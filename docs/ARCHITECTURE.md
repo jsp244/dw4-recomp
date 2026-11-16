@@ -250,11 +250,14 @@ they change, not by file hashes, so other versions are recognised too.
 ## Title screen
 
 `runtime/title.c` recognises the North American title scene by the stone plaque's frame
-(its tiles in the name table and a hash of their patterns) and, with the option on, draws
-the sky and the Japanese release's logo over it in the finished picture. The logo is a
-run-length picture of colour numbers in `generated/title_dq.h`, made by
-`tools/title/extract_title.py` from a dump of that cartridge, which the interpreter runs
-as it is (same board).
+(its tiles in the name table and a hash of their patterns) and the Japanese one by the
+patterns of the logo's tiles, and draws the sky and the other picture over it in the
+finished frame: the logo over the plaque, or the plaque over the logo that a hack brings
+along. The PPU's pixels are saved and put back after the frame is converted, so the PPU's
+picture stays its own and the option shows at once behind the paused menu. The pictures
+are run-length lists of colour numbers in `generated/title_dq.h` and `title_dw.h`, made by
+`tools/title/extract_title.py` from dumps of the two cartridges, which the interpreter
+runs as they are (same board).
 
 ## Frontend
 

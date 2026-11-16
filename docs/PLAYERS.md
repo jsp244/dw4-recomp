@@ -110,7 +110,9 @@ Title screen
 ------------
 Outside North America this game is Dragon Quest IV. Graphics > Title screen picks which
 name the title shows: the Dragon Quest IV logo (the default) or the stone plaque
-engraved with DRAGON WARRIOR IV. Nothing else changes.
+engraved with DRAGON WARRIOR IV. Nothing else changes. The choice shows at once, and it
+holds with a hack on too (Delocalized brings the Dragon Quest title along; with Dragon
+Warrior IV chosen the plaque is shown in its place).
 
 Patches (ROM hacks)
 -------------------
@@ -145,7 +147,8 @@ loads. The switch itself takes a moment of the game's choosing, usually none you
 notice; a message says when it has happened.
 
 While a patch is on, RetroAchievements are off (they belong to the original game), and a
-save state can only be loaded under the patches it was saved with. The adventure logs
+save state made under other patches still loads: the game returns to the saved moment and
+the patches you have chosen now take over a moment later. The adventure logs
 are shared: you can continue a game with or without patches. One caution from the hack
 itself: do not switch Manual tactics off while a party is set to the Manual tactic;
 choose another tactic first.

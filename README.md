@@ -220,20 +220,25 @@ and return inside the frame, so it usually takes a fraction of a frame.
 interpreter and translated code to agree on every frame. What a patch changes is seen the
 next time the game reads it: text when it is printed again, graphics when a scene loads.
 
-RetroAchievements are off while a patch is on. A saved state belongs to the image it was
-saved from and is refused under another set of patches.
+RetroAchievements are off while a patch is on. A saved state holds the machine in the
+middle of its code, so it belongs to the image it was saved from: loading one that was
+saved under another set of patches puts that set's image back for the load (it is found
+by the state's signature), and the set chosen now takes over through the same live switch.
 
 ## Title screen
 
 Graphics > Title screen chooses the name the game goes by: the Dragon Quest IV logo, as on
 the Japanese cartridge, or the stone plaque being engraved with DRAGON WARRIOR IV. The
 scene around it is the same in both releases, and the game runs the same either way: the
-picture is changed after the PPU has drawn it (`runtime/title.c`).
+picture is changed after the PPU has drawn it (`runtime/title.c`), and the PPU's own
+picture is put back afterwards, so the choice shows at once. It works both ways: with a
+hack that brings the Japanese title along (Delocalized), choosing Dragon Warrior IV draws
+the plaque over that logo.
 
-The logo is not in this repository. `make title TITLE_ROM="<your dump of the Japanese
-release>"` takes it from that cartridge into `generated/title_dq.h` (a picture of 197 x 65
-pixels); a build without that file has no such option. The packages on the releases page
-are built with it.
+The two pictures are not in this repository. `make title TITLE_ROM="<your dump of the
+Japanese release>"` takes the logo from that cartridge and the finished plaque from the ROM
+in `rom/` into `generated/` (197 x 65 and 192 x 80 pixels); a build without them has no
+such option. The packages on the releases page are built with them.
 
 ## Layout
 

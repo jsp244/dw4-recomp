@@ -373,7 +373,8 @@ void    nes_run_frame(void);
 void    nes_set_pad(int pad, uint8_t buttons);
 size_t  nes_state_size(void);
 int     nes_state_save(void *buf, size_t size);
-int     nes_state_load(const void *buf, size_t size);
+int     nes_state_load(const void *buf, size_t size);   /* -1 not a state of this program, -2 saved from another patched image */
+int     nes_state_image(const void *buf, size_t size, uint32_t *image);   /* 1 and the image (patch_signature) a state was saved from */
 /* One of the game's own routines run on the side, to ask it something (widescreen.c): begin saves
    the CPU, the RAM, the battery RAM and the mapper; call runs the routine at addr in the
    interpreter until it returns (1) or max_steps instructions have gone by (0), with the hardware

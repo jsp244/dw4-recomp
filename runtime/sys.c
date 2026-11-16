@@ -164,6 +164,15 @@ int nes_state_save(void *buf, size_t size) {
     return 0;
 }
 
+int nes_state_image(const void *buf, size_t size, uint32_t *image) {
+    const state_t *s = (const state_t *)buf;
+    if (size < STATE_V2_SIZE || s->magic != STATE_MAGIC) return 0;
+    if (s->version == 2) { *image = 0; return 1; }      /* from before patches existed */
+    if (s->version != STATE_VERSION || size < sizeof(state_t)) return 0;
+    *image = s->image;
+    return 1;
+}
+
 int nes_state_load(const void *buf, size_t size) {
     if (size < STATE_V2_SIZE) return -1;
     const state_t *s = (const state_t *)buf;

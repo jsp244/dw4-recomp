@@ -244,6 +244,7 @@ static void usage(void) {
         "  --ips-toggle N      every N frames switch the patches off, or on again, while the game runs\n"
         "                      (each switch waits for a frame at which no running code is affected)\n"
         "  --title-quest       the Dragon Quest IV logo in place of the Dragon Warrior IV plaque (runtime/title.h)\n"
+        "  --title-warrior     the other way: the plaque in place of the logo a hack brings along\n"
         "  --ppu-dump FILE     write the PPU's memory after the last frame (name tables, palette, CHR RAM,\n"
         "                      sprites, picture: tools/title reads it)\n"
         "  --input FILE        input script: lines of 'frame BTN+BTN'\n"
@@ -299,7 +300,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--remaster-pack") && i + 1 < argc) remaster_pack = argv[++i];
         else if (!strcmp(argv[i], "--hd-dump") && i + 1 < argc) hd_dump = argv[++i];
         else if (!strcmp(argv[i], "--ppu-dump") && i + 1 < argc) ppu_dump = argv[++i];
-        else if (!strcmp(argv[i], "--title-quest")) title_quest = 1;
+        else if (!strcmp(argv[i], "--title-quest")) title_quest = TITLE_LOGO;
+        else if (!strcmp(argv[i], "--title-warrior")) title_quest = TITLE_PLAQUE;
         else if (!strcmp(argv[i], "--wav") && i + 1 < argc) wav = argv[++i];
         else if (!strcmp(argv[i], "--apu-log")) { apu_log_on = 1; apu_write_hook = apu_log_hook; }
         else if (!strcmp(argv[i], "--mute") && i + 1 < argc) { apu_mute_mask = (uint8_t)strtol(argv[++i], NULL, 16); apu_mute_output = true; }
@@ -431,7 +433,10 @@ int main(int argc, char **argv) {
             FILE *f = fopen(name, "wb");
             if (f) { fwrite(ram, 1, sizeof ram, f); fwrite(cart.wram, 1, sizeof cart.wram, f); fclose(f); }
         }
-        if (title_quest && title_plaque()) { title_draw(); title_frames++; }      /* (after the hash: the picture only) */
+        if (title_quest) {      /* (after the hash: the picture only) */
+            int scene = title_scene();
+            if (scene && scene != title_quest) { title_draw(title_quest); title_frames++; }
+        }
         if (png && png_every && (frame % png_every) == 0) {
             char name[1100];
             snprintf(name, sizeof name, "%s.%05d.png", png, frame);
@@ -523,7 +528,7 @@ int main(int argc, char **argv) {
     }
     if (wav) { write_wav(wav, audio, audio_n, 48000, channels); free(audio); }
     if (apu_log_on) apu_log_print();
-    if (title_quest) printf("title: the logo %s; the plaque was on the screen in %ld frames\n", title_available() ? "is built in" : "is NOT built in", title_frames);
+    if (title_quest) printf("title: the pictures %s; the other title was on the screen, and drawn over, in %ld frames\n", title_available() ? "are built in" : "are NOT built in", title_frames);
 #ifdef STK_AUDIT
     printf("stack audit: %llu returns through an address pushed by hand, %llu of them with a call or return in between\n",
            (unsigned long long)stk_hand_returns, (unsigned long long)stk_hand_returns_late);

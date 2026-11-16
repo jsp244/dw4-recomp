@@ -137,11 +137,13 @@ $(BUILD)/nes-headless-recomp$(EXE): $(RUNTIME_OBJ) $(BUILD)/headless.o $(GEN_OBJ
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lm
 
 # ---- the Dragon Quest IV title logo, from a dump of the Japanese cartridge (optional) ----
-# make title TITLE_ROM="path/Dragon Quest IV (Japan).nes"   ->  generated/title_dq.h
-$(BUILD)/title.o: $(wildcard $(GEN)/title_dq.h)
+# make title TITLE_ROM="path/Dragon Quest IV (Japan).nes"   ->  generated/title_dq.h (its logo) and
+# generated/title_dw.h (the plaque of the ROM in rom/)
+$(BUILD)/title.o: $(wildcard $(GEN)/title_dq.h) $(wildcard $(GEN)/title_dw.h)
 title: headless
 	@test -n "$(TITLE_ROM)" || (echo "pass TITLE_ROM=<your dump of the Japanese Dragon Quest IV>" && exit 1)
-	$(PYTHON) tools/title/extract_title.py "$(TITLE_ROM)"
+	@test -n "$(ROM)" || (echo "put your Dragon Warrior IV .nes file in rom/ (or pass ROM=path)" && exit 1)
+	$(PYTHON) tools/title/extract_title.py "$(TITLE_ROM)" "$(ROM)"
 
 # ---- the ROM hacks built into the program (optional): the files of tools/hacks/hacks.txt, from a folder of yours ----
 # make hacks [HACKS_DIR=rom/hacks]   ->  generated/hacks.h
