@@ -249,6 +249,26 @@ static void write_wav(const char *path, const int16_t *samples, uint32_t n, uint
     fclose(f);
 }
 
+/* "DWMP" 1, ctrl, player x, y, the map's kind ($41), 4 bytes padding, palette[32], the squares (256 x 256 x 5),
+   CHR RAM (8192), the low RAM (2048), the battery RAM (8192) and OAM (256) */
+static void write_map_dump(const char *path) {
+    static uint8_t squares[256 * 256 * 5];
+    int px, py;
+    if (!widescreen_map_dump(squares, &px, &py)) fprintf(stderr, "map-dump: the map routine did not come back\n");
+    FILE *f = fopen(path, "wb");
+    if (!f) return;
+    uint8_t head[8] = { ppu.frame_ctrl, (uint8_t)px, (uint8_t)py, ram[0x41], 0, 0, 0, 0 };
+    fwrite("DWMP\1\0\0\0", 1, 8, f);
+    fwrite(head, 1, 8, f);
+    fwrite(ppu.palette, 1, 32, f);
+    fwrite(squares, 1, sizeof squares, f);
+    fwrite(cart.chr_ram, 1, sizeof cart.chr_ram, f);
+    fwrite(ram, 1, sizeof ram, f);
+    fwrite(cart.wram, 1, sizeof cart.wram, f);
+    fwrite(ppu.oam, 1, 256, f);
+    fclose(f);
+}
+
 static void usage(void) {
     fprintf(stderr,
         "usage: nes-headless --rom FILE [options]\n"
@@ -271,6 +291,9 @@ static void usage(void) {
         "  --map-dump FILE     write the whole map the player is on after the last frame, as the game's own map\n"
         "                      code gives it (256 x 256 squares: four tiles and a palette), with the palette, the\n"
         "                      CHR RAM and the game's memory (tools/sfc reads it)\n"
+        "  --map-moments K:N   with --map-dump FILE: run on, and write the map again (FILE_k.map) at each of the next\n"
+        "                      K - 1 moments, N frames apart, whose tiles differ from those seen (the game moves\n"
+        "                      water by redrawing tiles: a fountain is another square at another moment)\n"
         "  --input FILE        input script: lines of 'frame BTN+BTN'\n"
         "  --fuzz SEED         random controller input (the same for the same seed), from --fuzz-start N (default 0)\n"
         "  --png FILE          write the last frame as PNG\n"
@@ -317,7 +340,7 @@ int main(int argc, char **argv) {
     const char *wide = NULL;
     int frames = 600, png_every = 0, ram_dump_every = 0, nestest = 0, blargg = 0, recomp = 0, quiet = 0, trace_start = 0;
     static struct { int first, last, addr, value; } pokes[32];
-    int n_pokes = 0;
+    int n_pokes = 0, map_moments = 1, map_step = 8;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--rom") && i + 1 < argc) rom = argv[++i];
         else if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atoi(argv[++i]);
@@ -337,6 +360,9 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--hd-dump") && i + 1 < argc) hd_dump = argv[++i];
         else if (!strcmp(argv[i], "--ppu-dump") && i + 1 < argc) ppu_dump = argv[++i];
         else if (!strcmp(argv[i], "--map-dump") && i + 1 < argc) map_dump = argv[++i];
+        else if (!strcmp(argv[i], "--map-moments") && i + 1 < argc) {
+            if (sscanf(argv[++i], "%d:%d", &map_moments, &map_step) < 1 || map_moments < 1 || map_step < 1) { usage(); return 2; }
+        }
         else if (!strcmp(argv[i], "--sfc") && i + 1 < argc) sfc_png = argv[++i];
         else if (!strcmp(argv[i], "--sfc-wide") && i + 1 < argc) sfc_wide = argv[++i];
         else if (!strcmp(argv[i], "--sfc-pack") && i + 1 < argc) sfc_pack = argv[++i];
@@ -620,23 +646,29 @@ int main(int argc, char **argv) {
             fclose(f);
         }
     }
-    if (map_dump) {  /* "DWMP" 1, ctrl, player x, y, the map's kind ($41), 4 bytes padding, palette[32], the squares
-                        (256 x 256 x 5), CHR RAM (8192), the low RAM (2048), the battery RAM (8192) and OAM (256) */
-        static uint8_t squares[256 * 256 * 5];
-        int px, py;
-        if (!widescreen_map_dump(squares, &px, &py)) fprintf(stderr, "map-dump: the map routine did not come back\n");
-        FILE *f = fopen(map_dump, "wb");
-        if (f) {
-            uint8_t head[8] = { ppu.frame_ctrl, (uint8_t)px, (uint8_t)py, ram[0x41], 0, 0, 0, 0 };
-            fwrite("DWMP\1\0\0\0", 1, 8, f);
-            fwrite(head, 1, 8, f);
-            fwrite(ppu.palette, 1, 32, f);
-            fwrite(squares, 1, sizeof squares, f);
-            fwrite(cart.chr_ram, 1, sizeof cart.chr_ram, f);
-            fwrite(ram, 1, sizeof ram, f);
-            fwrite(cart.wram, 1, sizeof cart.wram, f);
-            fwrite(ppu.oam, 1, 256, f);
-            fclose(f);
+    if (map_dump) {
+        write_map_dump(map_dump);
+        if (map_moments > 1) {
+            /* The game moves water by redrawing tiles, so a fountain is another square at another moment: the
+               run goes on, and the map is written again (FILE_k.map) at every moment whose tiles were not seen
+               before. A moment at which every background color is black (the game is leaving the map) ends it. */
+            static uint8_t seen[32][8192];
+            int n_seen = 1;
+            size_t len = strlen(map_dump);
+            int stem = len > 4 && !strcmp(map_dump + len - 4, ".map") ? (int)len - 4 : (int)len;
+            memcpy(seen[0], cart.chr_ram, 8192);
+            for (int k = 1; k < map_moments; k++) {
+                for (int i = 0; i < map_step; i++) { nes_run_frame(); apu.ring_read = apu.ring_write; }
+                int dark = 1, known = 0;
+                for (int i = 0; i < 16; i++) if ((ppu.palette[i] & 0x0F) < 0x0D) dark = 0;
+                if (dark) break;
+                for (int s = 0; s < n_seen; s++) if (!memcmp(seen[s], cart.chr_ram, 8192)) known = 1;
+                if (known || n_seen >= 32) continue;
+                memcpy(seen[n_seen++], cart.chr_ram, 8192);
+                char name[1100];
+                snprintf(name, sizeof name, "%.*s_%d.map", stem, map_dump, k);
+                write_map_dump(name);
+            }
         }
     }
     if (hd_dump) {   /* "DWHD" 1, scroll t, fine x, ctrl, palette[32], line masks[240], fb, hd_bg, hd_spr (little-endian),

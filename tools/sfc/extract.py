@@ -66,7 +66,8 @@ NES_MAPS = [("castle", 6542), ("town", 6884), ("overworld", 8066)]
 # and the level ($64) it is to load, and 115 frames on that map is there.
 NES_WARPS = [("burland2", 0x02, 2), ("burland3", 0x02, 3), ("izmit0", 0x12, 0), ("izmit1", 0x12, 1), ("izmit2", 0x12, 2),
              ("tunnel0", 0x39, 0)] + [("well%d" % i, 0x36, i) for i in range(7)] + [("tower%d" % i, 0x41, i) for i in range(6)]
-# their inventories, one for every kind of map (the game's number at $28: art is bound to the kind, pack.py "here")
+# their inventories, one for every kind of map (the game's number at $28: art is bound to the kind, pack.py "here").
+# (Chapter 1's keep their names; scenes/dw4_places.txt lists every place of the game for the inventories nes_kXX.)
 NES_KINDS = [("castle_up", ["burland2"]), ("rooms", ["burland3", "izmit1", "izmit2"]), ("izmit", ["izmit0"]),
              ("tunnel", ["tunnel0"]), ("well", ["well%d" % i for i in range(7)]),
              ("tower", ["tower0", "tower1", "tower2", "tower3"]), ("tower_top", ["tower4", "tower5"])]
@@ -75,30 +76,16 @@ NES_KINDS = [("castle_up", ["burland2"]), ("rooms", ["burland3", "izmit1", "izmi
 # A map is dumped at several moments: the game moves water by redrawing tiles, so a fountain is another square at
 # another moment (eight steps of 16 frames). The dumps whose tiles differ are kept.
 MOMENTS, APART = 17, 8
-CHR_AT, CHR_LEN = 16 + 32 + 256 * 256 * 5, 8192         # where a map dump keeps the tiles
+KIND_AT = 16 + 32 + 256 * 256 * 5 + 8192 + 0x28         # where a map dump keeps the map's kind (the game's $28)
 
 
 def moments(cmd, first, base):
-    """dumps the map at frame `first` of the run `cmd` and MOMENTS - 1 later moments; returns the dumps kept, the
-    first of them base + ".map". A moment at which the game shows nothing (every color black: it is leaving
-    the map, as where the player was put on a trap door) ends the row."""
+    """dumps the map at frame `first` of the run `cmd` and at the later moments whose tiles differ (nes-headless
+    --map-moments); returns the dumps, the first of them base + ".map" """
     for old in glob.glob(base + "_[0-9]*.map"):
         os.remove(old)
-    kept, seen = [], set()
-    for k in range(MOMENTS):
-        dump = base + (".map" if k == 0 else "_%d.map" % k)
-        run(cmd + ["--frames", str(first + k * APART), "--map-dump", dump, "--quiet"])
-        d = open(dump, "rb").read()
-        tiles = d[CHR_AT:CHR_AT + CHR_LEN]
-        dark = all((c & 0x0F) >= 0x0D for c in d[16:32])       # (the background's colors)
-        if k and (dark or tiles in seen):
-            os.remove(dump)
-            if dark:
-                break
-        else:
-            seen.add(tiles)
-            kept.append(dump)
-    return kept
+    run(cmd + ["--frames", str(first), "--map-dump", base + ".map", "--map-moments", "%d:%d" % (MOMENTS, APART), "--quiet"])
+    return [base + ".map"] + sorted(glob.glob(base + "_[0-9]*.map"), key=lambda p: int(p[len(base) + 1:-4]))
 
 
 def run(cmd):
@@ -208,6 +195,19 @@ def main():
     for inv, names in NES_KINDS:
         py("nesmap.py", "squares", os.path.join(gen, "nes_" + inv), *[d for n in names for d in warped[n]])
     py("nesmap.py", "figures", os.path.join(gen, "nes_people_ch1"), *[warped[n][0] for n, _, _ in NES_WARPS])
+    # every place of the game and its levels (scenes/dw4_places.txt), one inventory for each kind of map: nes_kXX
+    kinds = {}
+    for ln in open(os.path.join(scenes, "dw4_places.txt")):
+        t = ln.split("#")[0].split()
+        if len(t) < 2:
+            continue
+        place, level = int(t[0], 16), int(t[1], 16)
+        dumps = moments(game + ["--state-load", state, "--keys", "0:DOWN;55:-",
+                                "--poke", "5-21:63:%02X" % place, "--poke", "9-21:64:%02X" % level], 115,
+                        os.path.join(gen, "p%02X_%02X" % (place, level)))
+        kinds.setdefault(open(dumps[0], "rb").read()[KIND_AT], []).extend(dumps)
+    for kind in sorted(kinds):
+        py("nesmap.py", "squares", os.path.join(gen, "nes_k%02X" % kind), *kinds[kind])
     os.remove(state)
 
     print("4. the pack")
