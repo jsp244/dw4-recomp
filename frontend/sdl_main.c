@@ -1511,7 +1511,11 @@ static void scan_patches(void) {
                 if (patch_entries[q].hack && !strcmp(patch_entries[q].hack->id, h->parent)) e->parent = q;
             snprintf(e->label, sizeof e->label, "    + %.44s", h->name);
         } else {
-            snprintf(e->label, sizeof e->label, "%.24s %.6s - %.18s, %.4s", h->name, h->version, h->author, h->year);
+            /* "Name version - author, year - RHDN #number": the number of its page on romhacking.net */
+            char site[24] = "";
+            const char *id = strstr(h->page, "/hacks/");
+            if (id) { snprintf(site, sizeof site, " - RHDN #%.6s", id + 7); for (char *c = site; *c; c++) if (*c == '/') *c = 0; }
+            snprintf(e->label, sizeof e->label, "%.24s %.6s - %.18s, %.4s%s", h->name, h->version, h->author, h->year, site);
             named[h->kind] = 1;
         }
         e->on = in_patch_list(e->key);
@@ -1674,7 +1678,8 @@ static void refresh_patch_items(void) {
     t[n] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
     if (hacks_count())
         snprintf(t[n].info, sizeof t[n].info, "ROM hacks, applied to your ROM in memory and switched On and Off while you play. The ones "
-                 "listed with their authors come with the program. Others: put the .ips files in this folder or drop them on the window:\n%.170s", patch_dir);
+                 "listed with their authors come with the program (RHDN #: their page, romhacking.net/hacks/number). "
+                 "Others: put .ips files in this folder or drop them on the window:\n%.140s", patch_dir);
     else
         snprintf(t[n].info, sizeof t[n].info, "ROM hacks as IPS files, applied to your ROM in memory and switched On and Off while you play. "
                  "Get them from their pages, then put the .ips files in this folder or drop them on the window:\n%.180s", patch_dir);

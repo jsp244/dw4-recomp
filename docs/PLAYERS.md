@@ -119,7 +119,8 @@ shared. Your ROM file is never changed; the patches are applied in memory, and e
 be switched On or Off at any time, also in the middle of a game.
 
 Four well-known hacks come with the program, ready to switch on. They are the work of
-their authors, included unchanged:
+their authors, included unchanged. Each row names the hack, its version, its author, the
+year and its number on romhacking.net (RHDN #9523 is romhacking.net/hacks/9523):
 
   Delocalized 1.08        by Translation Quest (Chicken Knife, nejimakipiyo,
                           AWildJuneAppeared, dattebayo), 2026. A new English translation
