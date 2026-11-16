@@ -1,0 +1,27 @@
+; Address labels and hints for Dragon Warrior IV (USA), written for this project: they contain
+; no game data. Text after ';' is a comment.
+;
+;   BB:AAAA Name       names an address (BB = 16 KiB PRG bank in decimal, AAAA = hex address);
+;                      the name shows up in the generated C and the listings
+;   codeptr BB:AAAA    the two bytes at that ROM address are a pointer to code
+;
+; The fixed banks: bank 15 serves the first half of the ROM, bank 31 the second. The routines
+; other banks rely on sit at the same addresses in both.
+15:FFD8 Reset
+31:FFD8 Reset
+15:C03D Init
+31:C03D Init
+15:C15A Nmi             ; reached through the JMP the game keeps in RAM at $0502
+31:C15A Nmi
+15:C408 FarCall         ; the IRQ/BRK vector: BRK, routine, bank code = call into another bank
+31:C408 FarCall
+15:C38B FarCallRun      ; switch bank, JSR to the routine through the JMP at $0023, switch back
+31:C38B FarCallRun
+15:C3CE FarPointer      ; the same table entry fetched as data, into the zero page at X
+31:C3CE FarPointer
+15:FF91 SwitchBank      ; A = bank (0-31): PRG register, then bit 4 through the CHR register
+31:FF91 SwitchBank
+
+; the NMI vector is $0502 in RAM; Init stores a JMP there to the address kept at $C0D2
+codeptr 15:C0D2
+codeptr 31:C0D2
