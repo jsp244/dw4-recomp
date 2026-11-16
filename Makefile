@@ -29,7 +29,7 @@ BUILD   ?= build
 GEN     := generated
 
 RUNTIME_SRC := runtime/cpu.c runtime/mem.c runtime/cart.c runtime/mapper.c runtime/ppu.c \
-               runtime/apu.c runtime/sys.c runtime/png.c runtime/palette.c runtime/remaster.c runtime/widescreen.c runtime/patch.c runtime/title.c
+               runtime/apu.c runtime/sys.c runtime/png.c runtime/palette.c runtime/remaster.c runtime/widescreen.c runtime/patch.c runtime/title.c runtime/hacks.c
 RUNTIME_OBJ := $(patsubst runtime/%.c,$(BUILD)/%.o,$(RUNTIME_SRC))
 
 GEN_SRC := $(wildcard $(GEN)/*.c)
@@ -142,6 +142,13 @@ $(BUILD)/title.o: $(wildcard $(GEN)/title_dq.h)
 title: headless
 	@test -n "$(TITLE_ROM)" || (echo "pass TITLE_ROM=<your dump of the Japanese Dragon Quest IV>" && exit 1)
 	$(PYTHON) tools/title/extract_title.py "$(TITLE_ROM)"
+
+# ---- the ROM hacks built into the program (optional): the files of tools/hacks/hacks.txt, from a folder of yours ----
+# make hacks [HACKS_DIR=rom/hacks]   ->  generated/hacks.h
+HACKS_DIR ?= rom/hacks
+$(BUILD)/hacks.o: $(wildcard $(GEN)/hacks.h)
+hacks:
+	$(PYTHON) tools/hacks/embed_hacks.py "$(HACKS_DIR)"
 
 # ---- recompiler ----
 recomp:

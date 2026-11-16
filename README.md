@@ -1,10 +1,10 @@
-# Dragon Warrior IV native PC port (static recompilation)
+# Dragon Quest IV (Dragon Warrior IV) native PC port (static recompilation)
 
-A native program for Windows, Linux, the Steam Deck and Android that plays Dragon Warrior IV
-(NES, USA) from your own cartridge dump. The game's 6502 code is translated ahead of time into C by a recompiler and linked
+A native program for Windows, Linux, the Steam Deck and Android that plays Dragon Quest IV,
+released in North America as Dragon Warrior IV (NES, USA), from your own cartridge dump. The game's 6502 code is translated ahead of time into C by a recompiler and linked
 against a small hardware runtime (CPU helpers, a dot-accurate PPU, the APU and the
 cartridge's MMC1 board), with a launcher, save states, rewind, low-latency video and
-optional remastered graphics.
+optional Pixel Remaster graphics, ROM hacks switched on and off as you play, and widescreen.
 
 **No game data is in this repository.** Nothing here contains Dragon Warrior IV code,
 graphics, music or text. The recompiler reads your `.nes` file and writes the translated
@@ -175,19 +175,26 @@ python recomp/recomp.py --rom rom/your.nes --out generated --coverage cov.bin --
 
 ## Patches (ROM hacks)
 
-The Patches tab lists the `.ips` files in the `patches` folder next to the program (drop a
-file on the window, or use "Add a patch file", to put one there). Each is On or Off. The ROM
-on disk is never changed: the image the machine runs is the dump plus the patches that are
-on, rebuilt from the dump whenever the set changes, so any of them can be taken out again.
+The Patches tab lists the hacks that come with the program and the `.ips` files in the
+`patches` folder next to it (drop a file on the window, or use "Add a patch file", to put one
+there). Each is On or Off. The ROM on disk is never changed: the image the machine runs is
+the dump plus the patches that are on, rebuilt from the dump whenever the set changes, so
+any of them can be taken out again.
 
-The tab knows four hacks by what they change, and links to their pages:
+Four hacks are built into the packages on the releases page, unchanged and under their
+authors' names, as the tab shows them:
 
-| Hack | Page |
-|---|---|
-| Delocalized (Translation Quest): a new translation from the Japanese, with fixes | romhacking.net/hacks/9523 |
-| Graphical Uncensoring (MetHy) | romhacking.net/hacks/8426 |
-| Manual Tactics (karmic): command every party member yourself in chapter 5 | romhacking.net/hacks/9221 |
-| Seamonsters fix (Jegriva) | romhacking.net/hacks/3760 |
+| Hack | Version | Author | Year | Page |
+|---|---|---|---|---|
+| Delocalized: a new translation from the Japanese, with fixes, and its seven option patches | 1.08 | Translation Quest (Chicken Knife, nejimakipiyo, AWildJuneAppeared, dattebayo) | 2026 | romhacking.net/hacks/9523 |
+| Graphical Uncensoring | 1.0 | MetHy | 2024 | romhacking.net/hacks/8426 |
+| Manual Tactics: command every party member yourself in chapter 5 | 1.1 | karmic | 2025 | romhacking.net/hacks/9221 |
+| Seamonsters fix | 1.0 | Jegriva | 2017 | romhacking.net/hacks/3760 |
+
+They are their authors' work and are not in this repository: `make hacks` builds them in
+from the files named in `tools/hacks/hacks.txt` (checked against the hashes there), which
+you download from the pages above into `rom/hacks/`. A build without them shows links to
+the pages instead, and the same files work from the `patches` folder.
 
 The three small ones touch different bytes and combine freely, in any order. Delocalized
 already contains all three (in its own adapted form), so with it on they are not applied a
@@ -234,7 +241,8 @@ runtime/     CPU helpers and interpreter, PPU, APU, MMC1 and MMC3, save states, 
              patches, the title logo, test harness
 frontend/    SDL2 program: launcher, video, audio, input, touch controls, rewind, achievements, updater
 android/     the Android app: manifest, activity, CMake file, build_apk.py
-tools/       icon generator, remaster pack tool, title logo tool, the Linux/Deck build, Deck and Android helpers
+tools/       icon generator, remaster pack tool, title logo tool, the list of built-in hacks, the Linux/Deck
+             build, Deck and Android helpers
 tests/       cosimulation, test-ROM runner, frontend tests
 docs/        ARCHITECTURE.md, PLAYERS.md, STEAMDECK.md, ANDROID.md
 rom/         your cartridge dump (ignored by git)
@@ -245,5 +253,5 @@ generated/   the translated game (ignored by git)
 
 Dragon Warrior and Dragon Quest belong to Square Enix. This is an unofficial fan
 project; it runs only with a cartridge dump you provide. The MIT licence in `LICENSE`
-covers the tooling and runtime in this repository only. ROM hacks belong to their
-authors; the port links to their pages and does not include them.
+covers the tooling and runtime in this repository only. The ROM hacks belong to their
+authors (named above); the released packages carry them unchanged, the repository does not.

@@ -1,0 +1,19 @@
+# The ROM hacks that are built into the program (tools/hacks/embed_hacks.py, runtime/hacks.h).
+#
+# One per line:  id | kind | name | version | author | year | page | file | SHA-1 of the file | parent
+# kind: whole (a whole-game hack, applied first), uncensor, manual, sea (the three small hacks the
+# Patches tab knows), or option (an add-on of the hack named in the last column, applied after it).
+# The files themselves are not in this repository: they belong to their authors and come from the
+# pages below. embed_hacks.py takes them from a folder of yours and checks them against the hashes.
+
+delocalized | whole    | Delocalized           | 1.08 | Translation Quest | 2026 | https://www.romhacking.net/hacks/9523/ | dq4_delocalized_108.ips | f6bff1ccb103126562638f1463b71dee485ca2b9 |
+deloc-title | option   | Western-style title   |      |                   |      |                                        | dq4_delocalized_western_style_title.ips | 0ec430155c2f7f441f0e2fe3c3ddfbf4dbc59408 | delocalized
+deloc-auto  | option   | No manual control     |      |                   |      |                                        | dq4_delocalized_manual_control_revert.ips | 4c8c975b7d7241ffbd3362bbfdfb640bc512d25b | delocalized
+deloc-hill  | option   | No pause on hills     |      |                   |      |                                        | dq4_delocalized_no_hill_pause.ips | 29a97cab37e7ccaf8c9d87eced617dcda67afa43 | delocalized
+deloc-wings | option   | Zenithians without wings |   |                   |      |                                        | dq4_delocalized_wings_revert.ips | 48ce7158c8cf91001b22ef9549ddb481daf455b4 | delocalized
+deloc-party | option   | Original party access |      |                   |      |                                        | dq4_delocalized_appropriate_party_access_revert.ips | 2836b69d7e228a45c3a0d19527f674f20785377d | delocalized
+deloc-hp    | option   | Original HP growth for Minea |  |                |      |                                        | dq4_delocalized_original_minea_hp_revert.ips | aea0a4ba2be2a96da8188c15f4ac2c49b53ba6fa | delocalized
+deloc-price | option   | Original armor price  |      |                   |      |                                        | dq4_delocalized_stray_metal_armor_price_revert.ips | ed684b8b25b10778e226f13e66bc1738de1795eb | delocalized
+uncensor    | uncensor | Graphical Uncensoring | 1.0  | MetHy             | 2024 | https://www.romhacking.net/hacks/8426/ | Dragon Warrior IV (U) [!] - Graphical Uncensoring.ips | 7c3eb7454f2123233531a2576c347a1c8fcd4a7f |
+manual      | manual   | Manual Tactics        | 1.1  | karmic            | 2025 | https://www.romhacking.net/hacks/9221/ | dw4manual-1.1.ips | 07c8a5634e3316bd50c67aa49e817e05e3ba94be |
+sea         | sea      | Seamonsters fix       | 1.0  | Jegriva           | 2017 | https://www.romhacking.net/hacks/3760/ | Dragon Warrior IV (U) [seamonsters bugfix].ips | f93c863b8fcaf80f920508e35098b87aa6da51b5 |

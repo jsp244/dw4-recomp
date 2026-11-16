@@ -48,8 +48,8 @@ Tips
 - Graphics > Textures: Pixel Remaster recolors and shades the game in the manner of the
   Pixel Remaster games (more colors per tile, soft light from the upper left). A
   hand-made tile pack, remaster.pak, if you have one, goes in the game folder.
-- ROM hacks (.ips files) go in the patches folder inside the game folder; the Patches tab
-  switches them on and off. See README.txt.
+- ROM hacks: four come with the program (Patches tab). Other .ips files go in the patches
+  folder inside the game folder. See README.txt.
 - Updates: once the port has published releases, Check for updates on the menu's
   Updates tab, then Install, installs a new one in place (the previous version stays
   as dw4.old); Restart now brings you straight back in, still in the same Steam session.

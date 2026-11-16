@@ -40,6 +40,7 @@
 #include "remaster.h"
 #include "widescreen.h"
 #include "patch.h"
+#include "hacks.h"
 #include "title.h"
 #include "update.h"
 #include "rewind.h"
@@ -196,7 +197,7 @@ enum { ACT_PLAY = 1, ACT_RESET, ACT_SAVE, ACT_LOAD, ACT_STOP, ACT_QUIT, ACT_CHOO
        ACT_PATCH_LINK, ACT_PATCH_LINK_LAST = ACT_PATCH_LINK + 3, ACT_PATCH_COMPARE, ACT_PATCH_RESCAN, ACT_PATCH_ADD, PATCH_CHANGED };
 enum { TAB_PLAY, TAB_GFX, TAB_AUDIO, TAB_CONTROLS, TAB_RA, TAB_ROM, TAB_PATCHES, TAB_UPDATES, N_TABS };
 #define MAX_PATCH_FILES 16
-#define PATCH_ROWS (1 + 4 + MAX_PATCH_FILES + 4)
+#define PATCH_ROWS (1 + 4 + HACKS_MAX + MAX_PATCH_FILES + 4)
 #define GFX_ROWS 15
 #define GFX_WINDOW_SIZE_ROW 2
 #define GFX_TITLE_ROW 13
@@ -1380,21 +1381,29 @@ static void setup_textures(void) {
 /* ------------------------------------------------------------------ */
 /* patches (ROM hacks as IPS files)                                    */
 /* ------------------------------------------------------------------ */
-/* The files in the patches folder, each On or Off. The ones that are on are applied to the ROM in
-   memory - a whole-game hack first, then the small well-known ones, then the rest by name - and
-   can be switched while the game runs (runtime/patch.h). */
+/* The hacks that come with the program (runtime/hacks.h) and the .ips files in the patches folder,
+   each On or Off. The ones that are on are applied to the ROM in memory - a whole-game hack first,
+   then the small well-known ones, then add-ons and the rest by name - and can be switched while
+   the game runs (runtime/patch.h). */
 static const struct { const char *name, *url; int kind; } known_hacks[4] = {
     { "Delocalized", "https://www.romhacking.net/hacks/9523/", PATCH_WHOLE },
     { "Uncensored graphics", "https://www.romhacking.net/hacks/8426/", PATCH_UNCENSOR },
     { "Manual tactics", "https://www.romhacking.net/hacks/9221/", PATCH_MANUAL },
     { "Sea monster fix", "https://www.romhacking.net/hacks/3760/", PATCH_SEA },
 };
+#define MAX_PATCH_ENTRIES (HACKS_MAX + MAX_PATCH_FILES)
+typedef struct {
+    char label[200];
+    char key[176];              /* its name in dw4.ini: "builtin:<id>", or the file's name */
+    char file[160];             /* a file of the patches folder; "" for a built-in hack */
+    const hack_t *hack;         /* a built-in hack, or NULL */
+    int on, kind;
+    int parent;                 /* an add-on: the entry of the hack it goes with (applied only with it), else -1 */
+    int part_of;                /* the whole-game hack (an entry) that already holds this one, or -1 */
+} patch_entry_t;
+static patch_entry_t patch_entries[MAX_PATCH_ENTRIES];
+static int n_patch_entries;
 static char patch_dir[1300];
-static char patch_files[MAX_PATCH_FILES][160];
-static char patch_labels[MAX_PATCH_FILES][200];
-static int patch_on[MAX_PATCH_FILES], n_patch_files;
-static int patch_kind[MAX_PATCH_FILES];
-static int patch_part_of[MAX_PATCH_FILES];   /* the whole-game hack (a row) that already holds this one, or -1 */
 static int patches_shown = 1;            /* the compare key: 0 = the original game for the moment */
 static char patch_errors[500];
 static int patch_announce;               /* say so on the screen when the pending switch has happened */
@@ -1425,10 +1434,32 @@ static int name_has(const char *name, const char *word) {
     return 0;
 }
 
-static void patch_path(int i, char *out, size_t n) { snprintf(out, n, "%.1299s/%.159s", patch_dir, patch_files[i]); }
+/* where an entry's patch comes from (path: room for the file's path) */
+static void entry_src(int i, patch_src_t *src, char *path, size_t n) {
+    const patch_entry_t *e = &patch_entries[i];
+    memset(src, 0, sizeof *src);
+    if (e->hack) { src->name = e->hack->name; src->data = e->hack->data; src->len = e->hack->len; }
+    else { snprintf(path, n, "%.1299s/%.159s", patch_dir, e->file); src->name = e->file; src->path = path; }
+}
 
-/* the .ips files in the patches folder, by name, and what each one is */
+/* is this file of the patches folder one of the built-in hacks, byte for byte? (its number + 1, or 0) */
+static int file_is_builtin(const char *name) {
+    char path[1500];
+    snprintf(path, sizeof path, "%.1299s/%.159s", patch_dir, name);
+    FILE *f = nes_fopen(path, "rb");
+    if (!f) return 0;
+    static unsigned char buf[1 << 20];
+    size_t len = fread(buf, 1, sizeof buf, f);
+    fclose(f);
+    for (int k = 0; k < hacks_count(); k++)
+        if (hacks_get(k)->len == len && !memcmp(hacks_get(k)->data, buf, len)) return k + 1;
+    return 0;
+}
+
+/* the built-in hacks, then the .ips files in the patches folder by name, and what each one is */
 static void scan_patches(void) {
+    static char files[MAX_PATCH_FILES][160];
+    int n_files = 0;
     const char *root = data_dir;
 #ifdef __ANDROID__
     static char ext[1100];                /* the app's folder on the shared storage: a place files can be copied to */
@@ -1437,7 +1468,6 @@ static void scan_patches(void) {
 #endif
     snprintf(patch_dir, sizeof patch_dir, "%spatches", root);
     make_dir(patch_dir);
-    n_patch_files = 0;
 #ifdef _WIN32
     wchar_t wpat[1400];
     char pat[1400];
@@ -1448,9 +1478,9 @@ static void scan_patches(void) {
         if (h != INVALID_HANDLE_VALUE) {
             do {
                 char name[160];
-                if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || n_patch_files >= MAX_PATCH_FILES) continue;
+                if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || n_files >= MAX_PATCH_FILES) continue;
                 if (!WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, name, sizeof name, NULL, NULL)) continue;
-                if (ends_with_ips(name)) snprintf(patch_files[n_patch_files++], sizeof patch_files[0], "%s", name);
+                if (ends_with_ips(name)) snprintf(files[n_files++], sizeof files[0], "%s", name);
             } while (FindNextFileW(h, &fd));
             FindClose(h);
         }
@@ -1459,34 +1489,66 @@ static void scan_patches(void) {
     DIR *d = opendir(patch_dir);
     if (d) {
         struct dirent *de;
-        while ((de = readdir(d)) != NULL && n_patch_files < MAX_PATCH_FILES)
-            if (ends_with_ips(de->d_name) && strlen(de->d_name) < sizeof patch_files[0])
-                snprintf(patch_files[n_patch_files++], sizeof patch_files[0], "%s", de->d_name);
+        while ((de = readdir(d)) != NULL && n_files < MAX_PATCH_FILES)
+            if (ends_with_ips(de->d_name) && strlen(de->d_name) < sizeof files[0])
+                snprintf(files[n_files++], sizeof files[0], "%s", de->d_name);
         closedir(d);
     }
 #endif
-    qsort(patch_files, (size_t)n_patch_files, sizeof patch_files[0], cmp_names);
+    qsort(files, (size_t)n_files, sizeof files[0], cmp_names);
+
+    n_patch_entries = 0;
     int named[5] = { 0 };
-    for (int i = 0; i < n_patch_files; i++) {
+    /* the hacks that come with the program: "Name version - author, year"; their add-ons indented below them */
+    for (int k = 0; k < hacks_count(); k++) {
+        const hack_t *h = hacks_get(k);
+        patch_entry_t *e = &patch_entries[n_patch_entries];
+        memset(e, 0, sizeof *e);
+        e->hack = h; e->kind = h->kind; e->parent = e->part_of = -1;
+        snprintf(e->key, sizeof e->key, "builtin:%.160s", h->id);
+        if (h->parent[0]) {
+            for (int q = 0; q < n_patch_entries; q++)
+                if (patch_entries[q].hack && !strcmp(patch_entries[q].hack->id, h->parent)) e->parent = q;
+            snprintf(e->label, sizeof e->label, "    + %.44s", h->name);
+        } else {
+            snprintf(e->label, sizeof e->label, "%.24s %.6s - %.18s, %.4s", h->name, h->version, h->author, h->year);
+            named[h->kind] = 1;
+        }
+        e->on = in_patch_list(e->key);
+        n_patch_entries++;
+    }
+    /* the folder's files (one that is a built-in hack byte for byte is already listed) */
+    for (int i = 0; i < n_files && n_patch_entries < MAX_PATCH_ENTRIES; i++) {
+        int same = hacks_count() ? file_is_builtin(files[i]) : 0;
+        if (same) {     /* already listed; and On if the file was (a setting from before the hacks were built in) */
+            if (in_patch_list(files[i])) patch_entries[same - 1].on = 1;
+            continue;
+        }
+        patch_entry_t *e = &patch_entries[n_patch_entries];
         char path[1500];
+        patch_src_t src;
         patch_info_t info;
-        patch_path(i, path, sizeof path);
-        patch_on[i] = in_patch_list(patch_files[i]);
-        patch_kind[i] = patch_inspect(path, &info) ? info.kind : PATCH_OTHER;
-        patch_part_of[i] = -1;
+        memset(e, 0, sizeof *e);
+        snprintf(e->file, sizeof e->file, "%.159s", files[i]);
+        snprintf(e->key, sizeof e->key, "%.159s", files[i]);
+        e->parent = e->part_of = -1;
+        entry_src(n_patch_entries, &src, path, sizeof path);
+        e->kind = patch_inspect_src(&src, &info) ? info.kind : PATCH_OTHER;
+        e->on = in_patch_list(e->key);
         /* the hacks the menu knows go by their names (the first file of each); a whole-game hack is
-           only "Delocalized" when its file says so */
+           only "Delocalized" when its file says so. (A row has room for some 55 characters before
+           the On/Off column.) */
         const char *known = NULL;
         for (int k = 0; k < 4; k++)
-            if (known_hacks[k].kind == patch_kind[i] && !named[patch_kind[i]] &&
-                (patch_kind[i] != PATCH_WHOLE || name_has(patch_files[i], "deloc"))) known = known_hacks[k].name;
-        /* (a row has room for some 55 characters before the On/Off column) */
-        size_t len = strlen(patch_files[i]);
+            if (known_hacks[k].kind == e->kind && !named[e->kind] &&
+                (e->kind != PATCH_WHOLE || name_has(files[i], "deloc"))) known = known_hacks[k].name;
+        size_t len = strlen(files[i]);
         if (known) {
-            named[patch_kind[i]] = 1;
+            named[e->kind] = 1;
             int room = 49 - (int)strlen(known);
-            snprintf(patch_labels[i], sizeof patch_labels[i], "%s  (%.*s%s)", known, room, patch_files[i], (int)len > room ? "..." : "");
-        } else snprintf(patch_labels[i], sizeof patch_labels[i], "%.52s%s", patch_files[i], len > 52 ? "..." : "");
+            snprintf(e->label, sizeof e->label, "%s  (%.*s%s)", known, room, files[i], (int)len > room ? "..." : "");
+        } else snprintf(e->label, sizeof e->label, "%.52s%s", files[i], len > 52 ? "..." : "");
+        n_patch_entries++;
     }
 }
 
@@ -1496,34 +1558,40 @@ static void patches_and_achievements(void);
 /* Prepare the image for the rows as they stand. force: put it in place at once (the machine is
    about to be powered on); otherwise it goes in at the first safe moment while the game runs. */
 static void apply_patches(int force) {
-    static char paths[MAX_PATCH_FILES][1500];
-    static const int rank[5] = { [PATCH_WHOLE] = 0, [PATCH_UNCENSOR] = 1, [PATCH_MANUAL] = 2, [PATCH_SEA] = 3, [PATCH_OTHER] = 4 };
-    const char *list[MAX_PATCH_FILES];
+    static char paths[MAX_PATCH_ENTRIES][1500];
+    patch_src_t list[MAX_PATCH_ENTRIES];
     int n = 0;
     cfg.patches[0] = 0;
-    for (int i = 0; i < n_patch_files; i++) {
-        patch_part_of[i] = -1;
-        if (!patch_on[i]) continue;
+    for (int i = 0; i < n_patch_entries; i++) {
+        patch_entry_t *e = &patch_entries[i];
+        e->part_of = -1;
+        if (!e->on) continue;
         size_t used = strlen(cfg.patches);
-        snprintf(cfg.patches + used, sizeof cfg.patches - used, "%s%.159s", used ? "|" : "", patch_files[i]);
+        snprintf(cfg.patches + used, sizeof cfg.patches - used, "%s%.175s", used ? "|" : "", e->key);
         /* a small hack that a whole-game hack already holds (they write the same places) is not
            applied on top of it: that would put the small hack's own version over the big one's */
-        if (patch_kind[i] == PATCH_OTHER || patch_kind[i] == PATCH_WHOLE) continue;
-        for (int k = 0; k < n_patch_files && patch_part_of[i] < 0; k++) {
-            char a[1500], b[1500];
-            if (!patch_on[k] || patch_kind[k] != PATCH_WHOLE) continue;
-            patch_path(i, a, sizeof a); patch_path(k, b, sizeof b);
-            if (patch_overlap(a, b) > 0) patch_part_of[i] = k;
+        if (e->kind != PATCH_UNCENSOR && e->kind != PATCH_MANUAL && e->kind != PATCH_SEA) continue;
+        for (int k = 0; k < n_patch_entries && e->part_of < 0; k++) {
+            char pa[1500], pb[1500];
+            patch_src_t a, b;
+            if (!patch_entries[k].on || patch_entries[k].kind != PATCH_WHOLE) continue;
+            entry_src(i, &a, pa, sizeof pa); entry_src(k, &b, pb, sizeof pb);
+            if (patch_overlap_src(&a, &b) > 0) e->part_of = k;
         }
     }
-    for (int r = 0; r < 5 && patches_shown; r++)
-        for (int i = 0; i < n_patch_files; i++) {
-            if (!patch_on[i] || rank[patch_kind[i]] != r || patch_part_of[i] >= 0) continue;
-            patch_path(i, paths[n], sizeof paths[n]);
-            list[n] = paths[n]; n++;
+    /* the order: whole-game hacks, the three small ones, add-ons (only with their hack), the rest */
+    for (int r = 0; r < 6 && patches_shown; r++)
+        for (int i = 0; i < n_patch_entries; i++) {
+            const patch_entry_t *e = &patch_entries[i];
+            int rank = e->kind == PATCH_WHOLE ? 0 : e->kind == PATCH_UNCENSOR ? 1 : e->kind == PATCH_MANUAL ? 2 :
+                       e->kind == PATCH_SEA ? 3 : e->parent >= 0 ? 4 : 5;
+            if (!e->on || rank != r || e->part_of >= 0) continue;
+            if (e->parent >= 0 && !patch_entries[e->parent].on) continue;
+            entry_src(i, &list[n], paths[n], sizeof paths[n]);
+            n++;
         }
     if (!rom_ok) { refresh_patch_items(); return; }
-    patch_prepare(list, n, patch_errors, sizeof patch_errors);
+    patch_prepare_list(list, n, patch_errors, sizeof patch_errors);
     if (force) patch_switch(1);
     else if (!game_started && patch_pending()) { patch_switch(1); nes_power(); patches_and_achievements(); }   /* only the attract mode to restart */
     refresh_patch_items();
@@ -1563,7 +1631,7 @@ static void poll_patch_switch(void) {
 /* the compare key: the original game for a moment, and the patches back again */
 static void compare_patches(void) {
     int any = 0;
-    for (int i = 0; i < n_patch_files; i++) any |= patch_on[i];
+    for (int i = 0; i < n_patch_entries; i++) any |= patch_entries[i].on;
     if (!any) { osd("No patch is on (menu > Patches)"); return; }
     patches_shown = !patches_shown;
     patch_announce = 1;
@@ -1574,7 +1642,7 @@ static void compare_patches(void) {
 static int add_patch_file(const char *path) {
     const char *name = path;
     for (const char *c = path; *c; c++) if (*c == '/' || *c == '\\') name = c + 1;
-    if (!ends_with_ips(name) || strlen(name) >= sizeof patch_files[0]) return 0;
+    if (!ends_with_ips(name) || strlen(name) >= sizeof patch_entries[0].file) return 0;
     char dst[1500];
     snprintf(dst, sizeof dst, "%s/%s", patch_dir, name);
     FILE *in = nes_fopen(path, "rb");
@@ -1601,24 +1669,30 @@ static int add_patch_file(const char *path) {
 }
 
 static void refresh_patch_items(void) {
-    int n = 0, on = 0, have[5] = { 0 }, held = 0;
+    int n = 0, on = 0, have[5] = { 0 }, held = 0, orphan = 0;
     ui_item *t = patch_items;
     t[n] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
-    snprintf(t[n].info, sizeof t[n].info, "ROM hacks as IPS files, applied to your ROM in memory and switched On and Off while you play. "
-             "Get them from their pages, then put the .ips files in this folder or drop them on the window:\n%.180s", patch_dir);
+    if (hacks_count())
+        snprintf(t[n].info, sizeof t[n].info, "ROM hacks, applied to your ROM in memory and switched On and Off while you play. The ones "
+                 "listed with their authors come with the program. Others: put the .ips files in this folder or drop them on the window:\n%.170s", patch_dir);
+    else
+        snprintf(t[n].info, sizeof t[n].info, "ROM hacks as IPS files, applied to your ROM in memory and switched On and Off while you play. "
+                 "Get them from their pages, then put the .ips files in this folder or drop them on the window:\n%.180s", patch_dir);
     n++;
-    for (int i = 0; i < n_patch_files; i++) have[patch_kind[i]] = 1;
+    for (int i = 0; i < n_patch_entries; i++) have[patch_entries[i].kind] = 1;
     for (int i = 0; i < 4; i++) {
         static char labels[4][64];
-        if (have[known_hacks[i].kind]) continue;        /* already in the folder */
+        if (have[known_hacks[i].kind]) continue;        /* built in, or already in the folder */
         snprintf(labels[i], sizeof labels[i], "Get: %s", known_hacks[i].name);
         t[n] = (ui_item){ labels[i], UI_ACTION, ACT_PATCH_LINK + i, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
         n++;
     }
-    for (int i = 0; i < n_patch_files; i++) {
-        t[n] = (ui_item){ patch_labels[i], UI_CHOICE, PATCH_CHANGED, &patch_on[i], onoff, 2, 0, 0, 0, NULL, "", NULL };
-        on += patch_on[i];
-        held += patch_on[i] && patch_part_of[i] >= 0;
+    for (int i = 0; i < n_patch_entries; i++) {
+        patch_entry_t *e = &patch_entries[i];
+        t[n] = (ui_item){ e->label, UI_CHOICE, PATCH_CHANGED, &e->on, onoff, 2, 0, 0, 0, NULL, "", NULL };
+        on += e->on;
+        held += e->on && e->part_of >= 0;
+        orphan += e->on && e->parent >= 0 && !patch_entries[e->parent].on;
         n++;
     }
     t[n++] = (ui_item){ handheld ? "Compare with the original" : "Compare with the original  (F9)", UI_ACTION, ACT_PATCH_COMPARE, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
@@ -1628,7 +1702,7 @@ static void refresh_patch_items(void) {
     t[n] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
     char *o = t[n].info;
     size_t room = sizeof t[n].info;
-    if (!n_patch_files)
+    if (!n_patch_entries)
         snprintf(o, room, "No .ips files in the folder yet.");
     else if (patch_pending())
         snprintf(o, room, "The switch happens as soon as the game runs and is not inside the code that changes.");
@@ -1642,10 +1716,12 @@ static void refresh_patch_items(void) {
     if (held) {
         size_t used = strlen(o);
         int whole = 0;
-        for (int i = 0; i < n_patch_files; i++) if (patch_on[i] && patch_part_of[i] >= 0) whole = patch_part_of[i];
+        for (int i = 0; i < n_patch_entries; i++) if (patch_entries[i].on && patch_entries[i].part_of >= 0) whole = patch_entries[i].part_of;
+        const patch_entry_t *w = &patch_entries[whole];
         snprintf(o + used, room - used, "\n%d of the small hacks %s already part of %.40s: not applied a second time.",
-                 held % 100, held == 1 ? "is" : "are", patch_files[whole]);
+                 held % 100, held == 1 ? "is" : "are", w->hack ? w->hack->name : w->file);
     }
+    if (orphan) { size_t used = strlen(o); snprintf(o + used, room - used, "\nThe + rows are add-ons: they take effect with the hack above them On."); }
     if (patch_errors[0]) { size_t used = strlen(o); snprintf(o + used, room - used, "\n%.150s", patch_errors); }
     n++;
     tabs[TAB_PATCHES].items = patch_items;

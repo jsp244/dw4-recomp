@@ -235,8 +235,15 @@ translated code, so both make the switch at the same instruction and stay compar
 as data; a build with `-DSTK_AUDIT` counts returns through such an address that had a call
 or return between the push and the return, and finds none.
 
-The frontend orders the files: a whole-game hack first, then the small hacks it knows,
-then the rest by name; a small hack that writes bytes a whole-game hack also writes is
+Built-in hacks. `tools/hacks/embed_hacks.py` turns the patch files listed in
+`tools/hacks/hacks.txt` (name, version, author, year, page, SHA-1) into `generated/hacks.h`;
+`runtime/hacks.c` exposes them, and `patch_prepare_list` takes a patch from memory as well as
+from a file. The Patches tab lists them first, an add-on under the hack it belongs to
+(applied only with it), and leaves out a file in the patches folder that is one of them
+byte for byte.
+
+The frontend orders the patches: a whole-game hack first, then the small hacks it knows,
+then add-ons and the rest by name; a small hack that writes bytes a whole-game hack also writes is
 taken to be part of it and left out. `patch_inspect` recognises the hacks by the places
 they change, not by file hashes, so other versions are recognised too.
 

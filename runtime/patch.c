@@ -108,6 +108,14 @@ static uint8_t *read_file(const char *path, long *len) {
     return buf;
 }
 
+/* a source's bytes: its own (memory) or read from its file (*owned: to be freed) */
+static const uint8_t *bytes_of(const patch_src_t *src, long *len, uint8_t **owned) {
+    *owned = NULL;
+    if (src->data) { *len = (long)src->len; return src->data; }
+    *owned = src->path ? read_file(src->path, len) : NULL;
+    return *owned;
+}
+
 /* marks the bytes of the .nes file (header included) that an IPS file writes; -1 if it is not one */
 static long mark(const uint8_t *ips, long len, uint8_t *map, uint32_t map_len) {
     long n_written = 0;
@@ -129,11 +137,12 @@ static long mark(const uint8_t *ips, long len, uint8_t *map, uint32_t map_len) {
     return n_written;
 }
 
-int patch_inspect(const char *path, patch_info_t *info) {
+int patch_inspect_src(const patch_src_t *src, patch_info_t *info) {
     memset(info, 0, sizeof *info);
     if (!base) return 0;
     long len;
-    uint8_t *buf = read_file(path, &len);
+    uint8_t *owned;
+    const uint8_t *buf = bytes_of(src, &len, &owned);
     uint8_t *map = calloc(HEADER + size, 1);
     long n = buf && map ? mark(buf, len, map, HEADER + size) : -1;
     uint8_t *img = malloc(size ? size : 1);
@@ -159,45 +168,48 @@ int patch_inspect(const char *path, patch_info_t *info) {
         }
 #undef CHANGED
     }
-    free(buf); free(map); free(img);
+    free(owned); free(map); free(img);
     return n >= 0;
 }
 
-long patch_overlap(const char *a, const char *b) {
+int patch_inspect(const char *path, patch_info_t *info) {
+    patch_src_t src = { path, path, NULL, 0 };
+    return patch_inspect_src(&src, info);
+}
+
+long patch_overlap_src(const patch_src_t *a, const patch_src_t *b) {
     if (!base) return 0;
     long la, lb, both = 0;
-    uint8_t *fa = read_file(a, &la), *fb = read_file(b, &lb);
+    uint8_t *oa, *ob;
+    const uint8_t *fa = bytes_of(a, &la, &oa), *fb = bytes_of(b, &lb, &ob);
     uint8_t *ma = calloc(HEADER + size, 1), *mb = calloc(HEADER + size, 1);
     if (fa && fb && ma && mb && mark(fa, la, ma, HEADER + size) >= 0 && mark(fb, lb, mb, HEADER + size) >= 0)
         for (uint32_t o = HEADER; o < HEADER + size; o++) both += ma[o] & mb[o];
-    free(fa); free(fb); free(ma); free(mb);
+    free(oa); free(ob); free(ma); free(mb);
     return both;
 }
 
-int patch_prepare(const char *const *paths, int n, char *errors, size_t errors_len) {
+long patch_overlap(const char *a, const char *b) {
+    patch_src_t sa = { a, a, NULL, 0 }, sb = { b, b, NULL, 0 };
+    return patch_overlap_src(&sa, &sb);
+}
+
+int patch_prepare_list(const patch_src_t *src, int n, char *errors, size_t errors_len) {
     if (errors && errors_len) errors[0] = 0;
     if (!base) return 0;
     memcpy(next, base, size);
     next_mapper = base_mapper;
     next_count = 0;
     for (int k = 0; k < n; k++) {
-        const char *err = "cannot read the file";
-        FILE *f = nes_fopen(paths[k], "rb");
-        uint8_t *buf = NULL;
-        long len = 0;
-        if (f) {
-            fseek(f, 0, SEEK_END);
-            len = ftell(f);
-            fseek(f, 0, SEEK_SET);
-            buf = len > 0 && len < (16 << 20) ? malloc((size_t)len) : NULL;
-            if (buf && fread(buf, 1, (size_t)len, f) == (size_t)len) err = apply(next, &next_mapper, buf, (size_t)len);
-            fclose(f);
-        }
-        free(buf);
+        long len;
+        uint8_t *owned;
+        const uint8_t *buf = bytes_of(&src[k], &len, &owned);
+        const char *err = buf ? apply(next, &next_mapper, buf, (size_t)len) : "cannot read the file";
+        free(owned);
         if (!err) next_count++;
         else if (errors && errors_len) {
-            const char *name = paths[k];
-            for (const char *c = paths[k]; *c; c++) if (*c == '/' || *c == '\\') name = c + 1;
+            const char *name = src[k].name ? src[k].name : src[k].path ? src[k].path : "patch";
+            for (const char *c = name; *c; c++) if (*c == '/' || *c == '\\') name = c + 1;
             size_t used = strlen(errors);
             snprintf(errors + used, errors_len - used, "%s%s: %s", used ? "\n" : "", name, err);
         }
@@ -205,6 +217,13 @@ int patch_prepare(const char *const *paths, int n, char *errors, size_t errors_l
     pending = memcmp(next, cart.prg, size) != 0 || next_count != applied || next_mapper != cart.mapper;
     patch_live_wait = pending && live;
     return next_count;
+}
+
+int patch_prepare(const char *const *paths, int n, char *errors, size_t errors_len) {
+    patch_src_t src[64];
+    if (n > 64) n = 64;
+    for (int k = 0; k < n; k++) { src[k].name = paths[k]; src[k].path = paths[k]; src[k].data = NULL; src[k].len = 0; }
+    return patch_prepare_list(src, n, errors, errors_len);
 }
 
 int patch_pending(void) { return pending; }

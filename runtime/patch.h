@@ -43,6 +43,18 @@ int patch_inspect(const char *path, patch_info_t *info);        /* 0: not a read
 /* How many ROM bytes both files write (0: they cannot affect each other, in either order). */
 long patch_overlap(const char *a, const char *b);
 
+/* A patch from a file (path) or from memory (data, len: the hacks built into the program); name
+   is what an error message calls it. The functions above and patch_prepare, for either kind: */
+typedef struct {
+    const char *name;
+    const char *path;
+    const uint8_t *data;
+    size_t len;
+} patch_src_t;
+int  patch_inspect_src(const patch_src_t *src, patch_info_t *info);
+long patch_overlap_src(const patch_src_t *a, const patch_src_t *b);
+int  patch_prepare_list(const patch_src_t *src, int n, char *errors, size_t errors_len);
+
 /* Build "the dump plus these IPS files, applied in this order" on the side. Returns how many of
    the files were applied; a file that is not an IPS patch or reaches beyond the ROM (patches
    that make the ROM bigger are not supported) is left out and named in errors, one line each.

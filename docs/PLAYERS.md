@@ -118,23 +118,29 @@ The Patches tab applies ROM hacks to the game: IPS patch files, the usual way ha
 shared. Your ROM file is never changed; the patches are applied in memory, and each can
 be switched On or Off at any time, also in the middle of a game.
 
-Getting them: the tab has a "Get" row for each of four well-known hacks, which opens its
-page on romhacking.net. Download the hack there, unpack the .zip, and give the .ips file
-to the program: drop it on the window, choose "Add a patch file", or copy it into the
-patches folder (shown at the top of the tab) and choose "Look for new files".
+Four well-known hacks come with the program, ready to switch on. They are the work of
+their authors, included unchanged:
 
-  Delocalized             a new English translation made from the Japanese text, with
-                          the original names, a Dragon Quest title sequence and several
-                          fixes. It already contains the three hacks below.
-  Uncensored graphics     the graphics changed for the North American release, put back
-  Manual tactics          command every party member yourself in chapter 5
-  Sea monster fix         the sea monsters that a bug kept from appearing
+  Delocalized 1.08        by Translation Quest (Chicken Knife, nejimakipiyo,
+                          AWildJuneAppeared, dattebayo), 2026. A new English translation
+                          made from the Japanese text, with the original names, a Dragon
+                          Quest title sequence and several fixes. It already contains the
+                          three hacks below. romhacking.net/hacks/9523
+  Graphical Uncensoring 1.0   by MetHy, 2024. The graphics changed for the North American
+                          release, put back. romhacking.net/hacks/8426
+  Manual Tactics 1.1      by karmic, 2025. Command every party member yourself in
+                          chapter 5. romhacking.net/hacks/9221
+  Seamonsters fix 1.0     by Jegriva, 2017. The sea monsters that a bug kept from
+                          appearing. romhacking.net/hacks/3760
 
 The three small ones can be used together in any combination. With Delocalized on they
-are left out, because it brings its own versions of them; the extra files that come with
-Delocalized (its "nonstandard options") can be switched on with it. Other IPS patches
-for Dragon Warrior IV (USA) can be tried the same way; one that makes the ROM bigger is
-refused.
+are left out, because it brings its own versions of them. The rows marked + under
+Delocalized are its authors' option patches (a Western-style title, no manual control,
+and so on): they take effect while Delocalized is On.
+
+Other IPS patches for Dragon Warrior IV (USA) can be added: drop the .ips file on the
+window, choose "Add a patch file", or copy it into the patches folder (shown at the top
+of the tab) and choose "Look for new files". One that makes the ROM bigger is refused.
 
 Comparing: F9 (or "Compare with the original" on the tab) switches all patches off and
 on again while you play, so you can see what a hack changed. Text appears changed the
@@ -220,4 +226,5 @@ Legal
 -----
 Dragon Warrior and Dragon Quest belong to Square Enix. This port is an unofficial
 fan project; it only runs with a cartridge dump you provide. Do not share your
-.nes file. ROM hacks belong to their authors and are not part of this program.
+.nes file. The ROM hacks that come with the program belong to their authors, named in
+the Patches section above.
