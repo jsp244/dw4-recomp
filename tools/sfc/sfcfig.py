@@ -10,10 +10,16 @@ Dragon Quest III draws everyone 16x24, as six 8x8 sprites (two columns of three)
 as one run from the ROM, where they lie uncompressed; which six make a picture is not in a table this tool knows,
 so it keeps every different picture the captures show, the characters told apart by where their tiles lie in
 the ROM. Which picture is which facing and step is then said in the map file (pack.py: cast ... poses).
+The party (the hero and the companions behind him) has its tiles loaded picture by picture, from one block of
+the ROM per class and sex ($C40 bytes each from $0E0000: the hero, the soldier, ...): build3p keeps only those,
+a set per block (its number is the block's), a set's pictures in the order they lie in the ROM. Companions
+walking in a column overlap on the screen, so there a figure's six sprites are those nearest it in the sprite
+list.
 
 usage:
     sfcfig.py build LIB.figs NAME=CAPTURE...
     sfcfig.py build3 LIB.figs DQ3.sfc NAME=CAPTURE...   Dragon Quest III's
+    sfcfig.py build3p LIB.figs DQ3.sfc NAME=CAPTURE...  Dragon Quest III's party: the hero and his companions
     sfcfig.py sheet LIB.figs OUT.png
 The library holds the games' art: it stays with your own copies (generated/ is git-ignored).
 """
@@ -75,7 +81,10 @@ def build(lib_path, named):
     print("%s: %d figures in %d sets from %d captures" % (lib_path, len(figs), len(sets), len(named)))
 
 
-def build3(lib_path, rom_path, named):
+PARTY_AT, PARTY_END, PARTY_BLOCK = 0x0E0000, 0x0F0000, 0xC40
+
+
+def build3(lib_path, rom_path, named, party=False):
     rom = open(rom_path, "rb").read()
     if len(rom) % 0x8000 == 512:
         rom = rom[512:]
@@ -99,12 +108,22 @@ def build3(lib_path, rom_path, named):
                 continue                        # the small ones on the screen
             spr.append((i, x, y, t | ((a & 1) << 8), (a >> 1) & 7, (a >> 6) & 1, a >> 7))
         at = {(s[1], s[2]): s for s in spr}
+        every = {}
+        for s in spr:
+            every.setdefault((s[1], s[2]), []).append(s)
         used = set()
         for s in spr:
             i, x, y, t, pal, hf, vf = s
             if i in used:
                 continue
-            parts = [at.get((x + dx, (y + dy) & 255)) for dx in (0, 8) for dy in (0, 8, 16)]
+            if party:               # (two figures may have a sprite at the same place: the one next in the list is its own)
+                parts = []
+                for dx in (0, 8):
+                    for dy in (0, 8, 16):
+                        c = [p for p in every.get((x + dx, (y + dy) & 255), []) if p[4] == pal and p[0] not in used and abs(p[0] - i) < 6]
+                        parts.append(min(c, key=lambda p: abs(p[0] - i)) if c else None)
+            else:
+                parts = [at.get((x + dx, (y + dy) & 255)) for dx in (0, 8) for dy in (0, 8, 16)]
             if any(p is None or p[4] != pal or p[0] in used for p in parts):
                 continue
             used.update(p[0] for p in parts)
@@ -123,6 +142,13 @@ def build3(lib_path, rom_path, named):
                             px[((k % 3) * 8 + yy) * 16 + (k // 3) * 8 + xx] = argb(d.cg[128 + pal * 16 + v])
             px = tuple(px)
             if not any(px) or px in seen or min(offs) < 0:
+                continue
+            if party:
+                if not PARTY_AT <= min(offs) < PARTY_END:
+                    continue
+                seen.add(px)
+                figs.append({"px": px, "w": 16, "h": 24, "from": name, "group": (min(offs) - PARTY_AT) // PARTY_BLOCK,
+                             "pose": 0, "rom": min(offs), "roms": tuple(offs)})
                 continue
             seen.add(px)
             # the character: the run of tiles this picture's first tile was loaded with (the game copies a
@@ -144,6 +170,12 @@ def build3(lib_path, rom_path, named):
             group = groups[who]
             pose = sum(1 for e in figs if e["group"] == group)
             figs.append({"px": px, "w": 16, "h": 24, "from": name, "group": group, "pose": pose, "rom": min(offs)})
+    if party:                   # a set's pictures in the order they lie in the ROM
+        figs.sort(key=lambda e: (e["group"], e["rom"], e["roms"], e["px"]))
+        for n, e in enumerate(figs):
+            e["pose"] = sum(1 for o in figs[:n] if o["group"] == e["group"])
+            del e["roms"]
+        groups = set(e["group"] for e in figs)
     figs.sort(key=lambda e: (e["group"], e["pose"]))
     with open(lib_path, "wb") as f:
         pickle.dump(figs, f)
@@ -175,6 +207,8 @@ def main():
         build(a[2], a[3:])
     elif len(a) >= 5 and a[1] == "build3":
         build3(a[2], a[3], a[4:])
+    elif len(a) >= 5 and a[1] == "build3p":
+        build3(a[2], a[3], a[4:], party=True)
     elif len(a) == 4 and a[1] == "sheet":
         sheet(a[2], a[3])
     else:

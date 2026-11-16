@@ -35,7 +35,10 @@ DQ1_CASTLE = ["dq1_throne1", "dq1_throne2", "dq1_castle0", "dq1_castle1", "dq1_c
 DQ1_OVERWORLD = ["w1_%03d" % i for i in (34, 35, 36, 40, 41, 42, 43, 44)]
 # Dragon Quest III (names from scenes/dq3.captures and dq3_front.captures; the order is the libraries' order, which
 # the map files' figure sets count by). Its script plays the game from power-on through the opening's questions and
-# last scene to Aliahan, the king's audience and three long walks through the town: about 91,000 frames.
+# last scene to Aliahan, the king's audience and three long walks through the town: about 91,000 frames; then
+# to Luisa's Place there, where a soldier, a fighter, a priest and a mage are entered in the register upstairs and
+# called to the party at the counter (a ready-made soldier and priest first, the soldier later left for the
+# mage), and the party walks in the four directions for its pictures (captures y_*): 16,700 frames more.
 # scenes/dq3_cave goes on from the town: out of its south gate, over the bridge to the cape, into the cave there
 # (captures v_*: its rock, its floor, its stairs and its treasure chests), up the stairs at the cave's east end into
 # the passages under the tower on the island (w_*) and up into the tower's ground floor (x_*: its stone floors
@@ -190,6 +193,9 @@ def main():
                        ("dq3_cellar", cellar), ("dq3_tower", tower)):
         py("sfclib.py", "build", os.path.join(gen, lib + ".sfclib"), *["%s=%s" % (n, os.path.join(cap, n)) for n in group])
     py("sfcfig.py", "build3", os.path.join(gen, "dq3.figs"), a.dq3, *["%s=%s" % (n, os.path.join(cap, n)) for n in figures])
+    # the hero and his companions (the end of the first scene: Luisa's Place), a set for each class
+    py("sfcfig.py", "build3p", os.path.join(gen, "dq3_party.figs"), a.dq3,
+       *["%s=%s" % (n, os.path.join(cap, n)) for n in sorted(n for n in names if n.startswith("y_"))])
 
     print("3. Dragon Warrior IV's maps")
     script = os.path.join(scenes, "dw4_chapter1.input")

@@ -15,9 +15,10 @@ python tools/sfc/extract.py --dq12 "Dragon Quest I & II (Japan).sfc" --dq3 "Drag
 
 That writes `sfc.pak` next to the Makefile; copy it beside the game. It takes twenty minutes or
 more: most of it is Dragon Quest III being played, without a window, from power-on through its
-opening to its first town and castle, and on through the cave on the cape nearby to the tower
-on the island, for their treasure chests, statues and stonework (about 213,000 frames in three
-scripts). `--keep-captures` on a later run skips that part
+opening to its first town and castle (where a soldier, a fighter, a priest and a mage are
+registered and join its hero at the tavern, for the heroes' figures), and on through the cave on
+the cape nearby to the tower on the island, for their treasure chests, statues and stonework
+(about 230,000 frames in three scripts). `--keep-captures` on a later run skips that part
 and uses the captures already made.
 Add `--uncensor FILE.ips` if you play with the Graphical Uncensoring hack: it changes a few squares
 and people, which then get their art too.
@@ -38,7 +39,10 @@ The same ROMs and scripts give the same pack every time.
 A place keeps the character the NES game gave it: its materials and its colors come first, and the
 Super Famicom art is chosen to fit them. In chapter 1 that means Dragon Quest I's grey castle brick
 for every wall (the castle inside and out, the towns' buildings), and Dragon Quest III for the
-ground, the plants, the water, the furniture, the people and the overworld. The caves' rock is Dragon
+ground, the plants, the water, the furniture, the people and the overworld (single trees, the
+throne rooms' white and blue tiles and the barrier floor are Dragon Quest I's too: it has the very
+things). The heroes are Dragon Quest III's classes as they walk in its party: Ragnar its soldier, Alena
+its fighter, Cristo its priest, Brey its mage. The caves' rock is Dragon
 Quest III's boulder wall in each cave's own color, and the tower's walls its dressed stone. Where the right thing
 exists only in another place's colors, the map file tones it (`gray`, `dark`, `hue`): Dragon Quest
 III's round towers, gate and braziers stand in the brick's grey on Burland's castle front.

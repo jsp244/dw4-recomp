@@ -10,6 +10,7 @@ A map file says which Super Famicom art takes the place of which NES map square 
 
     sq NES SFC [SFC...] [ticks N] [over SFC] [top SFC] [here] [hue A-B>C] [tint H:S] [gray P] [dark P]
                         [basegray P] [basetint H:S] [basedark P] [basehue A-B>C] [rows LIST] [cols LIST] [clear V]
+                        [cutting SFC]
                                           the NES square NES drawn as the square SFC; several = animation
                                           frames, each lasting N game frames (default 16). "over X" lays X's
                                           upper layer on every frame (a tree's trunk on other ground); "top X"
@@ -33,6 +34,10 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           Super Famicom game has only with an edge drawn on it, where the NES
                                           game lays one square side by side and the bricks have to run on;
                                           "cols LIST" does the same with its columns (counted from the left).
+                                          "over X cutting G" lays X without its own ground: X's pixels in
+                                          the colors of the square G that are joined to the square's edge
+                                          are clear (Dragon Quest I's tree, whose library has one layer,
+                                          on Dragon Quest III's grass; the crown keeps its greens).
                                           "over @FIGS:gSET:POSE" lays the upper sixteen rows of a figure
                                           there (m before POSE mirrors it, +N after it sets it N pixels
                                           lower): the spectators the NES draws
@@ -281,7 +286,7 @@ class Maps:
                             if t[i] == "ticks":
                                 ticks = int(t[i + 1]); i += 2
                             elif t[i] in ("over", "top", "hue", "tint", "gray", "dark", "basegray", "basetint", "basedark",
-                                          "basehue", "rows", "cols", "clear"):
+                                          "basehue", "rows", "cols", "clear", "cutting"):
                                 extra[t[i]] = t[i + 1]; i += 2
                             elif t[i] == "here":
                                 extra["here"] = True; i += 1
@@ -401,6 +406,19 @@ def build(out, paths):
                                  tuple(v for v in extra.get("clear", "").split(",") if v))
             else:
                 over = m.art(extra["over"], m.libs, where)["px"]
+                if "cutting" in extra:      # its own ground goes: from the edge inwards, through that ground's colors
+                    ground = set(m.art(extra["cutting"], m.libs, where)["px"])
+                    over = list(over)
+                    todo = [i for i in range(256) if over[i] in ground and (i < 16 or i >= 240 or i % 16 in (0, 15))]
+                    while todo:
+                        i = todo.pop()
+                        if over[i] is None:
+                            continue
+                        over[i] = None
+                        for j in (i - 16, i + 16, i - 1 if i % 16 else -1, i + 1 if i % 16 != 15 else -1):
+                            if 0 <= j < 256 and over[j] is not None and over[j] in ground:
+                                todo.append(j)
+                    over = tuple(over)
             if tone:
                 over = tuple(None if o is None else toned(solid(o), extra) for o in over)
             frames = [tuple(o if o is not None else p for p, o in zip(px, over)) for px in frames]

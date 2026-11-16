@@ -21,6 +21,7 @@ lib dq1 ../../../generated/sfc/dq1_castle.sfclib
 lib dq1ow ../../../generated/sfc/dq1_ow.sfclib
 lib dq3ow ../../../generated/sfc/dq3_ow.sfclib
 figs dq1 ../../../generated/sfc/dq1.figs
+figs dq3p ../../../generated/sfc/dq3_party.figs
 nes castle ../../../generated/sfc/nes_castle.json
 nes town ../../../generated/sfc/nes_town.json
 nes ow ../../../generated/sfc/nes_overworld.json
@@ -46,8 +47,7 @@ sq castle:900DF8803990C72C dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 here # wall
 sq castle:76A84895692C38FC dq1:7fe8dc4d rows 4,1-15 here # wall, its foot: the brick's top, then its face in shadow
 sq castle:5D4D19838C9BBD1F dq3ow:3ac67643 here # water
 sq castle:B548BC577D2B5C03 dq3c:04676b47 here # flowers
-sq castle:4837C70D8A6B1AF4 dq3t:1b1c559a here hue 40-100>115 dark 8 # bush
-sq castle:4C42029459ACE647 dq3c:3e9bb0cf here # the patterned border
+sq castle:4C42029459ACE647 dq1:b82e2b1d here # the white and blue tiles around a throne's carpet: Dragon Quest I's throne room has the very ones
 sq castle:173A98CBC7910EFD dq3c:e911c8dc here # grass
 sq castle:9D475928B28B0EDA dq3c:80f7ec3d here # carpet
 sq castle:9DBBE19B3CF1FED7 dq1:a8f0d174 here # pillar, top
@@ -62,7 +62,7 @@ sq castle:2BCE986FBA9CB02D ~dq3h:6b0f9bc2 here
 
 # ---- the town ----
 sq town:3E51A0A88427F85B dq3t:a1e452fd gray 60 # road
-sq town:4837C70D8A6B1AF4 dq3t:1b1c559a hue 40-100>115 dark 8 # bush
+sq town:4837C70D8A6B1AF4 =town:173A98CBC7910EFD over dq1:6ae91c01 cutting dq1:89e24835 dark 22 # tree: Dragon Quest I's, a square as the NES tree is, on the grass the place has
 sq town:173A98CBC7910EFD dq3t:e911c8dc # grass
 sq town:5D4D19838C9BBD1F dq3ow:3ac67643 # water
 sq town:E3CEA1E6E0C69E14 dq3t:662e9c69 hue 40-100>115 dark 8 # hedge
@@ -100,8 +100,7 @@ sq castle:900DF8803990C72C dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 # wall: Dra
 sq castle:76A84895692C38FC dq1:7fe8dc4d rows 4,1-15 # wall, its foot: the brick's top, then its face in shadow
 sq castle:5D4D19838C9BBD1F dq3ow:3ac67643 # water
 sq castle:B548BC577D2B5C03 dq3c:04676b47 # flowers
-sq castle:4837C70D8A6B1AF4 dq3t:1b1c559a hue 40-100>115 dark 8 # bush
-sq castle:4C42029459ACE647 dq3c:3e9bb0cf # the patterned border
+sq castle:4C42029459ACE647 dq1:b82e2b1d
 sq castle:173A98CBC7910EFD dq3c:e911c8dc # grass
 sq castle:9D475928B28B0EDA dq3c:80f7ec3d # carpet
 sq castle:9DBBE19B3CF1FED7 dq1:a8f0d174 # pillar, top
@@ -112,7 +111,7 @@ sq castle:057F5DA64D40C2DD ~dq3t:316d8b20 # bookshelf
 sq castle:998253DBED836007 dq3t:aa6b8d51 # stairs
 sq castle:53B1A507205103D5 ~dq3h:6b0f9bc2 # bed: no lying bed in Dragon Quest III (its beds stand upright on the map)
 sq castle:2BCE986FBA9CB02D ~dq3h:6b0f9bc2
-sq castle:8A58BF897366E20F ~dq3ow:3ac67643 dark -25 # the barrier's striped floor (Santeem's treasury has it too): its own stripes in the water's blues
+sq castle:8A58BF897366E20F dq1:5894afc5 # the barrier's striped floor (Santeem's treasury has it too): Dragon Quest I's barrier, drawn the same way
 sq castle:01F33E98E81225CB dq3c:ef6e87f5 # the castle's door
 
 # ---- Burland's castle, the upper floor ----
@@ -298,9 +297,9 @@ sq ow:BA49B9EB07364D4C dq3ow:734132f6+dq3ow:8efbdac0+dq3ow:38e4b17b+dq3ow:354185
 # ---- the people (Dragon Quest III's, 16x24) ----
 # pictures of a set: up, up, right, right, down, down, left, left ("m" = mirrored)
 # The player's soldier has no picture of his own in these games: the castle soldier, his blue turned to rose.
-cast people:castle:0 dq3:g9 poses 4,5,2,3,6,7,0,1 hue 200-260>315 # Ragnar
-cast people:town:0 dq3:g9 poses 4,5,2,3,6,7,0,1 hue 200-260>315
-cast people:overworld:0 dq3:g9 poses 4,5,2,3,6,7,0,1 hue 200-260>315
+cast people:castle:0 dq3p:g1 poses 0,1,2,3,4,5,6,7 # Ragnar: Dragon Quest III's soldier as he walks in its hero's party (dq3_party.figs)
+cast people:town:0 dq3p:g1 poses 0,1,2,3,4,5,6,7
+cast people:overworld:0 dq3p:g1 poses 0,1,2,3,4,5,6,7
 # the castle
 cast people:castle:4 dq3:g6 poses 0,1,m2,m2,0,1,2,2 # woman
 cast people:castle:5 dq3:g9 poses 4,5,2,3,6,7,0,1 hue 200-260>355 # the king's guard: the soldier in red
