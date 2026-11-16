@@ -220,10 +220,30 @@ and return inside the frame, so it usually takes a fraction of a frame.
 interpreter and translated code to agree on every frame. What a patch changes is seen the
 next time the game reads it: text when it is printed again, graphics when a scene loads.
 
+One kind of hack cannot join a game that is already running: one that moves the game to
+another board is a different program from the first instruction on and sets itself up when
+the game starts. The game calls into its other half through a routine that its start-up
+code copies into the cartridge RAM; the cartridge's copy drives the MMC1's serial port,
+which on an MMC3 switches the cartridge RAM off, and Delocalized installs one of its own.
+Such a hack goes in at a power-on: switched on while a game runs, it waits for the next
+reset. In a game that was started with it, it can be switched out and back in while the
+game runs like any other patch (its routine goes through the game's own bank switch and
+serves the original code as well); the runtime keeps the image whose start-up code ran
+last, at power-on or reset (`patch_needs_restart`), also in saved states.
+`nes-headless --ips FILE --ips-late N` starts a game without its patches and switches them
+on at frame N.
+
+The adventure logs have the same layout under every selection, so the one `.sav` file
+serves them all: a log saved under any selection continues under any other. The routine
+in the cartridge RAM is part of that file and is written again by the start-up code of
+whichever image starts the game.
+
 RetroAchievements are off while a patch is on. A saved state holds the machine in the
 middle of its code, so it belongs to the image it was saved from: loading one that was
 saved under another set of patches puts that set's image back for the load (it is found
-by the state's signature), and the set chosen now takes over through the same live switch.
+by the state's signature), and the set chosen now takes over through the same live switch
+(or, if that set has to start with the game, the state keeps the patches it was saved
+with). `dw4 --state-patch-test` saves and loads states across every pair of selections.
 
 ## Title screen
 

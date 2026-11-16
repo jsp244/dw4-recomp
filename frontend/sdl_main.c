@@ -1289,6 +1289,7 @@ static void state_save(void) {
 }
 
 static int state_load_across(const void *buf, size_t n);
+static int state_kept_its_patches;      /* the last such load: the patches chosen could not join a running game */
 
 static int state_load(void) {
     if (!rom_ok) return 0;
@@ -1308,7 +1309,8 @@ static int state_load(void) {
         audio_out_clear();
         rewind_clear(); chord_clear();
         game_started = 1;
-        if (across) osd("State loaded from slot %d; the patches switch to the current ones", cfg.state_slot);
+        if (across && state_kept_its_patches) osd("State loaded from slot %d with the patches it was saved with", cfg.state_slot);
+        else if (across) osd("State loaded from slot %d; the patches switch to the current ones", cfg.state_slot);
         else osd("State loaded from slot %d", cfg.state_slot);
         ok = 1;
     } else if (rc == -2) osd("Slot %d was saved with patches this version does not have", cfg.state_slot);
@@ -1575,6 +1577,7 @@ static void scan_patches(void) {
 
 static void refresh_patch_items(void);
 static void patches_and_achievements(void);
+static int restart_with_patches(void);
 
 /* Prepare the image for the rows as they stand. force: put it in place at once (the machine is
    about to be powered on); otherwise it goes in at the first safe moment while the game runs. */
@@ -1635,12 +1638,32 @@ static int state_load_across(const void *buf, size_t n) {
         apply_patches(1);
         found = patch_signature() == want;
     }
-    int rc = found ? nes_state_load(buf, n) : -2;
-    for (int i = 0; i < n_patch_entries; i++) patch_entries[i].on = keep[i];
+    int rc = found ? nes_state_load(buf, n) : -2, with[MAX_PATCH_ENTRIES];
+    for (int i = 0; i < n_patch_entries; i++) { with[i] = patch_entries[i].on; patch_entries[i].on = keep[i]; }
     patches_shown = keep_shown;
-    if (rc == 0) { game_started = 1; apply_patches(0); }     /* the current set: goes in while the game runs */
-    else apply_patches(1);                                     /* nothing loaded: the image as it was, under the machine as it is */
+    state_kept_its_patches = 0;
+    if (rc == 0) {
+        game_started = 1;
+        apply_patches(0);                 /* the current set: goes in while the game runs */
+        if (patch_needs_restart()) {      /* ... unless it has to start with the game: the state keeps its own set */
+            for (int i = 0; i < n_patch_entries; i++) patch_entries[i].on = with[i];
+            patches_shown = 1;
+            apply_patches(0);
+            state_kept_its_patches = 1;
+        }
+    } else apply_patches(1);              /* nothing loaded: the image as it was, under the machine as it is */
     return rc;
+}
+
+/* The game is about to be reset: a set of patches that waits for a restart goes in now, and the
+   machine is powered on under it. Returns 1 when it did that (the reset is then done). */
+static int restart_with_patches(void) {
+    if (!rom_ok || !patch_pending()) return 0;
+    patch_switch(1);
+    nes_power();
+    patches_and_achievements();
+    refresh_patch_items();
+    return 1;
 }
 
 /* RetroAchievements belong to the unpatched game: off while a patch is in the image */
@@ -1669,52 +1692,157 @@ static void poll_patch_switch(void) {
             patch_announce = 0;
         }
         refresh_patch_items();
+    } else if (patch_needs_restart()) {
+        if (waited++ == 0) osd("This hack starts with the game: Reset game (menu > Play) to switch");
     } else if (patch_pending() && ++waited == 120) {
         osd("The patches switch as soon as the game leaves the code they change");
     }
 }
 
 /* --state-patch-test: states saved under one set of patches, loaded under another */
+static uint32_t state_patch_rnd = 12345;
+static int state_patch_play;                 /* press buttons at random (the game is past its title) */
+static int state_patch_pairs = 1 << 30;      /* --state-patch-test N: stop after so many pairs */
+
 static void state_patch_run(int frames) {
+    static const uint8_t pads[10] = { 0, 0, 0x01, 0x01, 0x02, 0x10, 0x20, 0x40, 0x80, 0x01 };
+    static uint8_t pad;
     for (int i = 0; i < frames; i++) {
-        nes_set_pad(0, 0);
+        if (state_patch_play && i % 12 == 0) {
+            state_patch_rnd = state_patch_rnd * 1664525u + 1013904223u;
+            pad = pads[(state_patch_rnd >> 16) % 10];
+        }
+        nes_set_pad(0, state_patch_play ? pad : 0);
         patch_live(1); nes_run_frame(); patch_live(0);
         poll_patch_switch();
     }
 }
 
-static int state_patch_selftest(void) {
+/* the rows On as the bits of mask say; the switch is given time to find its moment.
+   1 switched, 0 still waiting, 2 the selection has to start with the game */
+static int state_patch_select(unsigned mask, int count) {
+    for (int i = 0; i < n_patch_entries; i++) patch_entries[i].on = i < count && ((mask >> i) & 1);
+    apply_patches(0);
+    if (patch_needs_restart()) return 2;
+    state_patch_run(120);
+    for (int k = 0; k < 20 && patch_pending(); k++) state_patch_run(120);
+    return !patch_pending();
+}
+
+static int state_patch_selftest(const char *start_state) {
     int failures = 0, hack = -1;
 #define CHECK(cond, msg) do { int c_ = (cond); printf("%s %s\n", c_ ? "ok:  " : "FAIL:", msg); if (!c_) failures++; } while (0)
     for (int i = 0; i < n_patch_entries; i++) if (patch_entries[i].kind == PATCH_WHOLE && hack < 0) hack = i;
     if (hack < 0) { printf("state-patch-test: this build has no whole-game hack to test with\n"); return 0; }
+    cfg.state_slot = 9;
+
+    /* a game started without the hack: the hack waits for a restart, the game goes on */
     for (int i = 0; i < n_patch_entries; i++) patch_entries[i].on = 0;
     patches_shown = 1;
     apply_patches(1);
     nes_power();
     game_started = 1;
-    cfg.state_slot = 9;
     state_patch_run(2500);
     state_save();                                    /* the unpatched game, on its title sequence */
     patch_entries[hack].on = 1; apply_patches(0);
     state_patch_run(600);
-    CHECK(patch_count() == 1, "the hack went in while the game ran");
+    CHECK(patch_needs_restart() && patch_count() == 0 && !cpu.jammed, "switched on in a game begun without it, the hack waits for a restart and the game goes on");
+    CHECK(restart_with_patches() && patch_count() == 1 && !patch_pending(), "a reset puts it in");
+    state_patch_run(2500);
+    CHECK(!cpu.jammed, "and the game runs under it");
     int ok = state_load();
-    CHECK(ok, "a state saved without patches loads with the hack on");
-    CHECK(patch_count() == 0 && patch_pending(), "into the image it was saved from, with the current set waiting");
+    CHECK(ok && patch_count() == 0, "a state saved without the hack loads with the hack on, into the image it was saved from");
+    CHECK(!patch_pending() && !patch_entries[hack].on, "and keeps its own patches: the hack cannot join that game");
     state_patch_run(600);
-    CHECK(patch_count() == 1 && !patch_pending() && !cpu.jammed, "and the hack takes over again while the game runs");
+    CHECK(patch_count() == 0 && !cpu.jammed, "which goes on without it");
+
+    /* a game started with the hack: it can go out and come back while the game runs, and so can its states */
+    patch_entries[hack].on = 1; apply_patches(0);
+    CHECK(restart_with_patches() && patch_count() == 1, "started again with the hack");
+    state_patch_run(2500);
     state_save();                                    /* the patched game */
     patch_entries[hack].on = 0; apply_patches(0);
     state_patch_run(600);
-    CHECK(patch_count() == 0, "the hack went out while the game ran");
+    CHECK(patch_count() == 0 && !patch_pending(), "the hack went out while the game ran");
     ok = state_load();
-    CHECK(ok && patch_count() == 1, "a state saved with the hack loads with it off");
+    CHECK(ok && patch_count() == 1, "a state saved with the hack loads with it off, into the image it was saved from");
     state_patch_run(600);
-    CHECK(patch_count() == 0 && !patch_pending() && !cpu.jammed, "and the game is unpatched again afterwards");
+    CHECK(patch_count() == 0 && !patch_pending() && !cpu.jammed, "and the game is unpatched again a moment later");
+    state_save();                                    /* unpatched, in a game that began with the hack */
+    patch_entries[hack].on = 1; apply_patches(0);
+    state_patch_run(600);
+    CHECK(patch_count() == 1 && !patch_pending(), "the hack came back while the game ran");
+    ok = state_load();
+    CHECK(ok && patch_count() == 0 && patch_pending(), "the unpatched state of that game loads with the hack on");
+    state_patch_run(600);
+    CHECK(patch_count() == 1 && !patch_pending() && !cpu.jammed, "and the hack takes over again");
     state_save();
     ok = state_load();
     CHECK(ok && !patch_pending(), "a state loads under the set it was saved with, as before");
+
+    /* a reset runs the start-up code of the image that is in: after one without the hack, the game is
+       one that began without it */
+    patch_entries[hack].on = 0; apply_patches(0);
+    state_patch_run(600);
+    CHECK(patch_count() == 0 && !patch_pending(), "the hack went out again");
+    nes_reset();
+    state_patch_run(900);
+    patch_entries[hack].on = 1; apply_patches(0);
+    state_patch_run(600);
+    CHECK(patch_needs_restart() && patch_count() == 0 && !cpu.jammed, "after a reset of the game without the hack, the hack waits for a restart again");
+    CHECK(restart_with_patches() && patch_count() == 1 && !patch_pending(), "and the next reset puts it in");
+    state_patch_run(2500);
+    CHECK(!cpu.jammed, "under which the game runs");
+
+    /* Every selection of the rows against every other: saved under one, loaded under the other. With
+       a state to start from (--state-load FILE: the game in play) the buttons are pressed at random
+       throughout, so the states are saved and loaded in the middle of walking, talking and menus.
+       A state of a game begun with the hack lets every selection in; in one begun without it the
+       selections with the hack are left out (they would need a restart). */
+    int count = n_patch_entries < 4 ? n_patch_entries : 4, pairs = 0, across = 0, bad = 0, slow = 0, left_out = 0;
+    if (start_state) {
+        size_t len = nes_state_size();
+        void *buf = malloc(len);
+        FILE *f = nes_fopen(start_state, "rb");
+        size_t n = f ? fread(buf, 1, len, f) : 0;
+        if (f) fclose(f);
+        int rc = n > 0 ? nes_state_load(buf, n) : -1;
+        if (rc == -2) rc = state_load_across(buf, n);
+        free(buf);
+        CHECK(rc == 0, "the starting state loads (the game in play)");
+        state_patch_play = rc == 0;
+        printf("      it is of a game begun %s\n", patch_boot_image() ? "with the hack" : "without the hack");
+    }
+    for (unsigned a = 0; a < (1u << count); a++)
+        for (unsigned b = 0; b < (1u << count); b++) {
+            if (a == b || pairs >= state_patch_pairs) continue;
+            int sa = state_patch_select(a, count);
+            if (sa == 2) { left_out++; state_patch_select(0, count); continue; }
+            int good = sa == 1;
+            uint32_t image_a = patch_signature();
+            uint64_t frame_a = ppu.frame;
+            state_save();
+            int sb = state_patch_select(b, count);
+            if (sb == 2) { left_out++; state_patch_select(0, count); continue; }
+            good = good && sb == 1;
+            uint32_t image_b = patch_signature();
+            ok = state_load();
+            good = good && ok && patch_signature() == image_a && ppu.frame == frame_a;     /* back at the saved moment, in its image */
+            across += ok && image_a != image_b;
+            state_patch_run(120);
+            for (int k = 0; k < 20 && patch_pending(); k++) { state_patch_run(120); slow++; }
+            good = good && patch_signature() == image_b && !patch_pending() && !cpu.jammed && ppu.frame > frame_a;
+            pairs++;
+            if (!good) {
+                bad++;
+                printf("FAIL: saved under selection %u, loaded under %u (loaded %d, image now %08X, wanted %08X, pending %d, jammed %d, pc $%04X)\n",
+                       a, b, ok, (unsigned)patch_signature(), (unsigned)image_b, patch_pending(), cpu.jammed, cpu.pc);
+            }
+        }
+    printf("%s %d pairs of selections: saved under one, loaded under the other (%d of them into another image), "
+           "the chosen patches back in force afterwards; %d waits of more than two seconds; %d pairs left out (a restart needed)\n",
+           bad ? "FAIL:" : "ok:  ", pairs, across, slow, left_out);
+    failures += bad;
     char path[2048];
     slot_path(cfg.state_slot, path, sizeof path);
     remove(path);
@@ -1805,6 +1933,9 @@ static void refresh_patch_items(void) {
     size_t room = sizeof t[n].info;
     if (!n_patch_entries)
         snprintf(o, room, "No .ips files in the folder yet.");
+    else if (patch_needs_restart())
+        snprintf(o, room, "This hack runs the game on another cartridge board and sets itself up when the game starts: "
+                 "it goes in when you reset the game (Play > Reset game) or start it next.");
     else if (patch_pending())
         snprintf(o, room, "The switch happens as soon as the game runs and is not inside the code that changes.");
     else if (!patches_shown && on)
@@ -2234,10 +2365,10 @@ static void menu_action(ui_event e) {
     case ACT_PATCH_RESCAN: scan_patches(); apply_patches(0); write_config(); break;
     case ACT_PATCH_ADD: choose_rom(); break;
     case ACT_PLAY: start_game(); break;
-    case ACT_RESET: if (rom_ok) { nes_reset(); ach_reset(); chord_clear(); game_started = 1; start_game(); } break;
+    case ACT_RESET: if (rom_ok) { if (!restart_with_patches()) nes_reset(); ach_reset(); rewind_clear(); chord_clear(); game_started = 1; start_game(); } break;
     case ACT_SAVE: state_save(); break;
     case ACT_LOAD: if (state_load()) start_game(); break;
-    case ACT_STOP: if (rom_ok) { battery_check(1); nes_power(); ach_reset(); rewind_clear(); chord_clear(); game_started = 0; refresh_rom_items(); ui_select_first(&menu); } break;
+    case ACT_STOP: if (rom_ok) { battery_check(1); if (!restart_with_patches()) nes_power(); ach_reset(); rewind_clear(); chord_clear(); game_started = 0; refresh_rom_items(); ui_select_first(&menu); } break;
     case ACT_QUIT: running = 0; break;
     case ACT_CHOOSE: choose_rom(); break;
     case ACT_KEYS_DEFAULT: {
@@ -2633,7 +2764,10 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--state-load") && i + 1 < argc) shot_state = argv[++i];
         else if (!strcmp(argv[i], "--rewind-test") && i + 1 < argc) rewind_test = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--chord-test")) chord_test = 1;
-        else if (!strcmp(argv[i], "--state-patch-test")) state_patch_test = 1;
+        else if (!strcmp(argv[i], "--state-patch-test")) {     /* optionally: how many pairs of selections to try */
+            state_patch_test = 1;
+            if (i + 1 < argc && isdigit((unsigned char)argv[i + 1][0])) state_patch_pairs = atoi(argv[++i]);
+        }
         else if (!strcmp(argv[i], "--trigger-test")) trigger_test_flag = 1;
         else if (!strcmp(argv[i], "--touch")) touch_flag = 1;   /* the phone edition: on-screen controls */
         else if (!strcmp(argv[i], "--touch-test")) touch_test = 1;
@@ -2807,7 +2941,7 @@ int main(int argc, char **argv) {
     }
     if (state_patch_test) {
         if (!rom_ok) { fprintf(stderr, "state-patch-test: no valid ROM (%s)\n", rom_status); SDL_Quit(); return 1; }
-        int rc = state_patch_selftest();
+        int rc = state_patch_selftest(shot_state);
         font_quit(); SDL_DestroyRenderer(renderer); SDL_DestroyWindow(window); SDL_Quit();
         return rc;
     }
@@ -3027,7 +3161,7 @@ int main(int argc, char **argv) {
                 case SDLK_F9: compare_patches(); break;
                 case SDLK_F12: save_screenshot(); break;
                 case SDLK_p: paused = !paused; audio_out_clear(); break;
-                case SDLK_r: if (ev.key.keysym.mod & KMOD_CTRL) { nes_reset(); ach_reset(); chord_clear(); osd("Reset"); } break;
+                case SDLK_r: if (ev.key.keysym.mod & KMOD_CTRL) { if (!restart_with_patches()) nes_reset(); ach_reset(); rewind_clear(); chord_clear(); osd("Reset"); } break;
                 default: break;
                 }
             } else if (ev.type == SDL_CONTROLLERBUTTONDOWN &&

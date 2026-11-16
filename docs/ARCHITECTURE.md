@@ -229,6 +229,13 @@ put in place by `patch_try` at a moment when:
   fixed bank per 256 KiB half, an MMC3 only the last 16 KiB), and the mapper is turned into
   the other kind with the same map, mirroring and RAM enable.
 
+A hack on another board has to start with the game: it sets itself up in its start-up code
+(the one at hand copies its own version of the game's far-call routine into the cartridge
+RAM), and nothing in the image tells what a running game would be missing. `patch.c`
+therefore keeps the signature of the image whose start-up code ran last, at power-on or
+reset (it is part of a saved state), and lets a board-changing image in while the game runs
+only if it is that image coming back; otherwise the switch waits for a power-on.
+
 The frame loop tries after every JSR, RTS and RTI, the same points for interpreter and
 translated code, so both make the switch at the same instruction and stay comparable
 (`tests/cosim.py --ips-toggle`). Addresses the game pushes by hand (its jump tables) count

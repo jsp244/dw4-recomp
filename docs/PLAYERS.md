@@ -138,6 +138,12 @@ their authors, included unchanged; each row names the hack and its author:
 The three small ones can be used together in any combination. With Delocalized on they
 are left out, because it brings its own versions of them.
 
+Delocalized runs the game on a different cartridge board and sets itself up when the game
+starts, so it cannot join a game that is already running: switch it On and it goes in when
+you reset the game (Play > Reset game) or start it next. Your adventure logs are kept, so
+you continue from your last save. Once the game runs with Delocalized, it can be switched
+Off and On again at any moment, like the others.
+
 Comparing: the "Compare" row on the tab (F9 on a keyboard) shows the original game for
 the moment, with every patch off but your On/Off choices kept, and brings the patches
 back when used again. It is for seeing what a hack changed at the spot you are in. Text
@@ -148,8 +154,11 @@ notice; a message says when it has happened.
 
 While a patch is on, RetroAchievements are off (they belong to the original game), and a
 save state made under other patches still loads: the game returns to the saved moment and
-the patches you have chosen now take over a moment later. The adventure logs
-are shared: you can continue a game with or without patches. One caution from the hack
+the patches you have chosen now take over a moment later. (One exception: a state from a
+game that was started without Delocalized keeps the patches it was saved with, because
+Delocalized cannot join a running game.) The adventure logs
+are shared: a log saved under any choice of patches continues under any other, with or
+without Delocalized. One caution from the hack
 itself: do not switch Manual tactics off while a party is set to the Manual tactic;
 choose another tactic first.
 
