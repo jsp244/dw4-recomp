@@ -26,6 +26,7 @@ void nes_power(void) {
     apu_reset();
     cpu_power();
     sys_sync();
+    patch_powered();        /* the image the game starts under */
 }
 
 void nes_reset(void) {
@@ -36,6 +37,7 @@ void nes_reset(void) {
     apu_write(0x4017, apu.frame_reset_value);
     cpu_reset();
     sys_sync();
+    patch_powered();        /* the start-up code runs again, under the image that is in now */
 }
 
 void nes_set_pad(int pad, uint8_t buttons) {
@@ -115,7 +117,7 @@ void nes_sandbox_end(void) {
    the frontend always runs a frame after a load) and the audio sample ring lives
    outside the APU state, so a state is about 24 KB; rewind keeps thousands. */
 #define STATE_MAGIC 0x53545331u  /* "STS1" */
-#define STATE_VERSION 3       /* 3: what pushed each stack slot, and the patched image the state belongs to */
+#define STATE_VERSION 4       /* 3: what pushed each stack slot, and the patched image the state belongs to; 4: the image the machine was powered on under */
 
 typedef struct {
     uint32_t magic;
@@ -134,9 +136,12 @@ typedef struct {
     uint8_t  stk_kind[256];
     uint8_t  stk_bank[256];
     uint32_t image;         /* patch_signature() of the image it was saved from */
+    /* since version 4 */
+    uint32_t boot_image;    /* patch_boot_image(): the image the machine was powered on under */
 } state_t;
 
 #define STATE_V2_SIZE offsetof(state_t, stk_kind)
+#define STATE_V3_SIZE offsetof(state_t, boot_image)
 
 uint8_t stk_kind[256], stk_bank[256];
 #ifdef STK_AUDIT
@@ -161,7 +166,17 @@ int nes_state_save(void *buf, size_t size) {
     memcpy(s->stk_kind, stk_kind, sizeof stk_kind);
     memcpy(s->stk_bank, stk_bank, sizeof stk_bank);
     s->image = patch_signature();
+    s->boot_image = patch_boot_image();
     return 0;
+}
+
+int nes_state_image(const void *buf, size_t size, uint32_t *image) {
+    const state_t *s = (const state_t *)buf;
+    if (size < STATE_V2_SIZE || s->magic != STATE_MAGIC) return 0;
+    if (s->version == 2) { *image = 0; return 1; }      /* from before patches existed */
+    if (s->version == 3 ? size < STATE_V3_SIZE : (s->version != STATE_VERSION || size < sizeof(state_t))) return 0;
+    *image = s->image;
+    return 1;
 }
 
 int nes_state_load(const void *buf, size_t size) {
@@ -169,8 +184,10 @@ int nes_state_load(const void *buf, size_t size) {
     const state_t *s = (const state_t *)buf;
     if (s->magic != STATE_MAGIC) return -1;
     int old = s->version == 2;      /* saved before patches existed: from the unpatched game */
-    if (!old && (s->version != STATE_VERSION || size < sizeof(state_t))) return -1;
+    int v3 = s->version == 3;       /* without the boot image: taken to be the image it was saved from */
+    if (!old && (v3 ? size < STATE_V3_SIZE : (s->version != STATE_VERSION || size < sizeof(state_t)))) return -1;
     if ((old ? 0 : s->image) != patch_signature()) return -2;
+    patch_set_boot_image(old ? 0 : v3 ? s->image : s->boot_image);
     if (old) memset(stk_kind, STK_UNKNOWN, sizeof stk_kind);
     else { memcpy(stk_kind, s->stk_kind, sizeof stk_kind); memcpy(stk_bank, s->stk_bank, sizeof stk_bank); }
     cpu = s->cpu; memcpy(ram, s->ram, sizeof ram);

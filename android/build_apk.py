@@ -7,7 +7,7 @@ SDL2 source once (its Java glue and native library). Output, both with arm64 (ha
 phones) and x86_64 (emulators, Chromebooks):
   dist/dw4-android-handheld.apk  for gaming handhelds with built-in controls
   dist/dw4-android-phone.apk     for phones: a translucent on-screen controller; its own
-                                 app ("Dragon Warrior IV Touch"), so both can be installed
+                                 app ("Dragon Quest IV Touch"), so both can be installed
 signed with a key kept in ~/.android/dw4-release.keystore (made on first use; keep it,
 an installed app can only be updated with the same key).
 
@@ -38,8 +38,8 @@ PACKAGE = "org.dw4.nativeport"
 # the phone edition is the same app with the on-screen controls (manifest meta-data, read by
 # DW4Activity) under its own package name and label
 EDITIONS = {
-    "handheld": {"apk": "dw4-android-handheld.apk", "package": PACKAGE, "label": "Dragon Warrior IV", "touch": False},
-    "phone": {"apk": "dw4-android-phone.apk", "package": PACKAGE + ".touch", "label": "Dragon Warrior IV Touch", "touch": True},
+    "handheld": {"apk": "dw4-android-handheld.apk", "package": PACKAGE, "label": "Dragon Quest IV", "touch": False},
+    "phone": {"apk": "dw4-android-phone.apk", "package": PACKAGE + ".touch", "label": "Dragon Quest IV Touch", "touch": True},
 }
 KEYSTORE = os.path.join(os.path.expanduser("~"), ".android", "dw4-release.keystore")
 KEY_ALIAS, KEY_PASS = "dw4", "dw4nativeport"
@@ -202,9 +202,9 @@ def edition_manifest(edition):
     e = EDITIONS[edition]
     with open(os.path.join(HERE, "AndroidManifest.xml"), encoding="utf-8") as f:
         m = f.read()
-    if m.count('android:label="Dragon Warrior IV"') != 2 or m.count("        <activity\n") != 1:
+    if m.count('android:label="Dragon Quest IV"') != 2 or m.count("        <activity\n") != 1:
         raise SystemExit("AndroidManifest.xml: labels or activity not where expected")
-    m = m.replace('android:label="Dragon Warrior IV"', 'android:label="%s"' % e["label"])
+    m = m.replace('android:label="Dragon Quest IV"', 'android:label="%s"' % e["label"])
     if e["touch"]:
         m = m.replace("        <activity\n", '        <meta-data android:name="org.dw4.touch" android:value="true" />\n\n        <activity\n')
     out = os.path.join(BUILD, "AndroidManifest-%s.xml" % edition)

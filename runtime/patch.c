@@ -25,6 +25,8 @@ static long changed;
 static int live;
 static unsigned generation;
 static uint32_t signature;
+static uint32_t next_signature;     /* of the prepared image */
+static uint32_t boot_image;         /* the image this machine was powered on under */
 int patch_live_wait;
 long patch_refused[4];          /* how often a switch was put off: the memory map, the program counter, the stack */
 uint16_t patch_refused_at;      /* the address that did it last */
@@ -35,7 +37,7 @@ void patch_reset(void) {
     size = n8 = 0;
     pending = next_count = applied = routines_off = 0;
     changed = 0;
-    signature = 0;
+    signature = next_signature = boot_image = 0;
     patch_live_wait = 0;
     generation++;
     recomp_patch(NULL, 0);
@@ -92,6 +94,20 @@ static const char *apply(uint8_t *img, int *mapper, const uint8_t *ips, size_t l
         if (pass) *mapper = m;
     }
     return NULL;
+}
+
+/* identifies an image: 0 for the dump on its own board, else a hash of what differs */
+static uint32_t signature_of(const uint8_t *img, int mapper_number) {
+    uint32_t h = 2166136261u;
+    long n = 0;
+    for (uint32_t i = 0; i < size; i++) {
+        if (img[i] == base[i]) continue;
+        n++;
+        h = (h ^ i) * 16777619u;
+        h = (h ^ img[i]) * 16777619u;
+    }
+    h = (h ^ (uint32_t)mapper_number) * 16777619u;
+    return (n || mapper_number != base_mapper) ? (h ? h : 1) : 0;
 }
 
 static uint8_t *read_file(const char *path, long *len) {
@@ -215,9 +231,15 @@ int patch_prepare_list(const patch_src_t *src, int n, char *errors, size_t error
         }
     }
     pending = memcmp(next, cart.prg, size) != 0 || next_count != applied || next_mapper != cart.mapper;
+    next_signature = signature_of(next, next_mapper);
     patch_live_wait = pending && live;
     return next_count;
 }
+
+int patch_needs_restart(void) { return pending && next_mapper != base_mapper && next_signature != boot_image; }
+void patch_powered(void) { boot_image = signature; }
+uint32_t patch_boot_image(void) { return boot_image; }
+void patch_set_boot_image(uint32_t image) { boot_image = image; }
 
 int patch_prepare(const char *const *paths, int n, char *errors, size_t errors_len) {
     patch_src_t src[64];
@@ -330,6 +352,7 @@ static void put_in_place(int force);
 
 int patch_try(int after_xfer) {
     if (!base || !pending) { pending = patch_live_wait = 0; return 1; }
+    if (patch_needs_restart()) { patch_refused[3]++; return 0; }      /* it has to start with the game */
     uint16_t after[4];
     if (!mapper_convertible(next_mapper, after)) { patch_refused[0]++; return 0; }
     if (!pc_ok(after_xfer)) {
@@ -370,16 +393,8 @@ static void put_in_place(int force) {
         }
     }
     changed = 0;
-    uint32_t h = 2166136261u;
-    for (uint32_t i = 0; i < size; i++) {
-        dirty[i] = next[i] != base[i];
-        if (!dirty[i]) continue;
-        changed++;
-        h = (h ^ i) * 16777619u;
-        h = (h ^ next[i]) * 16777619u;
-    }
-    h = (h ^ (uint32_t)cart.mapper) * 16777619u;
-    signature = (changed || cart.mapper != base_mapper) ? (h ? h : 1) : 0;
+    for (uint32_t i = 0; i < size; i++) { dirty[i] = next[i] != base[i]; changed += dirty[i]; }
+    signature = signature_of(next, cart.mapper);
     applied = next_count;
     routines_off = changed ? recomp_patch(dirty, size) : recomp_patch(NULL, 0);
     pending = patch_live_wait = 0;

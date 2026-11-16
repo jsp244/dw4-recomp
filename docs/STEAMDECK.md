@@ -1,5 +1,5 @@
-Dragon Warrior IV native port - Steam Deck edition
-==================================================
+Dragon Quest IV (Dragon Warrior IV) native port - Steam Deck edition
+====================================================================
 
 This build starts in fullscreen at the Deck's own 1280x800 with the 16:10 widescreen
 view (more of the map, and the people on it, at both sides), and the menus are driven
@@ -48,8 +48,7 @@ Tips
 - Graphics > Textures: Pixel Remaster recolors and shades the game in the manner of the
   Pixel Remaster games (more colors per tile, soft light from the upper left). A
   hand-made tile pack, remaster.pak, if you have one, goes in the game folder.
-- ROM hacks: four come with the program (Patches tab). Other .ips files go in the patches
-  folder inside the game folder. See README.txt.
+- ROM hacks: four come with the program, each with an On/Off switch on the Patches tab.
 - Updates: once the port has published releases, Check for updates on the menu's
   Updates tab, then Install, installs a new one in place (the previous version stays
   as dw4.old); Restart now brings you straight back in, still in the same Steam session.

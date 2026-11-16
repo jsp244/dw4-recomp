@@ -256,9 +256,11 @@ static void usage(void) {
         "  --keys SPEC         input events: 'frame:BTN+BTN;frame:-' (BTN = A B SELECT START UP DOWN LEFT RIGHT, '-' = none)\n"
         "  --ips FILE          apply an IPS patch (a ROM hack) to the loaded ROM; may be given several times,\n"
         "                      applied in that order. With --recomp the routines it touches are interpreted\n"
+        "  --ips-late N        start the game without the patches and switch them on at frame N\n"
         "  --ips-toggle N      every N frames switch the patches off, or on again, while the game runs\n"
         "                      (each switch waits for a frame at which no running code is affected)\n"
         "  --title-quest       the Dragon Quest IV logo in place of the Dragon Warrior IV plaque (runtime/title.h)\n"
+        "  --title-warrior     the other way: the plaque in place of the logo a hack brings along\n"
         "  --ppu-dump FILE     write the PPU's memory after the last frame (name tables, palette, CHR RAM,\n"
         "                      sprites, picture: tools/title reads it)\n"
         "  --sfc FILE          write the last frame with the 16-bit textures (also every N frames); needs\n"
@@ -308,6 +310,7 @@ int main(int argc, char **argv) {
     int sfc_n_miss[2] = { 0, 0 };
     int fuzz_start = 0, ws_check = 0, n_ips = 0, ips_toggle = 0, ips_on = 1;
     long ips_switches = 0, ips_waits = 0, title_frames = 0;
+    int ips_late = 0, jam_frame = -1;
     int title_quest = 0;
     unsigned ips_gen0 = 0;
     const char *ips[16];
@@ -322,6 +325,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--input") && i + 1 < argc) input = argv[++i];
         else if (!strcmp(argv[i], "--ips") && i + 1 < argc && n_ips < 16) ips[n_ips++] = argv[++i];
         else if (!strcmp(argv[i], "--ips-toggle") && i + 1 < argc) ips_toggle = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--ips-late") && i + 1 < argc) ips_late = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--fuzz") && i + 1 < argc) fuzz_state = (uint32_t)strtoul(argv[++i], NULL, 0) * 2654435761u + 1;
         else if (!strcmp(argv[i], "--fuzz-start") && i + 1 < argc) fuzz_start = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--png") && i + 1 < argc) png = argv[++i];
@@ -337,7 +341,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--sfc-wide") && i + 1 < argc) sfc_wide = argv[++i];
         else if (!strcmp(argv[i], "--sfc-pack") && i + 1 < argc) sfc_pack = argv[++i];
         else if (!strcmp(argv[i], "--sfc-check")) sfc_check = 1;
-        else if (!strcmp(argv[i], "--title-quest")) title_quest = 1;
+        else if (!strcmp(argv[i], "--title-quest")) title_quest = TITLE_LOGO;
+        else if (!strcmp(argv[i], "--title-warrior")) title_quest = TITLE_PLAQUE;
         else if (!strcmp(argv[i], "--wav") && i + 1 < argc) wav = argv[++i];
         else if (!strcmp(argv[i], "--apu-log")) { apu_log_on = 1; apu_write_hook = apu_log_hook; }
         else if (!strcmp(argv[i], "--mute") && i + 1 < argc) { apu_mute_mask = (uint8_t)strtol(argv[++i], NULL, 16); apu_mute_output = true; }
@@ -376,7 +381,7 @@ int main(int argc, char **argv) {
     if (nes_load(rom) != 0) return 1;
     if (sav) cart_load_battery(sav);
     patch_reset();
-    if (n_ips) {
+    if (n_ips && !ips_late) {
         char errs[800];
         if (patch_prepare(ips, n_ips, errs, sizeof errs) != n_ips) { fprintf(stderr, "%s\n", errs); return 1; }
         patch_switch(1);
@@ -457,6 +462,8 @@ int main(int argc, char **argv) {
         if (trace_file && trace_start && frame == trace_start) sys.trace_hook = trace_hook;
         while (ev < n_events && events[ev].frame <= frame) { nes_set_pad(0, events[ev].buttons); ev++; }
         if (fuzz_state && frame >= fuzz_start) nes_set_pad(0, fuzz_pad());
+        if (ips_late > 0 && n_ips && frame == ips_late) patch_prepare(ips, n_ips, NULL, 0);     /* the game began without them */
+        if (cpu.jammed && jam_frame < 0) jam_frame = frame;
         if (ips_toggle > 0 && n_ips && frame > 0 && frame % ips_toggle == 0) {
             ips_on = !ips_on;
             patch_prepare(ips, ips_on ? n_ips : 0, NULL, 0);
@@ -490,7 +497,10 @@ int main(int argc, char **argv) {
             FILE *f = fopen(name, "wb");
             if (f) { fwrite(ram, 1, sizeof ram, f); fwrite(cart.wram, 1, sizeof cart.wram, f); fclose(f); }
         }
-        if (title_quest && title_plaque()) { title_draw(); title_frames++; }      /* (after the hash: the picture only) */
+        if (title_quest) {      /* (after the hash: the picture only) */
+            int scene = title_scene();
+            if (scene && scene != title_quest) { title_draw(title_quest); title_frames++; }
+        }
         if (png && png_every && (frame % png_every) == 0) {
             char name[1100];
             snprintf(name, sizeof name, "%s.%05d.png", png, frame);
@@ -651,11 +661,15 @@ int main(int argc, char **argv) {
     }
     if (wav) { write_wav(wav, audio, audio_n, 48000, channels); free(audio); }
     if (apu_log_on) apu_log_print();
-    if (title_quest) printf("title: the logo %s; the plaque was on the screen in %ld frames\n", title_available() ? "is built in" : "is NOT built in", title_frames);
+    if (title_quest) printf("title: the pictures %s; the other title was on the screen, and drawn over, in %ld frames\n", title_available() ? "are built in" : "are NOT built in", title_frames);
 #ifdef STK_AUDIT
     printf("stack audit: %llu returns through an address pushed by hand, %llu of them with a call or return in between\n",
            (unsigned long long)stk_hand_returns, (unsigned long long)stk_hand_returns_late);
 #endif
+    if (ips_late > 0 && n_ips)
+        printf("patches: switched on at frame %d of a game begun without them: %d in the image at the end, %s\n", ips_late, patch_count(),
+               patch_pending() ? "the switch still waiting" : "switched");
+    if (jam_frame >= 0) printf("THE CPU JAMMED at frame %d (pc $%04X)\n", jam_frame, cpu.pc);
     if (ips_toggle > 0 && n_ips) {
         ips_switches = (long)(patch_generation() - ips_gen0);
         printf("patches: switched %ld times while running; %ld frames ended with a switch still waiting for its moment\n", ips_switches, ips_waits);

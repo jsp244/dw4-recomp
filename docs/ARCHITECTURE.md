@@ -229,6 +229,13 @@ put in place by `patch_try` at a moment when:
   fixed bank per 256 KiB half, an MMC3 only the last 16 KiB), and the mapper is turned into
   the other kind with the same map, mirroring and RAM enable.
 
+A hack on another board has to start with the game: it sets itself up in its start-up code
+(the one at hand copies its own version of the game's far-call routine into the cartridge
+RAM), and nothing in the image tells what a running game would be missing. `patch.c`
+therefore keeps the signature of the image whose start-up code ran last, at power-on or
+reset (it is part of a saved state), and lets a board-changing image in while the game runs
+only if it is that image coming back; otherwise the switch waits for a power-on.
+
 The frame loop tries after every JSR, RTS and RTI, the same points for interpreter and
 translated code, so both make the switch at the same instruction and stay comparable
 (`tests/cosim.py --ips-toggle`). Addresses the game pushes by hand (its jump tables) count
@@ -238,9 +245,9 @@ or return between the push and the return, and finds none.
 Built-in hacks. `tools/hacks/embed_hacks.py` turns the patch files listed in
 `tools/hacks/hacks.txt` (name, version, author, year, page, SHA-1) into `generated/hacks.h`;
 `runtime/hacks.c` exposes them, and `patch_prepare_list` takes a patch from memory as well as
-from a file. The Patches tab lists them first, an add-on under the hack it belongs to
-(applied only with it), and leaves out a file in the patches folder that is one of them
-byte for byte.
+from a file. A build with hacks built in offers exactly those (a row names the hack and its
+author); a build without them lists the `.ips` files of the patches folder and links to the
+four hacks' pages.
 
 The frontend orders the patches: a whole-game hack first, then the small hacks it knows,
 then add-ons and the rest by name; a small hack that writes bytes a whole-game hack also writes is
@@ -250,11 +257,14 @@ they change, not by file hashes, so other versions are recognised too.
 ## Title screen
 
 `runtime/title.c` recognises the North American title scene by the stone plaque's frame
-(its tiles in the name table and a hash of their patterns) and, with the option on, draws
-the sky and the Japanese release's logo over it in the finished picture. The logo is a
-run-length picture of colour numbers in `generated/title_dq.h`, made by
-`tools/title/extract_title.py` from a dump of that cartridge, which the interpreter runs
-as it is (same board).
+(its tiles in the name table and a hash of their patterns) and the Japanese one by the
+patterns of the logo's tiles, and draws the sky and the other picture over it in the
+finished frame: the logo over the plaque, or the plaque over the logo that a hack brings
+along. The PPU's pixels are saved and put back after the frame is converted, so the PPU's
+picture stays its own and the option shows at once behind the paused menu. The pictures
+are run-length lists of colour numbers in `generated/title_dq.h` and `title_dw.h`, made by
+`tools/title/extract_title.py` from dumps of the two cartridges, which the interpreter
+runs as they are (same board).
 
 ## Frontend
 

@@ -603,8 +603,21 @@ static void ensure_textures(int k) {
 
 /* the part src of the frame (see source_rect: of the PPU's picture, or in a widescreen mode of
    the canvas with the map beside it) as ARGB in frame_rgb, frame_w x frame_h */
+static void frame_to_rgb_plain(const SDL_Rect *src);
+
+/* The title under the name chosen (Graphics > Title screen): the logo over the plaque, or the
+   plaque over the logo a hack brings along. Drawn into the PPU's picture for the conversion and
+   taken out again, so that a change of the option shows at once, also behind the open menu. */
 static void frame_to_rgb(const SDL_Rect *src) {
-    if (cfg.title_quest && title_plaque()) title_draw();      /* the title under the game's other name */
+    int want = cfg.title_quest ? TITLE_LOGO : TITLE_PLAQUE, scene = title_available() ? title_scene() : TITLE_NONE;
+    /* a plaque engraved with the name asked for is left alone: the cartridge's own, with its engraving */
+    int swap = scene != TITLE_NONE && (scene != want || (want == TITLE_PLAQUE && patch_board_changed()));
+    if (swap) title_draw(want);
+    frame_to_rgb_plain(src);
+    if (swap) title_undo();
+}
+
+static void frame_to_rgb_plain(const SDL_Rect *src) {
     const uint8_t *fb = NULL, *emph = NULL;
     const uint32_t *hbg = NULL, *hspr = NULL;
     int stride = FB_W, remastered = cfg.textures && ppu_hd_capture && remaster_ready();
@@ -1091,7 +1104,7 @@ static void save_screenshot(void) {
 
 static void update_title(void) {
     char title[200];
-    snprintf(title, sizeof title, "Dragon Warrior IV (native port)%s", rom_ok && !sys.use_recomp ? " [interpreter]" : "");
+    snprintf(title, sizeof title, "Dragon Quest IV (native port)%s", rom_ok && !sys.use_recomp ? " [interpreter]" : "");
     SDL_SetWindowTitle(window, title);
 }
 
@@ -1287,6 +1300,9 @@ static void state_save(void) {
     refresh_play_items();
 }
 
+static int state_load_across(const void *buf, size_t n);
+static int state_kept_its_patches;      /* the last such load: the patches chosen could not join a running game */
+
 static int state_load(void) {
     if (!rom_ok) return 0;
     if (ach_hardcore()) { osd("Hardcore mode: save states cannot be loaded"); return 0; }
@@ -1298,15 +1314,18 @@ static int state_load(void) {
     if (!f) { osd("Slot %d is empty", cfg.state_slot); free(buf); return 0; }
     size_t n = fread(buf, 1, len, f);
     fclose(f);
-    int ok = 0, rc = n > 0 ? nes_state_load(buf, n) : -1;
+    int ok = 0, across = 0, rc = n > 0 ? nes_state_load(buf, n) : -1;
+    if (rc == -2) { rc = state_load_across(buf, n); across = rc == 0; }      /* saved under another set of patches */
     if (rc == 0) {
         apu_flush_samples();      /* the sound queued before the load belongs to the old timeline */
         audio_out_clear();
         rewind_clear(); chord_clear();
         game_started = 1;
-        osd("State loaded from slot %d", cfg.state_slot);
+        if (across && state_kept_its_patches) osd("State loaded from slot %d with the patches it was saved with", cfg.state_slot);
+        else if (across) osd("State loaded from slot %d; the patches switch to the current ones", cfg.state_slot);
+        else osd("State loaded from slot %d", cfg.state_slot);
         ok = 1;
-    } else if (rc == -2) osd("Slot %d was saved with other patches: set them as they were, then load", cfg.state_slot);
+    } else if (rc == -2) osd("Slot %d was saved with patches this version does not have", cfg.state_slot);
     else osd("Slot %d: the save state is from another version of the program", cfg.state_slot);
     free(buf);
     return ok;
@@ -1492,12 +1511,16 @@ static void scan_patches(void) {
     if (e) { snprintf(ext, sizeof ext, "%s/", e); root = ext; }
 #endif
     snprintf(patch_dir, sizeof patch_dir, "%spatches", root);
-    make_dir(patch_dir);
+    /* A build with the hacks built in offers exactly those (they are the ones known to work
+       together); only a build without them reads a patches folder. */
+    int folder = hacks_count() == 0;
+    file_dialog_patches = folder;
+    if (folder) make_dir(patch_dir);
 #ifdef _WIN32
     wchar_t wpat[1400];
     char pat[1400];
     snprintf(pat, sizeof pat, "%s\\*", patch_dir);
-    if (MultiByteToWideChar(CP_UTF8, 0, pat, -1, wpat, 1400)) {
+    if (folder && MultiByteToWideChar(CP_UTF8, 0, pat, -1, wpat, 1400)) {
         WIN32_FIND_DATAW fd;
         HANDLE h = FindFirstFileW(wpat, &fd);
         if (h != INVALID_HANDLE_VALUE) {
@@ -1511,7 +1534,7 @@ static void scan_patches(void) {
         }
     }
 #else
-    DIR *d = opendir(patch_dir);
+    DIR *d = folder ? opendir(patch_dir) : NULL;
     if (d) {
         struct dirent *de;
         while ((de = readdir(d)) != NULL && n_files < MAX_PATCH_FILES)
@@ -1536,11 +1559,7 @@ static void scan_patches(void) {
                 if (patch_entries[q].hack && !strcmp(patch_entries[q].hack->id, h->parent)) e->parent = q;
             snprintf(e->label, sizeof e->label, "    + %.44s", h->name);
         } else {
-            /* "Name version - author, year - RHDN #number": the number of its page on romhacking.net */
-            char site[24] = "";
-            const char *id = strstr(h->page, "/hacks/");
-            if (id) { snprintf(site, sizeof site, " - RHDN #%.6s", id + 7); for (char *c = site; *c; c++) if (*c == '/') *c = 0; }
-            snprintf(e->label, sizeof e->label, "%.24s %.6s - %.18s, %.4s%s", h->name, h->version, h->author, h->year, site);
+            snprintf(e->label, sizeof e->label, "%.30s by %.20s", h->name, h->author);     /* the hack and its author */
             named[h->kind] = 1;
         }
         e->on = in_patch_list(e->key);
@@ -1583,6 +1602,7 @@ static void scan_patches(void) {
 
 static void refresh_patch_items(void);
 static void patches_and_achievements(void);
+static int restart_with_patches(void);
 
 /* Prepare the image for the rows as they stand. force: put it in place at once (the machine is
    about to be powered on); otherwise it goes in at the first safe moment while the game runs. */
@@ -1626,6 +1646,51 @@ static void apply_patches(int force) {
     refresh_patch_items();
 }
 
+/* A state saved under another set of patches. A state holds the machine in the middle of its code,
+   so it can only be loaded into the image it was saved from: that image is found again (the set of
+   patches whose image has the state's signature), the state is loaded into it, and the set chosen
+   now is prepared as for any switch: it goes in at the first safe moment while the game runs.
+   Returns 0 when the state is loaded, -2 when no set of the patches at hand gives its image. */
+static int state_load_across(const void *buf, size_t n) {
+    uint32_t want;
+    if (!nes_state_image(buf, n, &want)) return -1;
+    int count = n_patch_entries < 10 ? n_patch_entries : 10, found = 0;
+    int keep[MAX_PATCH_ENTRIES], keep_shown = patches_shown;
+    for (int i = 0; i < n_patch_entries; i++) keep[i] = patch_entries[i].on;
+    patches_shown = 1;
+    for (unsigned mask = 0; mask < (1u << count) && !found; mask++) {
+        for (int i = 0; i < n_patch_entries; i++) patch_entries[i].on = i < count && ((mask >> i) & 1);
+        apply_patches(1);
+        found = patch_signature() == want;
+    }
+    int rc = found ? nes_state_load(buf, n) : -2, with[MAX_PATCH_ENTRIES];
+    for (int i = 0; i < n_patch_entries; i++) { with[i] = patch_entries[i].on; patch_entries[i].on = keep[i]; }
+    patches_shown = keep_shown;
+    state_kept_its_patches = 0;
+    if (rc == 0) {
+        game_started = 1;
+        apply_patches(0);                 /* the current set: goes in while the game runs */
+        if (patch_needs_restart()) {      /* ... unless it has to start with the game: the state keeps its own set */
+            for (int i = 0; i < n_patch_entries; i++) patch_entries[i].on = with[i];
+            patches_shown = 1;
+            apply_patches(0);
+            state_kept_its_patches = 1;
+        }
+    } else apply_patches(1);              /* nothing loaded: the image as it was, under the machine as it is */
+    return rc;
+}
+
+/* The game is about to be reset: a set of patches that waits for a restart goes in now, and the
+   machine is powered on under it. Returns 1 when it did that (the reset is then done). */
+static int restart_with_patches(void) {
+    if (!rom_ok || !patch_pending()) return 0;
+    patch_switch(1);
+    nes_power();
+    patches_and_achievements();
+    refresh_patch_items();
+    return 1;
+}
+
 /* RetroAchievements belong to the unpatched game: off while a patch is in the image */
 static void patches_and_achievements(void) {
     static int was_patched = -1;
@@ -1652,9 +1717,163 @@ static void poll_patch_switch(void) {
             patch_announce = 0;
         }
         refresh_patch_items();
+    } else if (patch_needs_restart()) {
+        if (waited++ == 0) osd("This hack starts with the game: Reset game (menu > Play) to switch");
     } else if (patch_pending() && ++waited == 120) {
         osd("The patches switch as soon as the game leaves the code they change");
     }
+}
+
+/* --state-patch-test: states saved under one set of patches, loaded under another */
+static uint32_t state_patch_rnd = 12345;
+static int state_patch_play;                 /* press buttons at random (the game is past its title) */
+static int state_patch_pairs = 1 << 30;      /* --state-patch-test N: stop after so many pairs */
+
+static void state_patch_run(int frames) {
+    static const uint8_t pads[10] = { 0, 0, 0x01, 0x01, 0x02, 0x10, 0x20, 0x40, 0x80, 0x01 };
+    static uint8_t pad;
+    for (int i = 0; i < frames; i++) {
+        if (state_patch_play && i % 12 == 0) {
+            state_patch_rnd = state_patch_rnd * 1664525u + 1013904223u;
+            pad = pads[(state_patch_rnd >> 16) % 10];
+        }
+        nes_set_pad(0, state_patch_play ? pad : 0);
+        patch_live(1); nes_run_frame(); patch_live(0);
+        poll_patch_switch();
+    }
+}
+
+/* the rows On as the bits of mask say; the switch is given time to find its moment.
+   1 switched, 0 still waiting, 2 the selection has to start with the game */
+static int state_patch_select(unsigned mask, int count) {
+    for (int i = 0; i < n_patch_entries; i++) patch_entries[i].on = i < count && ((mask >> i) & 1);
+    apply_patches(0);
+    if (patch_needs_restart()) return 2;
+    state_patch_run(120);
+    for (int k = 0; k < 20 && patch_pending(); k++) state_patch_run(120);
+    return !patch_pending();
+}
+
+static int state_patch_selftest(const char *start_state) {
+    int failures = 0, hack = -1;
+#define CHECK(cond, msg) do { int c_ = (cond); printf("%s %s\n", c_ ? "ok:  " : "FAIL:", msg); if (!c_) failures++; } while (0)
+    for (int i = 0; i < n_patch_entries; i++) if (patch_entries[i].kind == PATCH_WHOLE && hack < 0) hack = i;
+    if (hack < 0) { printf("state-patch-test: this build has no whole-game hack to test with\n"); return 0; }
+    cfg.state_slot = 9;
+
+    /* a game started without the hack: the hack waits for a restart, the game goes on */
+    for (int i = 0; i < n_patch_entries; i++) patch_entries[i].on = 0;
+    patches_shown = 1;
+    apply_patches(1);
+    nes_power();
+    game_started = 1;
+    state_patch_run(2500);
+    state_save();                                    /* the unpatched game, on its title sequence */
+    patch_entries[hack].on = 1; apply_patches(0);
+    state_patch_run(600);
+    CHECK(patch_needs_restart() && patch_count() == 0 && !cpu.jammed, "switched on in a game begun without it, the hack waits for a restart and the game goes on");
+    CHECK(restart_with_patches() && patch_count() == 1 && !patch_pending(), "a reset puts it in");
+    state_patch_run(2500);
+    CHECK(!cpu.jammed, "and the game runs under it");
+    int ok = state_load();
+    CHECK(ok && patch_count() == 0, "a state saved without the hack loads with the hack on, into the image it was saved from");
+    CHECK(!patch_pending() && !patch_entries[hack].on, "and keeps its own patches: the hack cannot join that game");
+    state_patch_run(600);
+    CHECK(patch_count() == 0 && !cpu.jammed, "which goes on without it");
+
+    /* a game started with the hack: it can go out and come back while the game runs, and so can its states */
+    patch_entries[hack].on = 1; apply_patches(0);
+    CHECK(restart_with_patches() && patch_count() == 1, "started again with the hack");
+    state_patch_run(2500);
+    state_save();                                    /* the patched game */
+    patch_entries[hack].on = 0; apply_patches(0);
+    state_patch_run(600);
+    CHECK(patch_count() == 0 && !patch_pending(), "the hack went out while the game ran");
+    ok = state_load();
+    CHECK(ok && patch_count() == 1, "a state saved with the hack loads with it off, into the image it was saved from");
+    state_patch_run(600);
+    CHECK(patch_count() == 0 && !patch_pending() && !cpu.jammed, "and the game is unpatched again a moment later");
+    state_save();                                    /* unpatched, in a game that began with the hack */
+    patch_entries[hack].on = 1; apply_patches(0);
+    state_patch_run(600);
+    CHECK(patch_count() == 1 && !patch_pending(), "the hack came back while the game ran");
+    ok = state_load();
+    CHECK(ok && patch_count() == 0 && patch_pending(), "the unpatched state of that game loads with the hack on");
+    state_patch_run(600);
+    CHECK(patch_count() == 1 && !patch_pending() && !cpu.jammed, "and the hack takes over again");
+    state_save();
+    ok = state_load();
+    CHECK(ok && !patch_pending(), "a state loads under the set it was saved with, as before");
+
+    /* a reset runs the start-up code of the image that is in: after one without the hack, the game is
+       one that began without it */
+    patch_entries[hack].on = 0; apply_patches(0);
+    state_patch_run(600);
+    CHECK(patch_count() == 0 && !patch_pending(), "the hack went out again");
+    nes_reset();
+    state_patch_run(900);
+    patch_entries[hack].on = 1; apply_patches(0);
+    state_patch_run(600);
+    CHECK(patch_needs_restart() && patch_count() == 0 && !cpu.jammed, "after a reset of the game without the hack, the hack waits for a restart again");
+    CHECK(restart_with_patches() && patch_count() == 1 && !patch_pending(), "and the next reset puts it in");
+    state_patch_run(2500);
+    CHECK(!cpu.jammed, "under which the game runs");
+
+    /* Every selection of the rows against every other: saved under one, loaded under the other. With
+       a state to start from (--state-load FILE: the game in play) the buttons are pressed at random
+       throughout, so the states are saved and loaded in the middle of walking, talking and menus.
+       A state of a game begun with the hack lets every selection in; in one begun without it the
+       selections with the hack are left out (they would need a restart). */
+    int count = n_patch_entries < 4 ? n_patch_entries : 4, pairs = 0, across = 0, bad = 0, slow = 0, left_out = 0;
+    if (start_state) {
+        size_t len = nes_state_size();
+        void *buf = malloc(len);
+        FILE *f = nes_fopen(start_state, "rb");
+        size_t n = f ? fread(buf, 1, len, f) : 0;
+        if (f) fclose(f);
+        int rc = n > 0 ? nes_state_load(buf, n) : -1;
+        if (rc == -2) rc = state_load_across(buf, n);
+        free(buf);
+        CHECK(rc == 0, "the starting state loads (the game in play)");
+        state_patch_play = rc == 0;
+        printf("      it is of a game begun %s\n", patch_boot_image() ? "with the hack" : "without the hack");
+    }
+    for (unsigned a = 0; a < (1u << count); a++)
+        for (unsigned b = 0; b < (1u << count); b++) {
+            if (a == b || pairs >= state_patch_pairs) continue;
+            int sa = state_patch_select(a, count);
+            if (sa == 2) { left_out++; state_patch_select(0, count); continue; }
+            int good = sa == 1;
+            uint32_t image_a = patch_signature();
+            uint64_t frame_a = ppu.frame;
+            state_save();
+            int sb = state_patch_select(b, count);
+            if (sb == 2) { left_out++; state_patch_select(0, count); continue; }
+            good = good && sb == 1;
+            uint32_t image_b = patch_signature();
+            ok = state_load();
+            good = good && ok && patch_signature() == image_a && ppu.frame == frame_a;     /* back at the saved moment, in its image */
+            across += ok && image_a != image_b;
+            state_patch_run(120);
+            for (int k = 0; k < 20 && patch_pending(); k++) { state_patch_run(120); slow++; }
+            good = good && patch_signature() == image_b && !patch_pending() && !cpu.jammed && ppu.frame > frame_a;
+            pairs++;
+            if (!good) {
+                bad++;
+                printf("FAIL: saved under selection %u, loaded under %u (loaded %d, image now %08X, wanted %08X, pending %d, jammed %d, pc $%04X)\n",
+                       a, b, ok, (unsigned)patch_signature(), (unsigned)image_b, patch_pending(), cpu.jammed, cpu.pc);
+            }
+        }
+    printf("%s %d pairs of selections: saved under one, loaded under the other (%d of them into another image), "
+           "the chosen patches back in force afterwards; %d waits of more than two seconds; %d pairs left out (a restart needed)\n",
+           bad ? "FAIL:" : "ok:  ", pairs, across, slow, left_out);
+    failures += bad;
+    char path[2048];
+    slot_path(cfg.state_slot, path, sizeof path);
+    remove(path);
+#undef CHECK
+    printf("state-patch-test: %s (%d failure%s)\n", failures ? "FAILED" : "all passed", failures, failures == 1 ? "" : "s");
+    return failures != 0;
 }
 
 /* the compare key: the original game for a moment, and the patches back again */
@@ -1671,6 +1890,7 @@ static void compare_patches(void) {
 static int add_patch_file(const char *path) {
     const char *name = path;
     for (const char *c = path; *c; c++) if (*c == '/' || *c == '\\') name = c + 1;
+    if (hacks_count()) { osd("This program has its patches built in (menu > Patches)"); return 0; }
     if (!ends_with_ips(name) || strlen(name) >= sizeof patch_entries[0].file) return 0;
     char dst[1500];
     snprintf(dst, sizeof dst, "%s/%s", patch_dir, name);
@@ -1702,9 +1922,8 @@ static void refresh_patch_items(void) {
     ui_item *t = patch_items;
     t[n] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
     if (hacks_count())
-        snprintf(t[n].info, sizeof t[n].info, "ROM hacks, applied to your ROM in memory and switched On and Off while you play. The ones "
-                 "listed with their authors come with the program (RHDN #: their page, romhacking.net/hacks/number). "
-                 "Others: put .ips files in this folder or drop them on the window:\n%.140s", patch_dir);
+        snprintf(t[n].info, sizeof t[n].info, "ROM hacks by their authors, built into the program. Each is applied to your ROM in memory "
+                 "(the file stays as it is) and can be switched On and Off while you play.");
     else
         snprintf(t[n].info, sizeof t[n].info, "ROM hacks as IPS files, applied to your ROM in memory and switched On and Off while you play. "
                  "Get them from their pages, then put the .ips files in this folder or drop them on the window:\n%.180s", patch_dir);
@@ -1725,19 +1944,27 @@ static void refresh_patch_items(void) {
         orphan += e->on && e->parent >= 0 && !patch_entries[e->parent].on;
         n++;
     }
-    t[n++] = (ui_item){ handheld ? "Compare with the original" : "Compare with the original  (F9)", UI_ACTION, ACT_PATCH_COMPARE, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
-    if (file_dialog_available())
-        t[n++] = (ui_item){ "Add a patch file...", UI_ACTION, ACT_PATCH_ADD, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
-    t[n++] = (ui_item){ "Look for new files", UI_ACTION, ACT_PATCH_RESCAN, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    /* the compare row says what it will do: all patches off for the moment (the On/Off choices stay), or back on */
+    t[n++] = (ui_item){ patches_shown ? (handheld ? "Compare: show the original game for now" : "Compare: show the original game for now  (F9)")
+                                      : (handheld ? "Compare: back to the game with patches" : "Compare: back to the game with patches  (F9)"),
+                        UI_ACTION, ACT_PATCH_COMPARE, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    if (!hacks_count()) {       /* only a build without built-in hacks takes files */
+        if (file_dialog_available())
+            t[n++] = (ui_item){ "Add a patch file...", UI_ACTION, ACT_PATCH_ADD, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+        t[n++] = (ui_item){ "Look for new files", UI_ACTION, ACT_PATCH_RESCAN, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    }
     t[n] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
     char *o = t[n].info;
     size_t room = sizeof t[n].info;
     if (!n_patch_entries)
         snprintf(o, room, "No .ips files in the folder yet.");
+    else if (patch_needs_restart())
+        snprintf(o, room, "This hack runs the game on another cartridge board and sets itself up when the game starts: "
+                 "it goes in when you reset the game (Play > Reset game) or start it next.");
     else if (patch_pending())
         snprintf(o, room, "The switch happens as soon as the game runs and is not inside the code that changes.");
     else if (!patches_shown && on)
-        snprintf(o, room, "Showing the original game (Compare). %d patch%s set to On.", on % 100, on == 1 ? " is" : "es are");
+        snprintf(o, room, "Compare: showing the original game for now. %d patch%s set to On and come%s back with the row above.", on % 100, on == 1 ? " is" : "es are", on == 1 ? "s" : "");
     else if (patch_count())
         snprintf(o, room, "%d patch%s on: %ld bytes changed. Changed text shows the next time it is printed, graphics at the next "
                  "scene. RetroAchievements are off while a patch is on.", patch_count() % 100, patch_count() == 1 ? "" : "es", patch_bytes() % 10000000);
@@ -2095,7 +2322,7 @@ static void build_menu(void) {
     tabs[TAB_UPDATES] = (ui_tab){ "Updates", upd_items, 3, 1 };
     memset(&menu, 0, sizeof menu);
     menu.tabs = tabs; menu.ntabs = N_TABS;
-    menu.title = "DRAGON WARRIOR IV";
+    menu.title = "DRAGON QUEST IV";
     menu.subtitle = "native port";
     if (touchpad_enabled()) menu.hint = "Tap to choose.   In game: MENU at the top opens this menu";
     else if (handheld) menu.hint = "D-pad, A to choose, B back.   In game: LT + RT opens this menu";
@@ -2163,10 +2390,10 @@ static void menu_action(ui_event e) {
     case ACT_PATCH_RESCAN: scan_patches(); apply_patches(0); write_config(); break;
     case ACT_PATCH_ADD: choose_rom(); break;
     case ACT_PLAY: start_game(); break;
-    case ACT_RESET: if (rom_ok) { nes_reset(); ach_reset(); chord_clear(); game_started = 1; start_game(); } break;
+    case ACT_RESET: if (rom_ok) { if (!restart_with_patches()) nes_reset(); ach_reset(); rewind_clear(); chord_clear(); game_started = 1; start_game(); } break;
     case ACT_SAVE: state_save(); break;
     case ACT_LOAD: if (state_load()) start_game(); break;
-    case ACT_STOP: if (rom_ok) { battery_check(1); nes_power(); ach_reset(); rewind_clear(); chord_clear(); game_started = 0; refresh_rom_items(); ui_select_first(&menu); } break;
+    case ACT_STOP: if (rom_ok) { battery_check(1); if (!restart_with_patches()) nes_power(); ach_reset(); rewind_clear(); chord_clear(); game_started = 0; refresh_rom_items(); ui_select_first(&menu); } break;
     case ACT_QUIT: running = 0; break;
     case ACT_CHOOSE: choose_rom(); break;
     case ACT_KEYS_DEFAULT: {
@@ -2227,7 +2454,7 @@ static void draw_menu(void) {
 /* ------------------------------------------------------------------ */
 static void fatal_box(const char *msg) {
     fprintf(stderr, "%s\n", msg);
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Dragon Warrior IV", msg, NULL);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Dragon Quest IV", msg, NULL);
 }
 
 /* --chord-test: the Start + Select rollback, through the same functions as the game loop */
@@ -2516,7 +2743,7 @@ int main(int argc, char **argv) {
     const char *shot_state = NULL;
     int selftest_frames = 0, uishot_tab = 0, uishot_frames = 0, gameshot_frames = 300, rewind_test = 0, list_pads = 0, autoplay = 0;
     const char *list_modes_file = NULL;
-    int list_modes_flag = 0, chord_test = 0, touch_flag = 0, touch_test = 0;
+    int list_modes_flag = 0, chord_test = 0, touch_flag = 0, touch_test = 0, state_patch_test = 0;
     const char *update_pretend = NULL;
     char **update_then = NULL, **launch_argv = argv;   /* the restart after an update runs the same command line */
     int update_test = 0;
@@ -2562,6 +2789,10 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--state-load") && i + 1 < argc) shot_state = argv[++i];
         else if (!strcmp(argv[i], "--rewind-test") && i + 1 < argc) rewind_test = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--chord-test")) chord_test = 1;
+        else if (!strcmp(argv[i], "--state-patch-test")) {     /* optionally: how many pairs of selections to try */
+            state_patch_test = 1;
+            if (i + 1 < argc && isdigit((unsigned char)argv[i + 1][0])) state_patch_pairs = atoi(argv[++i]);
+        }
         else if (!strcmp(argv[i], "--trigger-test")) trigger_test_flag = 1;
         else if (!strcmp(argv[i], "--touch")) touch_flag = 1;   /* the phone edition: on-screen controls */
         else if (!strcmp(argv[i], "--touch-test")) touch_test = 1;
@@ -2677,7 +2908,7 @@ int main(int argc, char **argv) {
     /* ---- window ---- */
     int win_w, win_h;
     window_size_for_config(&win_w, &win_h);
-    window = SDL_CreateWindow("Dragon Warrior IV (native port)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    window = SDL_CreateWindow("Dragon Quest IV (native port)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               win_w, win_h, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI |
                               (cfg.display_mode == 1 ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
     if (!window) { fatal_box(SDL_GetError()); SDL_Quit(); return 1; }
@@ -2730,6 +2961,12 @@ int main(int argc, char **argv) {
     }
     if (trigger_test_flag) {
         int rc = trigger_selftest();
+        font_quit(); SDL_DestroyRenderer(renderer); SDL_DestroyWindow(window); SDL_Quit();
+        return rc;
+    }
+    if (state_patch_test) {
+        if (!rom_ok) { fprintf(stderr, "state-patch-test: no valid ROM (%s)\n", rom_status); SDL_Quit(); return 1; }
+        int rc = state_patch_selftest(shot_state);
         font_quit(); SDL_DestroyRenderer(renderer); SDL_DestroyWindow(window); SDL_Quit();
         return rc;
     }
@@ -2949,7 +3186,7 @@ int main(int argc, char **argv) {
                 case SDLK_F9: compare_patches(); break;
                 case SDLK_F12: save_screenshot(); break;
                 case SDLK_p: paused = !paused; audio_out_clear(); break;
-                case SDLK_r: if (ev.key.keysym.mod & KMOD_CTRL) { nes_reset(); ach_reset(); chord_clear(); osd("Reset"); } break;
+                case SDLK_r: if (ev.key.keysym.mod & KMOD_CTRL) { if (!restart_with_patches()) nes_reset(); ach_reset(); rewind_clear(); chord_clear(); osd("Reset"); } break;
                 default: break;
                 }
             } else if (ev.type == SDL_CONTROLLERBUTTONDOWN &&

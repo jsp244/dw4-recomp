@@ -175,30 +175,31 @@ python recomp/recomp.py --rom rom/your.nes --out generated --coverage cov.bin --
 
 ## Patches (ROM hacks)
 
-The Patches tab lists the hacks that come with the program and the `.ips` files in the
-`patches` folder next to it (drop a file on the window, or use "Add a patch file", to put one
-there). Each is On or Off. The ROM on disk is never changed: the image the machine runs is
-the dump plus the patches that are on, rebuilt from the dump whenever the set changes, so
-any of them can be taken out again.
+The Patches tab lists ROM hacks, each On or Off. The ROM on disk is never changed: the
+image the machine runs is the dump plus the patches that are on, rebuilt from the dump
+whenever the set changes, so any of them can be taken out again.
 
 Four hacks are built into the packages on the releases page, unchanged and under their
-authors' names, as the tab shows them:
+authors' names (a row reads "Delocalized by Translation Quest"), and that build offers exactly
+these, the set that was tested together:
 
 | Hack | Version | Author | Year | Page |
 |---|---|---|---|---|
-| Delocalized: a new translation from the Japanese, with fixes, and its seven option patches | 1.08 | Translation Quest (Chicken Knife, nejimakipiyo, AWildJuneAppeared, dattebayo) | 2026 | romhacking.net/hacks/9523 |
+| Delocalized: a new translation from the Japanese, with fixes | 1.08 | Translation Quest (Chicken Knife, nejimakipiyo, AWildJuneAppeared, dattebayo) | 2026 | romhacking.net/hacks/9523 |
 | Graphical Uncensoring | 1.0 | MetHy | 2024 | romhacking.net/hacks/8426 |
 | Manual Tactics: command every party member yourself in chapter 5 | 1.1 | karmic | 2025 | romhacking.net/hacks/9221 |
 | Seamonsters fix | 1.0 | Jegriva | 2017 | romhacking.net/hacks/3760 |
 
 They are their authors' work and are not in this repository: `make hacks` builds them in
 from the files named in `tools/hacks/hacks.txt` (checked against the hashes there), which
-you download from the pages above into `rom/hacks/`. A build without them shows links to
-the pages instead, and the same files work from the `patches` folder.
+you download from the pages above into `rom/hacks/`. A build without them works from files
+instead: it lists the `.ips` files of the `patches` folder next to the program (drop a file on
+the window, or use "Add a patch file"), knows the four hacks by what they change, and links
+to their pages.
 
 The three small ones touch different bytes and combine freely, in any order. Delocalized
 already contains all three (in its own adapted form), so with it on they are not applied a
-second time; its own option patches go on after it. Delocalized also moves the game from
+second time. Delocalized also moves the game from
 its MMC1 board to an MMC3, which the runtime follows.
 
 How a patched game runs: the translated code was made from the dump, so every routine of
@@ -207,7 +208,8 @@ patched image, along with any code a patch adds. `tests/cosim.py --ips FILE` che
 patched game the same way as the plain one (interpreter against translated code, frame by
 frame).
 
-Switching while the game runs (the tab, or F9: the original game and back) puts the new
+Switching while the game runs (the tab's switches, or its Compare row / F9: the original game
+for the moment, and back) puts the new
 image in place at a moment when the CPU cannot be caught in code that is no longer there.
 The runtime notes what pushed each return address on the stack and from which bank; a
 switch waits until the instruction the CPU stands on, and every call it still has to
@@ -218,20 +220,45 @@ and return inside the frame, so it usually takes a fraction of a frame.
 interpreter and translated code to agree on every frame. What a patch changes is seen the
 next time the game reads it: text when it is printed again, graphics when a scene loads.
 
-RetroAchievements are off while a patch is on. A saved state belongs to the image it was
-saved from and is refused under another set of patches.
+One kind of hack cannot join a game that is already running: one that moves the game to
+another board is a different program from the first instruction on and sets itself up when
+the game starts. The game calls into its other half through a routine that its start-up
+code copies into the cartridge RAM; the cartridge's copy drives the MMC1's serial port,
+which on an MMC3 switches the cartridge RAM off, and Delocalized installs one of its own.
+Such a hack goes in at a power-on: switched on while a game runs, it waits for the next
+reset. In a game that was started with it, it can be switched out and back in while the
+game runs like any other patch (its routine goes through the game's own bank switch and
+serves the original code as well); the runtime keeps the image whose start-up code ran
+last, at power-on or reset (`patch_needs_restart`), also in saved states.
+`nes-headless --ips FILE --ips-late N` starts a game without its patches and switches them
+on at frame N.
+
+The adventure logs have the same layout under every selection, so the one `.sav` file
+serves them all: a log saved under any selection continues under any other. The routine
+in the cartridge RAM is part of that file and is written again by the start-up code of
+whichever image starts the game.
+
+RetroAchievements are off while a patch is on. A saved state holds the machine in the
+middle of its code, so it belongs to the image it was saved from: loading one that was
+saved under another set of patches puts that set's image back for the load (it is found
+by the state's signature), and the set chosen now takes over through the same live switch
+(or, if that set has to start with the game, the state keeps the patches it was saved
+with). `dw4 --state-patch-test` saves and loads states across every pair of selections.
 
 ## Title screen
 
 Graphics > Title screen chooses the name the game goes by: the Dragon Quest IV logo, as on
 the Japanese cartridge, or the stone plaque being engraved with DRAGON WARRIOR IV. The
 scene around it is the same in both releases, and the game runs the same either way: the
-picture is changed after the PPU has drawn it (`runtime/title.c`).
+picture is changed after the PPU has drawn it (`runtime/title.c`), and the PPU's own
+picture is put back afterwards, so the choice shows at once. It works both ways: with a
+hack that brings the Japanese title along (Delocalized), choosing Dragon Warrior IV draws
+the plaque over that logo.
 
-The logo is not in this repository. `make title TITLE_ROM="<your dump of the Japanese
-release>"` takes it from that cartridge into `generated/title_dq.h` (a picture of 197 x 65
-pixels); a build without that file has no such option. The packages on the releases page
-are built with it.
+The two pictures are not in this repository. `make title TITLE_ROM="<your dump of the
+Japanese release>"` takes the logo from that cartridge and the finished plaque from the ROM
+in `rom/` into `generated/` (197 x 65 and 192 x 80 pixels); a build without them has no
+such option. The packages on the releases page are built with them.
 
 ## Layout
 

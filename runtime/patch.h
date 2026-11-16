@@ -78,6 +78,20 @@ extern int patch_live_wait;             /* (for the frame loop: a switch is pend
 extern long patch_refused[4];           /* statistics: switches put off because of the memory map, the program counter, the stack */
 extern uint16_t patch_refused_at;       /* the address that did it last */
 
+/* A hack that moves the game to another board is a different program from the first instruction
+   on: it sets itself up when the machine is powered on (Delocalized copies routines of its own
+   into the cartridge RAM), and a game that was started without it has none of that. Such an
+   image can be switched in while the game runs only if this machine was powered on under it
+   (it was then switched out and is coming back); otherwise the switch waits for a power-on,
+   and patch_needs_restart() says so. Switching it out, and every switch between images on the
+   cartridge's own board, needs no such thing. patch_powered: the machine was just powered on
+   or reset (nes_power and nes_reset call it; the game's start-up code installs the routines
+   of the image that is in at that moment). The boot image travels with saved states. */
+int      patch_needs_restart(void);
+void     patch_powered(void);
+uint32_t patch_boot_image(void);
+void     patch_set_boot_image(uint32_t image);
+
 /* Counts the switches made. States saved before a switch belong to the other image: whoever keeps
    some (rewind) watches this. */
 unsigned patch_generation(void);

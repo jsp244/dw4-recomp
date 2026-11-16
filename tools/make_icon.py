@@ -1,5 +1,5 @@
 """Draws the port's icon (original artwork: a sword standing before a night sky
-and distant mountains) and writes it as a Windows .ico (16/32/48/256), a PNG
+and distant mountains, between the letters DQ and IV) and writes it as a Windows .ico (16/32/48/256), a PNG
 preview and a C array for SDL_SetWindowIcon. Pure Python, no image libraries.
 
 usage: python tools/make_icon.py
@@ -28,6 +28,38 @@ def ridge(u):
     return 0.80 - 0.07 * abs(math.sin(u * 5.3 + 0.6)) - 0.05 * abs(math.sin(u * 11.0 + 2.0))
 
 
+# the letters DQ and IV, left and right of the blade: blocky, 5 x 7 (the I is 3 wide)
+GLYPHS = {
+    "D": ("11110", "10001", "10001", "10001", "10001", "10001", "11110"),
+    "Q": ("01110", "10001", "10001", "10001", "10101", "10010", "01101"),
+    "I": ("111", "010", "010", "010", "010", "010", "111"),
+    "V": ("10001", "10001", "10001", "10001", "01010", "01010", "00100"),
+}
+LETTERS = (("D", 0.085, 0.165), ("Q", 0.270, 0.165), ("I", 0.585, 0.085), ("V", 0.690, 0.175))   # letter, left edge, width
+LETTER_TOP, LETTER_HEIGHT = 0.30, 0.25
+
+
+def in_letter(u, v):
+    if not LETTER_TOP <= v < LETTER_TOP + LETTER_HEIGHT:
+        return False
+    for ch, left, width in LETTERS:
+        if left <= u < left + width:
+            g = GLYPHS[ch]
+            return g[int((v - LETTER_TOP) / LETTER_HEIGHT * 7)][int((u - left) / width * len(g[0]))] == "1"
+    return False
+
+
+def lettering(u, v):
+    """1 inside a letter, 2 on its dark outline, 0 elsewhere"""
+    if in_letter(u, v):
+        return 1
+    d = 0.013
+    for du, dv in ((d, 0), (-d, 0), (0, d), (0, -d), (d, d), (-d, d), (d, -d), (-d, -d)):
+        if in_letter(u + du, v + dv):
+            return 2
+    return 0
+
+
 def color_at(u, v):
     """RGBA (0..1) of the artwork at normalised coordinates"""
     # rounded-square badge
@@ -44,6 +76,12 @@ def color_at(u, v):
     # mountains
     if v > ridge(u):
         col = lerp((0.07, 0.10, 0.24), (0.03, 0.04, 0.12), min(1.0, (v - ridge(u)) / 0.2))
+    # the letters, gold with a dark outline
+    k = lettering(u, v)
+    if k == 1:
+        col = lerp((1.00, 0.92, 0.50), (0.94, 0.64, 0.14), (v - LETTER_TOP) / LETTER_HEIGHT)
+    elif k == 2:
+        col = (0.03, 0.04, 0.14)
     # the sword: point up, blade, crossguard, grip and pommel
     x = u - 0.5
     blade_top, blade_bottom = 0.10, 0.66
