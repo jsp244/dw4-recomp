@@ -85,6 +85,7 @@ static inline void copy_y(void) { ppu.v = (uint16_t)((ppu.v & ~0x7BE0) | (ppu.t 
 
 static inline void reload_shifters(void) {
     ppu.hd_tile_a = ppu.hd_tile_b; ppu.hd_tile_b = ppu.hd_latch; ppu.hd_shifts = 0;
+    ppu.hd_cell_a = ppu.hd_cell_b; ppu.hd_cell_b = ppu.hd_cell_latch;
     ppu.bg_shift_lo = (uint16_t)((ppu.bg_shift_lo & 0xFF00) | ppu.pt_lo_latch);
     ppu.bg_shift_hi = (uint16_t)((ppu.bg_shift_hi & 0xFF00) | ppu.pt_hi_latch);
     ppu.at_shift_lo = (uint16_t)((ppu.at_shift_lo & 0xFF00) | ((ppu.at_latch & 1) ? 0xFF : 0x00));
@@ -112,7 +113,7 @@ static inline void bg_fetch_step(int dot) {
     case 6: {
         uint16_t a = (uint16_t)(((ppu.ctrl & 0x10) ? 0x1000 : 0) + ppu.nt_latch * 16 + ((ppu.v >> 12) & 7));
         ppu.pt_lo_latch = fetch(a);
-        if (ppu_hd_capture) ppu.hd_latch = ppu_hd_tile_of(a);
+        if (ppu_hd_capture) { ppu.hd_latch = ppu_hd_tile_of(a); ppu.hd_cell_latch = (uint16_t)(HD_CELL | (ppu.v & 0x0FFF)); }
         break; }
     case 0: {
         uint16_t a = (uint16_t)(((ppu.ctrl & 0x10) ? 0x1000 : 0) + ppu.nt_latch * 16 + ((ppu.v >> 12) & 7) + 8);
@@ -243,9 +244,11 @@ static inline void render_pixel(int sl, int dot) {
            position, and the winning sprite (its columns count in screen order, so a mirrored
            sprite's column in the tile runs backwards) */
         uint32_t bgi = 0, spi = 0;
+        uint16_t cell = 0;
         if (bg_pixel || ((ppu.mask & 0x08) && (x >= 8 || (ppu.mask & 0x02)))) {
             int c = ppu.x + ppu.hd_shifts;
             uint32_t t = c <= 7 ? ppu.hd_tile_a : ppu.hd_tile_b;
+            cell = c <= 7 ? ppu.hd_cell_a : ppu.hd_cell_b;
             bgi = HD_PACK(HD_TILE(t), HD_ROW(t), c & 7, bg_pal, bg_pixel) | ((uint32_t)ppu.hd_palette_cur << 28);
         }
         if (spr_pixel) {
@@ -256,6 +259,7 @@ static inline void render_pixel(int sl, int dot) {
         }
         ppu.hd_bg[sl * 256 + x] = bgi;
         ppu.hd_spr[sl * 256 + x] = spi;
+        ppu.hd_cell[sl * 256 + x] = cell;
     }
 
     if (is_spr0 && spr_pixel && bg_pixel && x != 255 && (ppu.mask & 0x18) == 0x18)
@@ -334,7 +338,7 @@ static inline void ppu_tick(void) {
             uint8_t color = ((ppu.v & 0x3F00) == 0x3F00) ? ppu.palette[pal_index(ppu.v)] : ppu.palette[0];
             if (ppu.mask & 1) color &= 0x30;
             ppu.fb[sl * 256 + (dot - 1)] = color;
-            if (ppu_hd_capture) ppu.hd_bg[sl * 256 + (dot - 1)] = ppu.hd_spr[sl * 256 + (dot - 1)] = 0;
+            if (ppu_hd_capture) { ppu.hd_bg[sl * 256 + (dot - 1)] = ppu.hd_spr[sl * 256 + (dot - 1)] = 0; ppu.hd_cell[sl * 256 + (dot - 1)] = 0; }
         }
     } else if (sl == 241 && dot == 1) {
         if (!ppu.suppress_vbl) { ppu.status |= 0x80; ppu_update_nmi(); }

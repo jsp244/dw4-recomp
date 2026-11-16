@@ -38,6 +38,7 @@
 #include "input.h"
 #include "gpu_sync.h"
 #include "remaster.h"
+#include "sfc.h"
 #include "widescreen.h"
 #include "patch.h"
 #include "hacks.h"
@@ -81,7 +82,8 @@ typedef struct {
     int scaling;         /* 0 integer, 1 fit, 2 stretch */
     int aspect;          /* 0 square pixels, 1 4:3 CRT, 2 16:9 widescreen (the map shown beside the picture, black bars on other screens), 3 16:10 */
     int title_quest;     /* the title screen: 1 the Dragon Quest IV logo, 0 the Dragon Warrior IV plaque (runtime/title.h) */
-    int textures;        /* 0 original, 1 remastered (runtime/remaster.c: recolored and shaded in the Pixel Remaster's manner) */
+    int textures;        /* 0 original, 1 remastered (runtime/remaster.c: recolored and shaded in the Pixel Remaster's manner),
+                            2 the 16-bit textures (runtime/sfc.c: map squares and people from the Super Famicom games, by a pack) */
     int filter;          /* 0 nearest, 1 linear, 2 sharp */
     int shader;          /* 0 off, 1 scanlines, 2 CRT, 3 CRT curved, 4 glow */
     int shader_strength; /* 0 light, 1 medium, 2 strong */
@@ -112,7 +114,8 @@ static const char *const latency_names[]  = { "Low", "Normal", "Safe" };
 static const char *const window_sizes[]  = { "1x", "2x", "3x", "4x", "5x", "6x" };
 static const char *const scalings[]      = { "Integer (exact pixels)", "Fit (fills the screen)", "Stretch (distorts)" };
 static const char *const aspects[]       = { "Square pixels 8:7", "4:3 (CRT)", "16:9 (widescreen)", "16:10 (widescreen)" };
-static const char *const texture_names[] = { "Original", "Pixel Remaster" };
+static const char *const texture_names[] = { "Original", "Pixel Remaster", "SNES Remaster" };
+static int sfc_pack_found;   /* sfc.pak is there: the third choice is offered */
 static const char *const title_names[] = { "Dragon Warrior IV", "Dragon Quest IV" };
 static const char *const filters[]       = { "Nearest", "Linear", "Sharp" };
 static const char *const onoff[]         = { "Off", "On" };
@@ -155,6 +158,7 @@ static uint32_t frame_rgb[WS_W * WS_H];   /* the picture to show, frame_w x fram
 static uint8_t wide_fb[WS_W * WS_H];      /* widescreen: that part of the canvas around the PPU's picture */
 static uint8_t wide_emph[WS_H];           /* and the $2001 bits of each of its rows */
 static uint32_t wide_hbg[WS_W * WS_H], wide_hspr[WS_W * WS_H];   /* and each pixel's source tile, for the remastered textures */
+static uint16_t wide_hcell[WS_W * WS_H];  /* and its map square, for the 16-bit textures */
 static int frame_w = FB_W, frame_h = FB_H;
 static uint8_t wram_snapshot[8192];
 static SDL_Window *window;
@@ -401,7 +405,8 @@ static void write_config(void) {
     fprintf(f, "shader_strength=%d     ; 0 light, 1 medium, 2 strong\n", cfg.shader_strength);
     fprintf(f, "overscan=%d            ; crop 8 lines at the top and bottom\n", cfg.overscan);
     fprintf(f, "no_sprite_limit=%d     ; 1: draw every sprite on a line instead of 8 (no flicker)\n", cfg.no_sprite_limit);
-    fprintf(f, "textures=%d            ; 0 original, 1 Pixel Remaster (recolored and shaded; remaster.pak next to the game adds hand-made tiles)\n", cfg.textures);
+    fprintf(f, "textures=%d            ; 0 original, 1 Pixel Remaster (recolored and shaded; remaster.pak next to the game adds hand-made tiles),\n"
+               "                      ; 2 SNES Remaster (map squares and people from the Super Famicom Dragon Quest games; needs sfc.pak next to the game: see tools/sfc)\n", cfg.textures);
     fprintf(f, "title_quest=%d         ; the title screen: 1 the Dragon Quest IV logo, 0 the Dragon Warrior IV plaque\n", cfg.title_quest);
     fprintf(f, "low_latency=%d         ; 1: frame delay, locked to the display (Windows, Android) or timer pacing without vsync (Linux); 0: plain timer (Linux: vsync)\n", cfg.lowlat);
     fprintf(f, "runahead=%d            ; frames of run-ahead (0-3)\n", cfg.runahead);
@@ -463,7 +468,7 @@ static void load_config(void) {
         else if (!strcmp(key, "shader_strength")) { int v = atoi(val); if (v >= 0 && v <= 2) cfg.shader_strength = v; }
         else if (!strcmp(key, "overscan")) cfg.overscan = atoi(val) ? 1 : 0;
         else if (!strcmp(key, "no_sprite_limit")) cfg.no_sprite_limit = atoi(val) ? 1 : 0;
-        else if (!strcmp(key, "textures")) cfg.textures = atoi(val) ? 1 : 0;
+        else if (!strcmp(key, "textures")) { cfg.textures = atoi(val); if (cfg.textures < 0 || cfg.textures > 2) cfg.textures = 1; }
         else if (!strcmp(key, "title_quest")) cfg.title_quest = atoi(val) ? 1 : 0;
         else if (!strcmp(key, "rewind_enabled")) cfg.rewind = atoi(val) ? 1 : 0;
         else if (!strcmp(key, "state_slot")) { int v = atoi(val); if (v >= 1 && v <= 9) cfg.state_slot = v; }
@@ -603,11 +608,14 @@ static void frame_to_rgb(const SDL_Rect *src) {
     const uint8_t *fb = NULL, *emph = NULL;
     const uint32_t *hbg = NULL, *hspr = NULL;
     int stride = FB_W, remastered = cfg.textures && ppu_hd_capture && remaster_ready();
+    int sfc = remastered && cfg.textures == 2 && sfc_ready();
+    int cx = src->x, cy = src->y;                 /* src in the canvas's coordinates */
+    if (!widescreen_on()) { cx += WS_BAND; cy += WS_VBAND; }
     frame_w = src->w; frame_h = src->h;
-    if (widescreen_on()) {
-        int decoded = remastered ? widescreen_render_hd(wide_fb, wide_emph, wide_hbg, wide_hspr, src->x, src->y, src->w, src->h)
-                                 : widescreen_render(wide_fb, wide_emph, src->x, src->y, src->w, src->h);
-        if (!decoded && cfg.overscan && integer_fill())
+    if (widescreen_on() || sfc) {                 /* (the 16-bit textures draw whole map squares: always by way of the canvas) */
+        int decoded = remastered ? widescreen_render_cells(wide_fb, wide_emph, wide_hbg, wide_hspr, wide_hcell, cx, cy, src->w, src->h)
+                                 : widescreen_render(wide_fb, wide_emph, cx, cy, src->w, src->h);
+        if (widescreen_on() && !decoded && cfg.overscan && integer_fill())
             for (int y = 0; y < frame_h; y++) {   /* the lines the crop hides stay black around the picture */
                 int line = src->y + y - WS_VBAND;
                 if ((line >= 0 && line < OVERSCAN) || (line >= FB_H - OVERSCAN && line < FB_H)) {
@@ -623,6 +631,10 @@ static void frame_to_rgb(const SDL_Rect *src) {
     } else {
         fb = ppu.fb + src->y * FB_W + src->x; emph = ppu.line_emph + src->y;
         hbg = ppu.hd_bg + src->y * FB_W + src->x; hspr = ppu.hd_spr + src->y * FB_W + src->x;
+    }
+    if (sfc) {
+        sfc_frame(frame_rgb, frame_w, fb, hbg, hspr, wide_hcell, stride, emph, frame_w, frame_h, cx - WS_BAND, cy - WS_VBAND);
+        return;
     }
     if (remastered) {
         remaster_frame(frame_rgb, frame_w, fb, hbg, hspr, stride, emph, frame_w, frame_h);
@@ -1360,20 +1372,33 @@ static void refresh_rom_items(void);
 
 /* the remastered textures for the loaded ROM: the automatic inks, and remaster.pak (hand-made
    tiles) from the game's folder, the data folder or, on Android, the app's shared folder */
-static void setup_textures(void) {
-    ppu_hd_capture = cfg.textures != 0;
-    if (!cfg.textures || !rom_ok || remaster_ready()) return;
-    char path[1300] = "";
+static int find_pack(const char *name, char *path, size_t size) {
     const char *dirs[3] = { base_dir, data_dir, NULL };
 #ifdef __ANDROID__
     dirs[2] = SDL_AndroidGetExternalStoragePath();
 #endif
-    for (int i = 0; i < 3 && !path[0]; i++) {
+    for (int i = 0; i < 3; i++) {
         if (!dirs[i]) continue;
         size_t n = strlen(dirs[i]);
-        snprintf(path, sizeof path, "%s%sremaster.pak", dirs[i], n && (dirs[i][n - 1] == '/' || dirs[i][n - 1] == '\\') ? "" : "/");
-        if (!file_exists(path)) path[0] = 0;
+        snprintf(path, size, "%s%s%s", dirs[i], n && (dirs[i][n - 1] == '/' || dirs[i][n - 1] == '\\') ? "" : "/", name);
+        if (file_exists(path)) return 1;
     }
+    path[0] = 0;
+    return 0;
+}
+
+/* The same folders hold sfc.pak, the 16-bit textures' art (tools/sfc makes it from the player's own
+   Super Famicom cartridges). Without it the third choice is not offered, and a setting that asks for
+   it shows the Pixel Remaster. */
+static void setup_textures(void) {
+    char path[1300] = "";
+    sfc_pack_found = find_pack("sfc.pak", path, sizeof path);
+    if (cfg.textures == 2 && !sfc_pack_found) cfg.textures = 1;
+    if (cfg.textures == 2 && !sfc_ready() && !sfc_init(path)) { sfc_pack_found = 0; cfg.textures = 1; }
+    gfx_all[5].nchoices = sfc_pack_found ? 3 : 2;
+    ppu_hd_capture = cfg.textures != 0;
+    if (!cfg.textures || !rom_ok || remaster_ready()) return;
+    find_pack("remaster.pak", path, sizeof path);
     remaster_init(path[0] ? path : NULL);
 }
 
@@ -1998,7 +2023,7 @@ static void build_menu(void) {
     g[2] = (ui_item){ "Window size", UI_CHOICE, GFX_CHANGED, &window_size_idx, window_sizes, 6, 0, 0, 0, NULL, "", NULL };
     g[3] = (ui_item){ "Scaling", UI_CHOICE, GFX_CHANGED, &cfg.scaling, scalings, 3, 0, 0, 0, NULL, "", NULL };
     g[4] = (ui_item){ "Aspect ratio", UI_CHOICE, GFX_CHANGED, &cfg.aspect, aspects, 4, 0, 0, 0, NULL, "", NULL };
-    g[5] = (ui_item){ "Textures", UI_CHOICE, GFX_CHANGED, &cfg.textures, texture_names, 2, 0, 0, 0, NULL, "", NULL };
+    g[5] = (ui_item){ "Textures", UI_CHOICE, GFX_CHANGED, &cfg.textures, texture_names, sfc_pack_found ? 3 : 2, 0, 0, 0, NULL, "", NULL };
     g[6] = (ui_item){ "Filter", UI_CHOICE, GFX_CHANGED, &cfg.filter, filters, 3, 0, 0, 0, NULL, "", NULL };
     g[7] = (ui_item){ "Shader", UI_CHOICE, GFX_CHANGED, &cfg.shader, shader_names, 5, 0, 0, 0, NULL, "", NULL };
     g[8] = (ui_item){ "Shader strength", UI_CHOICE, GFX_CHANGED, &cfg.shader_strength, strength_names, 3, 0, 0, 0, NULL, "", NULL };

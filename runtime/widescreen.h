@@ -24,6 +24,26 @@ int widescreen_render(uint8_t *out, uint8_t *emph, int x, int y, int w, int h);
 /* The same, with every pixel's source for the remastered textures (remaster.h); needs ppu_hd_capture. */
 int widescreen_render_hd(uint8_t *out, uint8_t *emph, uint32_t *hbg, uint32_t *hspr, int x, int y, int w, int h);
 
+/* The same again, with each background pixel's place for the 16-bit textures (sfc.h): HD_CELL
+   and a name table cell where the PPU drew it, HD_CELL_BAND and one of the canvas's own map
+   squares where the map did. */
+int widescreen_render_cells(uint8_t *out, uint8_t *emph, uint32_t *hbg, uint32_t *hspr, uint16_t *hcell, int x, int y, int w, int h);
+/* Square n of the last canvas's map (as HD_CELL_BAND numbers them): its four tiles and its palette.
+   Returns 0 when there is none. */
+int widescreen_square(int n, uint8_t tile[4], uint8_t *pal);
+/* The people the last canvas drew beside the PPU's picture, each as a whole: where their 16x16
+   pixels start, counted from the PPU picture's first pixel, and the tile and sprite attributes of
+   each quarter (top left, top right, bottom left, bottom right). Returns how many. */
+typedef struct { int x, y; uint8_t tile[4], attr[4]; } ws_person_t;
+int widescreen_people_list(const ws_person_t **list);
+/* The map square one row below the square that holds pixel (sx, line) of the PPU's picture (the
+   bands' pixels have sx < 0 or >= 256, line < 0 or >= 240): its number as widescreen_square takes
+   it when the canvas draws that square from the map, -2 when it is one the PPU shows (look in the
+   name tables), -1 when there is none. For art that stands taller than its square. */
+int widescreen_below(int sx, int line);
+/* Does the canvas take the PPU picture's first eight pixels from the map (the game blanks them)? */
+int widescreen_strip(void);
+
 /* The width of the canvas that makes a picture of target_aspect from src_h lines of pixels that
    are pixel_aspect wide: an even number, at most WS_W. */
 int widescreen_visible_width(int src_h, double pixel_aspect, double target_aspect);
@@ -41,6 +61,10 @@ extern long widescreen_still_edge_bad; /* checks with the screen at rest and a d
 extern long widescreen_better;        /* checks in which a neighbouring camera square fits the screen clearly better */
 extern long widescreen_jumps;         /* frames in which the decoded map jumped while the PPU's scroll did not */
 extern int widescreen_bad_box[4];     /* of that check: the first and last column, the first and last row that differ */
+/* For tools: the whole map the player is on, asked of the game's map code square by square: out
+   takes 256 x 256 squares of five bytes (the four tiles, the palette), *px and *py the player's
+   square. Returns 0 when the routine did not come back. */
+int widescreen_map_dump(uint8_t *out, int *px, int *py);
 /* and how many people the last picture has in its bands */
 int widescreen_people(void);
 /* and how many times the game's map routine has been run on the side so far */

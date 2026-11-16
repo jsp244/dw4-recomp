@@ -119,6 +119,10 @@ typedef struct {
        the frame's earlier ones, up to four; every pixel's source names its own (HD_PALSET) */
     uint8_t  hd_palettes[4][32];
     uint8_t  hd_palette_count, hd_palette_cur;
+    /* and for the 16-bit textures (sfc.c), which draw whole map squares: the name table cell of each
+       pixel's background tile (HD_CELL: the low 12 bits of its address; 0 where there is no tile) */
+    uint16_t hd_cell[256 * 240];
+    uint16_t hd_cell_latch, hd_cell_a, hd_cell_b;
 } ppu_t;
 
 /* A pixel's source, for the enhanced graphics: the 16-byte tile (its slot in the CHR RAM; with
@@ -136,6 +140,11 @@ typedef struct {
 #define HD_PRESENT     (1u << 27)
 #define HD_PALSET(i)   (((i) >> 28) & 3)   /* the palette snapshot it was drawn with (ppu.hd_palettes) */
 #define HD_TILE_NONE   0x3FFF
+/* A background pixel's place for the 16-bit textures: a name table cell (bits 0-4 its column, 5-9
+   its row, 10-11 the name table), or a square of the widescreen canvas's map around the picture
+   (bits 0-9 its number, see widescreen_square; 10-11 which quarter of it). */
+#define HD_CELL        0x8000u
+#define HD_CELL_BAND   0x4000u
 #define HD_PACK(tile, row, col, pal, value) \
     (HD_PRESENT | ((uint32_t)(tile) & 0x3FFF) | ((uint32_t)(row) << 14) | ((uint32_t)(col) << 17) | \
      ((uint32_t)(pal) << 20) | ((uint32_t)(value) << 22))

@@ -73,6 +73,8 @@ static unsigned long asked_total;         /* calls of the game's routine (statis
 static uint8_t people[WS_H][WS_W];
 static uint32_t people_src[WS_H][WS_W];
 static int people_drawn;
+static ws_person_t people_list[OBJECTS];  /* and each of them as a whole, for the 16-bit textures */
+static int people_listed;
 
 static inline int player_x(void) { return (ram[0x41] & 0x80) ? ram[0x44] : ram[0x42]; }
 static inline int player_y(void) { return (ram[0x41] & 0x80) ? ram[0x45] : ram[0x43]; }
@@ -205,6 +207,7 @@ static void draw_people(int strip) {
     const uint8_t *w = cart.wram;                         /* $6000 on */
     int cam_px = (ram[0xEC] + cam_dx) * 16 + fine_x, cam_py = (ram[0xED] + cam_dy) * 16 + fine_y;
     people_drawn = 0;
+    people_listed = 0;
     int last = 0, cleared = 0;
     while (last + 1 < OBJECTS && w[0x1020 + last + 1] != 0xFF) last++;
     for (int i = last; i >= 1; i--) {                     /* the first in the table end up on top */
@@ -220,6 +223,9 @@ static void draw_people(int strip) {
         if (!cleared) { memset(people, 0xFF, sizeof people); cleared = 1; }
         for (int q = 0; q < 4; q++)
             person_tile(sx + WS_BAND + (q & 1) * 8, sy + WS_VBAND + (q >> 1) * 8, def[q * 2], def[q * 2 + 1], strip);
+        ws_person_t *who = &people_list[people_listed++];
+        who->x = sx; who->y = sy;
+        for (int q = 0; q < 4; q++) { who->tile[q] = def[q * 2]; who->attr[q] = def[q * 2 + 1]; }
         people_drawn++;
     }
 }
@@ -256,6 +262,7 @@ static void decode(void) {
     stamped = 1; stamp_frame = ppu.frame; stamp_cycles = cpu.cycles;
     decoded = 0;
     people_drawn = 0;
+    people_listed = 0;
     if ((cart.mapper != 1 && cart.mapper != 4) || cart.prg_size != 0x80000) return;
     uint16_t t = ppu.frame_t;
     scroll_x = ((t >> 10) & 1) * 256 + (t & 31) * 8 + ppu.frame_x;
@@ -349,14 +356,57 @@ int widescreen_check(int *cells) {
     return failed ? -1 : bad;
 }
 
+int widescreen_map_dump(uint8_t *out, int *px, int *py) {
+    int ok = 1;
+    *px = player_x(); *py = player_y();
+    for (int my = 0; my < 256 && ok; my++)
+        for (int mx = 0; mx < 256 && ok; mx++) {
+            square_t s;
+            if (!ask(mx, my, *px, *py, &s)) { ok = 0; break; }
+            memcpy(out + (my * 256 + mx) * 5, s.tile, 4);
+            out[(my * 256 + mx) * 5 + 4] = s.pal;
+        }
+    if (in_sandbox) { nes_sandbox_end(); in_sandbox = 0; }
+    return ok;
+}
+
 int widescreen_people(void) { decode(); return decoded ? people_drawn : 0; }
+
+int widescreen_people_list(const ws_person_t **list) {
+    decode();
+    *list = people_list;
+    return decoded ? people_listed : 0;
+}
+
+int widescreen_square(int n, uint8_t tile[4], uint8_t *pal) {
+    if (!decoded || n < 0 || n >= ROWS * COLS) return 0;
+    const square_t *s = &squares[n / COLS][n % COLS];
+    if (!s->ok) return 0;
+    memcpy(tile, s->tile, 4);
+    *pal = s->pal;
+    return 1;
+}
+
+int widescreen_strip(void) { decode(); return decoded && !(ppu.mask & 0x02); }
+
+int widescreen_below(int sx, int line) {
+    decode();
+    if (!decoded) return -1;
+    int c = (sx + fine_x) >> 4, r = ((line + fine_y) >> 4) + 1;       /* the camera grid's square one row down */
+    if (sx + fine_x < 0) c = -((-(sx + fine_x) + 15) >> 4);
+    if (line + fine_y < 0) r = -((-(line + fine_y) + 15) >> 4) + 1;
+    if (c < COL0 || c >= COL0 + COLS || r < ROW0 || r >= ROW0 + ROWS) return -1;
+    if (c >= 2 && c <= 15 && r >= 1 && r <= 14) return -2;            /* the PPU's own: in its name tables */
+    return (r - ROW0) * COLS + (c - COL0);
+}
 unsigned long widescreen_calls(void) { return asked_total; }
 
 /* the map's pixel at canvas column cx (0 = the left band's first), line y: its palette index, its
    2-bit value and its source for the remaster */
-static inline uint8_t map_pixel(int cx, int y, uint8_t gray, uint32_t palset, uint32_t *src, int *value_out) {
+static inline uint8_t map_pixel(int cx, int y, uint8_t gray, uint32_t palset, uint32_t *src, int *value_out, uint16_t *cell) {
     int wx = cx - WS_BAND + fine_x - COL0 * 16, wy = y - WS_VBAND + fine_y - ROW0 * 16;      /* pixels from the grid's corner */
     const square_t *s = &squares[wy >> 4][wx >> 4];
+    if (cell) *cell = (uint16_t)(HD_CELL_BAND | ((((wy >> 3) & 1) * 2 + ((wx >> 3) & 1)) << 10) | ((wy >> 4) * COLS + (wx >> 4)));
     unsigned tile = s->tile[((wy >> 3) & 1) * 2 + ((wx >> 3) & 1)];
     unsigned addr = ((ppu.frame_ctrl & 0x10) ? 0x1000u : 0u) + tile * 16 + (wy & 7);
     const uint8_t *p = mapper.chr_ptr[(addr >> 10) & 7] + (addr & 0x3FF);
@@ -370,11 +420,17 @@ static inline uint8_t map_pixel(int cx, int y, uint8_t gray, uint32_t palset, ui
 }
 
 int widescreen_render_hd(uint8_t *out, uint8_t *emph, uint32_t *hbg, uint32_t *hspr, int x, int y, int w, int h) {
+    return widescreen_render_cells(out, emph, hbg, hspr, NULL, x, y, w, h);
+}
+
+int widescreen_render_cells(uint8_t *out, uint8_t *emph, uint32_t *hbg, uint32_t *hspr, uint16_t *hcell, int x, int y, int w, int h) {
     decode();
     for (int j = 0; j < h; j++) {
         int cy = y + j, line = cy - WS_VBAND;                 /* the canvas line, and the PPU's (beyond the picture above and below) */
         uint8_t *o = out + (size_t)j * w;
         uint32_t *ob = hbg ? hbg + (size_t)j * w : NULL, *os = hspr ? hspr + (size_t)j * w : NULL;
+        uint16_t *oc = hcell ? hcell + (size_t)j * w : NULL;
+        if (oc) memset(oc, 0, (size_t)w * sizeof *oc);
         if (cy < 0 || cy >= WS_H) {
             memset(o, 0x0F, (size_t)w);
             if (ob) memset(ob, 0, (size_t)w * sizeof *ob);
@@ -397,9 +453,10 @@ int widescreen_render_hd(uint8_t *out, uint8_t *emph, uint32_t *hbg, uint32_t *h
             else if (in_frame && sx >= 0 && sx < 256 && (!map_line || inner(sx, line, strip))) {
                 v = ppu.fb[line * 256 + sx];
                 if (hbg) { b = ppu.hd_bg[line * 256 + sx]; s = ppu.hd_spr[line * 256 + sx]; }
+                if (oc) oc[i] = ppu.hd_cell[line * 256 + sx];
             } else if (map_line) {
                 int value;
-                v = map_pixel(cx, cy, gray, palset, hbg ? &b : NULL, &value);
+                v = map_pixel(cx, cy, gray, palset, hbg ? &b : NULL, &value, oc ? &oc[i] : NULL);
                 if (people_line && people[cy][cx] != 0xFF) {
                     s = people_src[cy][cx] | (palset << 28);
                     if (!value || !(s & HD_BEHIND)) v = people[cy][cx] & gray;

@@ -8,6 +8,7 @@
 #include "palette.h"
 #include "remaster.h"
 #include "widescreen.h"
+#include "sfc.h"
 #include "patch.h"
 #include "title.h"
 #include <stdio.h>
@@ -185,6 +186,20 @@ static long widescreen_middle_diff(void) {
     return bad;
 }
 
+/* the frame with the 16-bit textures as a PNG: the PPU's picture, or the whole widescreen canvas */
+static void write_sfc(const char *path, int wide) {
+    static uint8_t idx[WS_W * WS_H], emph[WS_H], rgb[WS_W * WS_H * 3];
+    static uint32_t hbg[WS_W * WS_H], hspr[WS_W * WS_H], argb[WS_W * WS_H];
+    static uint16_t hcell[WS_W * WS_H];
+    int x = wide ? 0 : WS_BAND, y = wide ? 0 : WS_VBAND, w = wide ? WS_W : 256, h = wide ? WS_H : 240;
+    widescreen_render_cells(idx, emph, hbg, hspr, hcell, x, y, w, h);
+    sfc_frame(argb, w, idx, hbg, hspr, hcell, w, emph, w, h, x - WS_BAND, y - WS_VBAND);
+    for (int i = 0; i < w * h; i++) {
+        rgb[i * 3] = (uint8_t)(argb[i] >> 16); rgb[i * 3 + 1] = (uint8_t)(argb[i] >> 8); rgb[i * 3 + 2] = (uint8_t)argb[i];
+    }
+    png_write_rgb(path, w, h, rgb);
+}
+
 /* the frame with the remastered graphics as a PNG (rgb: a 256x240x3 scratch buffer) */
 static void write_remastered(const char *path, uint8_t *rgb) {
     static uint32_t argb[256 * 240];
@@ -246,6 +261,14 @@ static void usage(void) {
         "  --title-quest       the Dragon Quest IV logo in place of the Dragon Warrior IV plaque (runtime/title.h)\n"
         "  --ppu-dump FILE     write the PPU's memory after the last frame (name tables, palette, CHR RAM,\n"
         "                      sprites, picture: tools/title reads it)\n"
+        "  --sfc FILE          write the last frame with the 16-bit textures (also every N frames); needs\n"
+        "  --sfc-pack F        the pack tools/sfc builds from the Super Famicom games\n"
+        "  --sfc-wide FILE     the same for the whole widescreen canvas\n"
+        "  --sfc-check         every frame: draw the canvas with the 16-bit textures and count what the pack does\n"
+        "                      not know; prints the totals and the keys of the squares and figures it lacks\n"
+        "  --map-dump FILE     write the whole map the player is on after the last frame, as the game's own map\n"
+        "                      code gives it (256 x 256 squares: four tiles and a palette), with the palette, the\n"
+        "                      CHR RAM and the game's memory (tools/sfc reads it)\n"
         "  --input FILE        input script: lines of 'frame BTN+BTN'\n"
         "  --fuzz SEED         random controller input (the same for the same seed), from --fuzz-start N (default 0)\n"
         "  --png FILE          write the last frame as PNG\n"
@@ -269,12 +292,20 @@ static void usage(void) {
         "  --frame-hash FILE   write a per-frame state hash (for cosimulation diffs)\n"
         "  --sav FILE          load/save battery RAM from FILE\n"
         "  --ram-dump FILE     write RAM + PRG RAM at the end (with --ram-dump-every N: FILE.NNNNN.bin every N frames)\n"
+        "  --poke F:ADDR:VAL   before frame F (or every frame of F-G) put the byte VAL at ADDR in the game's memory\n"
+        "                      (hex; RAM or battery RAM): tools use it to have the game load a map without\n"
+        "                      playing to it. May be given up to 32 times\n"
         "  --quiet             no per-run summary\n");
 }
 
 int main(int argc, char **argv) {
     const char *rom = NULL, *png = NULL, *wav = NULL, *trace = NULL, *cov = NULL, *hash = NULL, *sav = NULL, *input = NULL, *debug_log = NULL, *ram_dump = NULL;
-    const char *state_save = NULL, *state_load = NULL, *remaster = NULL, *remaster_pack = NULL, *hd_dump = NULL, *ppu_dump = NULL;
+    const char *state_save = NULL, *state_load = NULL, *remaster = NULL, *remaster_pack = NULL, *hd_dump = NULL, *ppu_dump = NULL, *map_dump = NULL;
+    const char *sfc_png = NULL, *sfc_wide = NULL, *sfc_pack = NULL;
+    int sfc_check = 0;
+    long sfc_frames = 0, sfc_map_frames = 0, sfc_sq[2] = { 0, 0 }, sfc_fig[2] = { 0, 0 };
+    static struct { uint64_t key; long n; int first, scene; } sfc_miss[2][512];
+    int sfc_n_miss[2] = { 0, 0 };
     int fuzz_start = 0, ws_check = 0, n_ips = 0, ips_toggle = 0, ips_on = 1;
     long ips_switches = 0, ips_waits = 0, title_frames = 0;
     int title_quest = 0;
@@ -282,6 +313,8 @@ int main(int argc, char **argv) {
     const char *ips[16];
     const char *wide = NULL;
     int frames = 600, png_every = 0, ram_dump_every = 0, nestest = 0, blargg = 0, recomp = 0, quiet = 0, trace_start = 0;
+    static struct { int first, last, addr, value; } pokes[32];
+    int n_pokes = 0;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--rom") && i + 1 < argc) rom = argv[++i];
         else if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atoi(argv[++i]);
@@ -299,6 +332,11 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--remaster-pack") && i + 1 < argc) remaster_pack = argv[++i];
         else if (!strcmp(argv[i], "--hd-dump") && i + 1 < argc) hd_dump = argv[++i];
         else if (!strcmp(argv[i], "--ppu-dump") && i + 1 < argc) ppu_dump = argv[++i];
+        else if (!strcmp(argv[i], "--map-dump") && i + 1 < argc) map_dump = argv[++i];
+        else if (!strcmp(argv[i], "--sfc") && i + 1 < argc) sfc_png = argv[++i];
+        else if (!strcmp(argv[i], "--sfc-wide") && i + 1 < argc) sfc_wide = argv[++i];
+        else if (!strcmp(argv[i], "--sfc-pack") && i + 1 < argc) sfc_pack = argv[++i];
+        else if (!strcmp(argv[i], "--sfc-check")) sfc_check = 1;
         else if (!strcmp(argv[i], "--title-quest")) title_quest = 1;
         else if (!strcmp(argv[i], "--wav") && i + 1 < argc) wav = argv[++i];
         else if (!strcmp(argv[i], "--apu-log")) { apu_log_on = 1; apu_write_hook = apu_log_hook; }
@@ -319,6 +357,17 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--debug-log") && i + 1 < argc) debug_log = argv[++i];
         else if (!strcmp(argv[i], "--ram-dump") && i + 1 < argc) ram_dump = argv[++i];
         else if (!strcmp(argv[i], "--ram-dump-every") && i + 1 < argc) ram_dump_every = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--poke") && i + 1 < argc && n_pokes < 32) {
+            int a = 0, b = 0, addr = 0, value = 0;
+            const char *s = argv[++i];
+            if (sscanf(s, "%d-%d:%x:%x", &a, &b, &addr, &value) != 4) {
+                if (sscanf(s, "%d:%x:%x", &a, &addr, &value) != 3) { usage(); return 2; }
+                b = a;
+            }
+            if (!(addr < 0x800 || (addr >= 0x6000 && addr < 0x8000))) { fprintf(stderr, "--poke: $%04X is not RAM\n", addr); return 2; }
+            pokes[n_pokes].first = a; pokes[n_pokes].last = b; pokes[n_pokes].addr = addr; pokes[n_pokes].value = value & 0xFF;
+            n_pokes++;
+        }
         else { usage(); return 2; }
     }
     if (!rom) { usage(); return 2; }
@@ -354,6 +403,11 @@ int main(int argc, char **argv) {
     if (remaster) {
         ppu_hd_capture = true;
         remaster_init(remaster_pack);
+    }
+    if (sfc_png || sfc_wide || sfc_check) {
+        ppu_hd_capture = true;
+        if (!remaster) remaster_init(remaster_pack);
+        if (!sfc_init(sfc_pack)) { fprintf(stderr, "no 16-bit texture pack (--sfc-pack FILE)\n"); return 1; }
     }
 
     if (recomp) {
@@ -407,6 +461,11 @@ int main(int argc, char **argv) {
             ips_on = !ips_on;
             patch_prepare(ips, ips_on ? n_ips : 0, NULL, 0);
         }
+        for (int k = 0; k < n_pokes; k++)
+            if (frame >= pokes[k].first && frame <= pokes[k].last) {
+                if (pokes[k].addr < 0x800) ram[pokes[k].addr] = (uint8_t)pokes[k].value;
+                else cart.wram[pokes[k].addr - 0x6000] = (uint8_t)pokes[k].value;
+            }
         nes_run_frame();
         if (patch_pending()) {                 /* a whole frame without a safe moment */
             ips_waits++;
@@ -456,6 +515,38 @@ int main(int argc, char **argv) {
             snprintf(name, sizeof name, "%s.%05d.png", remaster, frame);
             write_remastered(name, rgb);
         }
+        if (sfc_check) {
+            static uint8_t idx[WS_W * WS_H], emph[WS_H];
+            static uint32_t hbg[WS_W * WS_H], hspr[WS_W * WS_H], argb[WS_W * WS_H];
+            static uint16_t hcell[WS_W * WS_H];
+            int on = widescreen_render_cells(idx, emph, hbg, hspr, hcell, 0, 0, WS_W, WS_H), k[4], n[2];
+            uint64_t keys[2][64];
+            sfc_frame(argb, WS_W, idx, hbg, hspr, hcell, WS_W, emph, WS_W, WS_H, -WS_BAND, -WS_VBAND);
+            sfc_stats(&k[0], &k[1], &k[2], &k[3]);
+            sfc_unknown(keys[0], keys[1], 64, n);
+            sfc_frames++;
+            if (on) {       /* (other screens, battles and menus, are not the map's) */
+                sfc_map_frames++;
+                sfc_sq[0] += k[0]; sfc_sq[1] += k[1]; sfc_fig[0] += k[2]; sfc_fig[1] += k[3];
+                for (int t = 0; t < 2; t++)
+                    for (int i = 0; i < n[t]; i++) {
+                        int j = 0;
+                        while (j < sfc_n_miss[t] && sfc_miss[t][j].key != keys[t][i]) j++;
+                        if (j == sfc_n_miss[t]) {
+                            if (j == 512) continue;
+                            sfc_miss[t][j].key = keys[t][i]; sfc_miss[t][j].n = 0; sfc_miss[t][j].first = frame;
+                            sfc_miss[t][j].scene = (ram[0x41] & 0x80) ? 0 : 1;
+                            sfc_n_miss[t]++;
+                        }
+                        sfc_miss[t][j].n++;
+                    }
+            }
+        }
+        if ((sfc_png || sfc_wide) && png_every && (frame % png_every) == 0) {
+            char name[1100];
+            if (sfc_png) { snprintf(name, sizeof name, "%s.%05d.png", sfc_png, frame); write_sfc(name, 0); }
+            if (sfc_wide) { snprintf(name, sizeof name, "%s.%05d.png", sfc_wide, frame); write_sfc(name, 1); }
+        }
         if (blargg && reset_hold > 0) { reset_hold--; continue; }
         if (blargg && cart.wram[1] == 0xDE && cart.wram[2] == 0xB0 && cart.wram[3] == 0x61) {
             uint8_t st = cart.wram[0];
@@ -476,6 +567,24 @@ int main(int argc, char **argv) {
 
     if (png) { fb_to_rgb(rgb); png_write_rgb(png, 256, 240, rgb); }
     if (remaster) write_remastered(remaster, rgb);
+    if (sfc_png) write_sfc(sfc_png, 0);
+    if (sfc_wide) write_sfc(sfc_wide, 1);
+    if (sfc_check) {
+        printf("sfc-check: %ld of %ld frames show the map; on them the pack had %ld squares and lacked %ld (windows' among them), had %ld figures and lacked %ld\n",
+               sfc_map_frames, sfc_frames, sfc_sq[0], sfc_sq[1], sfc_fig[0], sfc_fig[1]);
+        printf("sfc-check: %d different map squares and %d different figures are lacking\n", sfc_n_miss[0], sfc_n_miss[1]);
+        for (int t = 0; t < 2; t++)
+            for (int i = 0; i < sfc_n_miss[t]; i++)
+                printf("sfc-check: %s %016llX lacking in %ld frames, first in frame %d%s\n", t ? "figure" : "square",
+                       (unsigned long long)(sfc_miss[t][i].key ^ (!t && sfc_miss[t][i].scene ? 0x9E3779B97F4A7C15ULL : 0)),
+                       sfc_miss[t][i].n, sfc_miss[t][i].first, !t && sfc_miss[t][i].scene ? " (overworld)" : "");
+    }
+    if ((sfc_png || sfc_wide) && !quiet) {
+        int known, unknown, people, strangers;
+        sfc_stats(&known, &unknown, &people, &strangers);
+        printf("16-bit textures: the last picture has %d map squares from the pack and %d it does not know, %d figures and %d it does not know\n",
+               known, unknown, people, strangers);
+    }
     if (wide) { ws_wide_on += write_widescreen(wide, remaster != NULL); ws_wide++; }
     if (wide && !quiet) printf("widescreen: %ld of %ld pictures have the map in their bands\n", ws_wide_on, ws_wide);
     if (wide || ws_check) printf("widescreen: the map routine was run %lu times, %.1f a frame\n", widescreen_calls(), (double)widescreen_calls() / frames);
@@ -498,6 +607,25 @@ int main(int argc, char **argv) {
             fwrite(cart.chr_ram, 1, sizeof cart.chr_ram, f);
             fwrite(ppu.oam, 1, 256, f);
             fwrite(ppu.fb, 1, sizeof ppu.fb, f);
+            fclose(f);
+        }
+    }
+    if (map_dump) {  /* "DWMP" 1, ctrl, player x, y, the map's kind ($41), 4 bytes padding, palette[32], the squares
+                        (256 x 256 x 5), CHR RAM (8192), the low RAM (2048), the battery RAM (8192) and OAM (256) */
+        static uint8_t squares[256 * 256 * 5];
+        int px, py;
+        if (!widescreen_map_dump(squares, &px, &py)) fprintf(stderr, "map-dump: the map routine did not come back\n");
+        FILE *f = fopen(map_dump, "wb");
+        if (f) {
+            uint8_t head[8] = { ppu.frame_ctrl, (uint8_t)px, (uint8_t)py, ram[0x41], 0, 0, 0, 0 };
+            fwrite("DWMP\1\0\0\0", 1, 8, f);
+            fwrite(head, 1, 8, f);
+            fwrite(ppu.palette, 1, 32, f);
+            fwrite(squares, 1, sizeof squares, f);
+            fwrite(cart.chr_ram, 1, sizeof cart.chr_ram, f);
+            fwrite(ram, 1, sizeof ram, f);
+            fwrite(cart.wram, 1, sizeof cart.wram, f);
+            fwrite(ppu.oam, 1, 256, f);
             fclose(f);
         }
     }

@@ -29,7 +29,7 @@ BUILD   ?= build
 GEN     := generated
 
 RUNTIME_SRC := runtime/cpu.c runtime/mem.c runtime/cart.c runtime/mapper.c runtime/ppu.c \
-               runtime/apu.c runtime/sys.c runtime/png.c runtime/palette.c runtime/remaster.c runtime/widescreen.c runtime/patch.c runtime/title.c runtime/hacks.c
+               runtime/apu.c runtime/sys.c runtime/png.c runtime/palette.c runtime/remaster.c runtime/sfc.c runtime/widescreen.c runtime/patch.c runtime/title.c runtime/hacks.c
 RUNTIME_OBJ := $(patsubst runtime/%.c,$(BUILD)/%.o,$(RUNTIME_SRC))
 
 GEN_SRC := $(wildcard $(GEN)/*.c)
@@ -113,7 +113,7 @@ endif
 
 all: headless
 
-$(BUILD)/%.o: runtime/%.c runtime/nes.h runtime/remaster.h runtime/widescreen.h runtime/patch.h runtime/recomp_rt.h
+$(BUILD)/%.o: runtime/%.c runtime/nes.h runtime/remaster.h runtime/sfc.h runtime/widescreen.h runtime/patch.h runtime/recomp_rt.h
 	@mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -124,6 +124,15 @@ $(BUILD)/gen/%.o: $(GEN)/%.c runtime/nes.h runtime/recomp_rt.h
 	$(CC) $(CFLAGS) $(GEN_CFLAGS) $(RECOMP_DEFS) -Iruntime -c $< -o $@
 
 # ---- headless harness (interpreter only) ----
+# sfc-capture (tools/sfc): a Super Famicom game run without a window, for cutting the 16-bit textures' art
+# from the player's own cartridges. LakeSnes (third_party/lakesnes) is the emulation.
+LAKESNES_SRC := $(wildcard third_party/lakesnes/snes/*.c)
+sfc-capture: $(BUILD)/sfc-capture$(EXE)
+
+$(BUILD)/sfc-capture$(EXE): tools/sfc/capture.c $(LAKESNES_SRC)
+	@mkdir -p $(BUILD)
+	$(CC) -O2 -std=gnu11 -w -Ithird_party/lakesnes/snes tools/sfc/capture.c $(LAKESNES_SRC) -o $@ -lm
+
 headless: $(BUILD)/nes-headless$(EXE)
 
 $(BUILD)/nes-headless$(EXE): $(RUNTIME_OBJ) $(BUILD)/headless.o $(BUILD)/recomp_stub.o
@@ -170,7 +179,7 @@ $(BUILD)/rc/$(notdir $(basename $(1))).o: $(1)
 endef
 $(foreach src,$(RCHEEVOS_SRC),$(eval $(call RC_RULE,$(src))))
 
-$(BUILD)/fe_%.o: frontend/%.c runtime/nes.h runtime/remaster.h runtime/widescreen.h runtime/patch.h frontend/font.h frontend/ui.h frontend/filedialog.h frontend/audio_out.h frontend/input.h frontend/gpu_sync.h frontend/achievements.h frontend/rewind.h frontend/touchpad.h frontend/http.h frontend/update.h
+$(BUILD)/fe_%.o: frontend/%.c runtime/nes.h runtime/remaster.h runtime/sfc.h runtime/widescreen.h runtime/patch.h frontend/font.h frontend/ui.h frontend/filedialog.h frontend/audio_out.h frontend/input.h frontend/gpu_sync.h frontend/achievements.h frontend/rewind.h frontend/touchpad.h frontend/http.h frontend/update.h
 	@mkdir -p $(BUILD)
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) $(RCHEEVOS_CFLAGS) $(HTTP_CFLAGS) -Iruntime -c $< -o $@
 

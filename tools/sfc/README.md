@@ -1,0 +1,59 @@
+# The SNES Remaster's art
+
+Graphics > Textures > **SNES Remaster** draws the game's map squares and people with the art of the
+Super Famicom Dragon Quest games. None of that art is in this repository or in the packages: it is
+taken from your own cartridge dumps into a pack, `sfc.pak`, that the game loads from its folder.
+Without the pack the choice is not offered.
+
+You need the Japanese Super Famicom dumps of **Dragon Quest I & II** and **Dragon Quest III**, and
+your Dragon Warrior IV ROM in `rom/`.
+
+```
+make headless-recomp sfc-capture
+python tools/sfc/extract.py --dq12 "Dragon Quest I & II (Japan).sfc" --dq3 "Dragon Quest III - Soshite Densetsu e... (Japan).sfc"
+```
+
+That writes `sfc.pak` next to the Makefile; copy it beside the game. It takes twenty minutes or
+more: most of it is Dragon Quest III being played, without a window, from power-on through its
+opening to its first town and castle, and on through the cave on the cape nearby to the tower
+on the island, for their treasure chests, statues and stonework (about 213,000 frames in three
+scripts). `--keep-captures` on a later run skips that part
+and uses the captures already made.
+Add `--uncensor FILE.ips` if you play with the Graphical Uncensoring hack: it changes a few squares
+and people, which then get their art too.
+
+## How it works
+
+| step | tool | what it does |
+|---|---|---|
+| 1 | `capture.c` (`sfc-capture`) | runs a Super Famicom game without a window (LakeSnes, `third_party/lakesnes`), pressing the buttons a script names, and saves the machine's memory at the frames a list names (`scenes/*.keys`, `scenes/*.captures`). The cave's script also keeps its hero's hit points up, and later the game's count of steps to the next battle (`scenes/dq3_cave.holds`): he is alone at the start of the game, and the battles on the way are fought by pressing A or do not come |
+| 2 | `sfclib.py`, `sfcfig.py` | cut the captures into libraries of 16x16 map squares (Dragon Quest III's two layers kept apart as well, for things that stand on other ground or reach into the square above) and of people (16x16 in Dragon Quest I.II, 16x24 in III); Dragon Quest III's overworld squares are read straight from its ROM |
+| 3 | `nesmap.py` | lists the squares and people of Dragon Warrior IV's maps, from `nes-headless --map-dump` (the game's own map code, asked for every square) |
+| 4 | `pack.py` | builds the pack from the map files in `maps/`: which Super Famicom art takes the place of which NES square or person |
+
+The same ROMs and scripts give the same pack every time.
+
+## Which game supplies what
+
+A place keeps the character the NES game gave it: its materials and its colors come first, and the
+Super Famicom art is chosen to fit them. In chapter 1 that means Dragon Quest I's grey castle brick
+for every wall (the castle inside and out, the towns' buildings), and Dragon Quest III for the
+ground, the plants, the water, the furniture, the people and the overworld. The caves' rock is Dragon
+Quest III's boulder wall in each cave's own color, and the tower's walls its dressed stone. Where the right thing
+exists only in another place's colors, the map file tones it (`gray`, `dark`, `hue`): Dragon Quest
+III's round towers, gate and braziers stand in the brick's grey on Burland's castle front.
+
+## Adding a map
+
+1. Get the game to the map and dump it: `nes-headless --rom ... --input SCRIPT --frames N --map-dump x.map`,
+   then `nesmap.py squares` / `figures` for numbered sheets of what it holds. The game need not be played to
+   every map: it keeps the place it is to load at `$63` and that place's level at `$64`, and `--poke` puts
+   other numbers there while it changes maps (`extract.py` lists chapter 1's that way: `NES_WARPS`).
+2. `sfclib.py sheet` / `sfcfig.py sheet` show the Super Famicom libraries the same way.
+3. Add lines to a map file (see the head of `pack.py` for the forms) and build the pack.
+4. `nes-headless --sfc-check --sfc-pack sfc.pak` plays a script or random input and reports every
+   square and person the pack lacks; `--sfc FILE` / `--sfc-wide FILE` write pictures.
+5. `pack.py freeze FILE` rewrites sheet numbers as keys, which stay the same when the libraries
+   are built again.
+
+Everything these tools write (`generated/sfc`, `*.pak`) is ignored by git: it holds the games' art.

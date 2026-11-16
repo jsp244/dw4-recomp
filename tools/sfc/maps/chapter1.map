@@ -1,0 +1,326 @@
+# Chapter 1: Burland and Izmit, the places between them and the overworld around them.
+# Which Super Famicom square takes the place of which NES square (tools/sfc/pack.py reads this).
+# The place keeps its own character: the grey brick and the colors the NES game gave it come first, and the art
+# is chosen to fit them. Every wall (the castle inside and out, the towns' buildings) is Dragon Quest I's castle
+# brick; the ground, the plants, the water, the furniture, the people and the overworld are Dragon Quest III's,
+# toned where it has the right thing only in another place's colors (its tan castle's round towers, gate and
+# braziers stand in the brick's grey on the castle's front; its olive bushes are green here).
+# The first line for a square stays. A line with "here" is for the kind of map its NES square was listed in (the
+# game's number at $28: one NES square is a town's road, a castle's floor and a house's floor) and is looked up
+# before the lines for any kind.
+
+lib dq3t ../../../generated/sfc/dq3_town.sfclib
+lib dq3c ../../../generated/sfc/dq3_castle.sfclib
+lib dq3f ../../../generated/sfc/dq3_front.sfclib
+lib dq3h ../../../generated/sfc/dq3_house.sfclib
+lib dq3v ../../../generated/sfc/dq3_cave.sfclib
+lib dq3w ../../../generated/sfc/dq3_tower.sfclib
+figs dq3 ../../../generated/sfc/dq3.figs
+lib dq1 ../../../generated/sfc/dq1_castle.sfclib
+lib dq1ow ../../../generated/sfc/dq1_ow.sfclib
+lib dq3ow ../../../generated/sfc/dq3_ow.sfclib
+figs dq1 ../../../generated/sfc/dq1.figs
+nes castle ../../../generated/sfc/nes_castle.json
+nes town ../../../generated/sfc/nes_town.json
+nes ow ../../../generated/sfc/nes_overworld.json
+people people ../../../generated/sfc/nes_people.json
+# what the "Graphical Uncensoring" hack changes in these maps (the church's sign and its priest get their crosses back)
+nes uncensored ../../../generated/sfc/nes_uncensored.json
+people uncensored ../../../generated/sfc/nes_people_uncensored.json
+# Burland's castle, the upper floor (kind $09); rooms upstairs in Burland and Izmit ($03); Izmit ($0E)
+nes castle_up ../../../generated/sfc/nes_castle_up.json
+nes rooms ../../../generated/sfc/nes_rooms.json
+nes izmit ../../../generated/sfc/nes_izmit.json
+# the cave between Burland and Izmit ($1D); the old well ($2A); the tower ($2B, its top floors $26)
+nes tunnel ../../../generated/sfc/nes_tunnel.json
+nes well ../../../generated/sfc/nes_well.json
+nes tower ../../../generated/sfc/nes_tower.json
+nes tower_top ../../../generated/sfc/nes_tower_top.json
+people ch1 ../../../generated/sfc/nes_people_ch1.json
+
+# ==== the pairing in use ====
+# ---- the castle's inside (bound to the castle: its floor is the town's road square) ----
+sq castle:3E51A0A88427F85B dq3c:37817fc5 here # floor
+sq castle:900DF8803990C72C dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 here # wall: Dragon Quest I's castle brick, its rows without the drawn edges
+sq castle:76A84895692C38FC dq1:7fe8dc4d rows 4,1-15 here # wall, its foot: the brick's top, then its face in shadow
+sq castle:5D4D19838C9BBD1F dq3ow:3ac67643 here # water
+sq castle:B548BC577D2B5C03 dq3c:04676b47 here # flowers
+sq castle:4837C70D8A6B1AF4 dq3t:1b1c559a here hue 40-100>115 dark 8 # bush
+sq castle:4C42029459ACE647 dq3c:3e9bb0cf here # the patterned border
+sq castle:173A98CBC7910EFD dq3c:e911c8dc here # grass
+sq castle:9D475928B28B0EDA dq3c:80f7ec3d here # carpet
+sq castle:398ABC1806F71B4C dq3c:a2de7dcd here # stool
+sq castle:9DBBE19B3CF1FED7 dq1:a8f0d174 here # pillar, top
+sq castle:BD680820EF4BDDAD dq1:4cfee83d here # pillar, foot
+sq castle:38D894D557619B08 dq3c:601c59ec here # chest of drawers
+sq castle:B5B4419A63FD7B01 dq3c:37817fc5 over dq3v:ecf9c237.hi here # treasure chest: Dragon Quest III's, from the cave on its cape
+sq castle:D860E376B08B4F9D dq3t:f6d6f46d here # table
+sq castle:057F5DA64D40C2DD ~dq3t:316d8b20 here # bookshelf: in no capture yet either
+sq castle:998253DBED836007 dq3t:aa6b8d51 here # stairs
+sq castle:53B1A507205103D5 ~dq3h:6b0f9bc2 here # bed: no lying bed in Dragon Quest III (its beds stand upright on the map)
+sq castle:2BCE986FBA9CB02D ~dq3h:6b0f9bc2 here
+
+# ---- the town ----
+sq town:3E51A0A88427F85B dq3t:a1e452fd gray 60 # road
+sq town:4837C70D8A6B1AF4 dq3t:1b1c559a hue 40-100>115 dark 8 # bush
+sq town:173A98CBC7910EFD dq3t:e911c8dc # grass
+sq town:5D4D19838C9BBD1F dq3ow:3ac67643 # water
+sq town:E3CEA1E6E0C69E14 dq3t:662e9c69 hue 40-100>115 dark 8 # hedge
+sq town:900DF8803990C72C dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 # wall: Dragon Quest I's castle brick, its rows without the drawn edges
+sq town:76A84895692C38FC dq1:7fe8dc4d rows 4,1-15 # wall, its foot
+sq town:B548BC577D2B5C03 dq3t:14c72e3f # flowers
+sq town:A8EB8D7D34D5EF09 dq3t:759db578 # counter
+sq town:398ABC1806F71B4C dq3c:a2de7dcd # stool
+sq town:A3CE01D4E7A119A8 dq3c:289f35a2 # the church's sign
+sq uncensored:AD61DD4BDC0175ED dq3c:289f35a2 # the same with its cross
+sq town:1B02248CBF40CBF4 dq3t:f6d6f46d # round table
+sq town:998253DBED836007 dq3t:aa6b8d51 # stairs
+sq town:475539467B32795D dq3c:ef6e87f5 # door
+sq town:AA7D67E01603EB04 dq3t:71dfbc59 # well
+sq town:53B1A507205103D5 ~dq3h:6b0f9bc2 # bed
+sq town:2BCE986FBA9CB02D ~dq3h:6b0f9bc2
+sq town:64AF9E5FD8580060 ~dq3t:316d8b20 # the inn's sign
+# the castle's front
+sq town:CE75F5BE758E6D2C dq1:991fffb5 # the castle's front: Dragon Quest I's dark brick
+sq town:F82817CAE5BBDBAC dq1:991fffb5 over dq3f:ae8e2fed.hi gray 92 dark 18 # ledge
+sq town:2180AE34E3AAC095 dq1:991fffb5 over dq3f:2f0984d6.hi gray 92 dark 18 # window
+sq town:5BE337E4314AFC30 dq1:991fffb5 over dq3f:73dabe3a.hi top dq3f:079c602b.hi gray 92@32-60 dark 18@32-60 # brazier, its flame over the wall above (the stone toned, not the fire)
+sq town:7E06E6927E5822D3 dq1:991fffb5 over dq3f:c87aa6b3.hi gray 92 dark 18 # gate: the arch
+sq town:4934EA16FBEE1348 dq1:991fffb5 over dq3f:0bec9c53.hi gray 92 dark 18
+sq town:E5E7F78A15291006 dq3f:c137bdfe gray 92 dark 18 # gate: the opening
+sq town:1A5A66A1BF69111F dq3f:60f62397 gray 92 dark 18
+sq town:317E8C8E2CF7DEA0 dq3f:3699f474 gray 92 dark 18 # tower, left half
+sq town:51B6C2F63CCBA608 dq3f:c8d4e334 gray 92 dark 18 # tower, right half
+sq town:60ED14E64E57EE4A dq3t:a1e452fd basegray 60 over dq3f:2709e28b.hi gray 92 dark 18 # tower's foot, on the road
+sq town:490C9C0F0EB97094 dq3t:a1e452fd basegray 60 over dq3f:20766aa2.hi gray 92 dark 18
+
+# ---- the castle's squares in other kinds of place (a square the town has too keeps the town's line) ----
+sq castle:3E51A0A88427F85B dq3c:37817fc5 # floor
+sq castle:900DF8803990C72C dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 # wall: Dragon Quest I's castle brick, its rows without the drawn edges
+sq castle:76A84895692C38FC dq1:7fe8dc4d rows 4,1-15 # wall, its foot: the brick's top, then its face in shadow
+sq castle:5D4D19838C9BBD1F dq3ow:3ac67643 # water
+sq castle:B548BC577D2B5C03 dq3c:04676b47 # flowers
+sq castle:4837C70D8A6B1AF4 dq3t:1b1c559a hue 40-100>115 dark 8 # bush
+sq castle:4C42029459ACE647 dq3c:3e9bb0cf # the patterned border
+sq castle:173A98CBC7910EFD dq3c:e911c8dc # grass
+sq castle:9D475928B28B0EDA dq3c:80f7ec3d # carpet
+sq castle:398ABC1806F71B4C dq3c:a2de7dcd # stool
+sq castle:9DBBE19B3CF1FED7 dq1:a8f0d174 # pillar, top
+sq castle:BD680820EF4BDDAD dq1:4cfee83d # pillar, foot
+sq castle:38D894D557619B08 dq3c:601c59ec # chest of drawers
+sq castle:B5B4419A63FD7B01 dq3v:ecf9c237 # treasure chest (the old well's and the tower's too)
+sq castle:D860E376B08B4F9D dq3t:f6d6f46d # table
+sq castle:057F5DA64D40C2DD ~dq3t:316d8b20 # bookshelf
+sq castle:998253DBED836007 dq3t:aa6b8d51 # stairs
+sq castle:53B1A507205103D5 ~dq3h:6b0f9bc2 # bed: no lying bed in Dragon Quest III (its beds stand upright on the map)
+sq castle:2BCE986FBA9CB02D ~dq3h:6b0f9bc2
+sq castle:8A58BF897366E20F dq3ow:3ac67643 dark -25 # the bright water of the bath
+sq castle:01F33E98E81225CB dq3c:ef6e87f5 # the castle's door
+
+# ---- Burland's castle, the upper floor ----
+sq castle_up:3E51A0A88427F85B dq3c:37817fc5 here # floor
+sq castle_up:68E0482A58AFF73F dq3h:4ec6fd25 dark -38 # the sky around an upper floor
+sq castle_up:A79AABFAEDE3778E dq3c:d3085b3e hue 320-360>215 # the drapes behind the throne (Dragon Quest III's banner, red there)
+sq castle_up:A1B91B40C89DE342 dq3c:a2de7dcd here # chair
+sq castle_up:852F4F70CFD534ED dq3h:3290b79c # stairs down
+sq castle_up:81BD48EBEA5317FE dq3c:80f7ec3d over dq3c:995211d2.hi top dq3c:d3467418.hi # the throne, its back over the square above
+sq castle_up:2E19A154F0671C08 dq3c:80f7ec3d over dq3c:083a5635.hi top dq3c:7a31dbbd.hi
+sq castle_up:E378F9025349C9CE dq3c:80f7ec3d over dq3c:c99b810a.hi top dq3c:2bbe94b4.hi
+
+# ---- rooms upstairs ----
+sq rooms:3E51A0A88427F85B dq3h:37817fc5 here # floor
+sq rooms:68E0482A58AFF73F dq3h:4ec6fd25 dark -38 # sky
+sq rooms:D758A26F452DEB92 dq3h:bc978def # wooden floor
+sq rooms:852F4F70CFD534ED dq3h:3290b79c # stairs down
+sq rooms:8942B7B622419875 dq3h:bc978def over dq3h:ab80d1e5.hi # potted plant
+sq rooms:13EB98CA8C09F255 ~dq3h:6b0f9bc2 # bed on the wooden floor
+sq rooms:6E60B6567857152A ~dq3h:6b0f9bc2
+sq rooms:AFEB5C4FFB4B7A7A dq3t:052ee6be # stove
+
+# ---- Izmit ----
+sq izmit:3E51A0A88427F85B dq3h:37817fc5 here # floor (indoors only: the village's paths are brick)
+sq izmit:1DC7F722BDA070B6 dq3t:84d1bc46 # the brick path: the paved square of Dragon Quest III's town
+sq izmit:9A333EA78F23AD92 dq3ow:cf1c8dc8 # sand
+sq izmit:AFEB5C4FFB4B7A7A dq3t:052ee6be # stove
+sq izmit:852F4F70CFD534ED dq3h:3290b79c # stairs down
+sq izmit:BA92834D2D683A41 dq3t:ed5dca6e # the weapon shop's sign
+sq izmit:C62C6B90BF374063 dq3t:118c1376 # the armor shop's sign
+sq izmit:68AA4BD95796A0CF ~dq3ow:3ac67643 # the fountain (the game redraws its tiles: seven squares in turn): its own shape in the water's colors, until it is redrawn
+sq izmit:24B88B65E5E1BB35 ~dq3ow:3ac67643
+sq izmit:0DA81E00D83486A4 ~dq3ow:3ac67643
+sq izmit:D9ED152C85B1AE26 ~dq3ow:3ac67643
+sq izmit:44CAB9585DDFE575 ~dq3ow:3ac67643
+sq izmit:57429DE3F22B9D0D ~dq3ow:3ac67643
+sq izmit:6700C18F91A273BB ~dq3ow:3ac67643
+sq izmit:D17AEAAB8B406A78 ~dq3t:316d8b20 # the item shop's sign: its own shape in the inn sign's colors
+
+# ---- the cave between Burland and Izmit ----
+# Dragon Quest III's rock is drawn as rims around a cave, piece by piece; the NES lays one square of boulders
+# side by side. So the rock here is the boulder wall of Dragon Quest III's town in the cave's own color, and
+# the floor its bare earth.
+sq tunnel:5598EB42178C6BC4 dq3h:df287325 # the dark beyond the rock
+sq tunnel:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 # the earth floor (the square's rows without the grass at its foot)
+sq tunnel:7F87F1342CE25E55 dq3t:52d321d7 tint 28:60 # rock
+sq tunnel:72F56AA04FBB3EF1 dq3t:b1728a08 tint 28:60
+sq tunnel:65DB5B29F249CA11 dq3t:30f34ccc tint 28:60 dark 35 # rock, its face in shadow
+sq tunnel:8DA17CE1D99E0580 dq3t:b5d04690 rows 0-11,2-5 over dq3t:aa6b8d51.hi # stairs
+
+# ---- the old well ----
+sq well:B5B4419A63FD7B01 dq3v:ecf9c237 here # treasure chest, in its own colors (the NES draws it grey down here)
+sq well:5598EC42178C6D77 dq3h:df287325 # the dark beyond the rock
+sq well:5598EB42178C6BC4 dq3h:df287325
+sq well:DE5FEBC9DD4DE780 dq3t:b5d04690 rows 0-11,2-5 # the earth floor
+sq well:926561065DFE02B9 dq3t:b5d04690 rows 0-11,2-5 dark 30 # the lower floor
+sq well:B22BC1DF76ACB499 dq3t:52d321d7 tint 6:55 # rock (red here)
+sq well:C533299995965681 dq3t:b1728a08 tint 6:55
+sq well:FB0415D8C014C734 dq3t:253e4373 tint 6:55
+sq well:B32BF70844898785 dq3t:33fcadf1 tint 6:55
+sq well:65DB5A29F249C85E dq3t:30f34ccc tint 6:55 dark 35 # rock, its face in shadow
+sq well:7234E6D673C0D6A2 dq3t:30f34ccc tint 6:55 dark 35
+sq well:8DA17EE1D99E08E6 dq3t:b5d04690 rows 0-11,2-5 over dq3t:aa6b8d51.hi # stairs
+sq well:1E7E2CFAE583698D dq3t:b5d04690 rows 0-11,2-5 dark 30 over dq3t:aa6b8d51.hi
+sq well:AAC870F7C9244146 dq3t:52d321d7 # the grey rock (four squares)
+sq well:E83FB18F1895AF9C dq3t:b1728a08
+sq well:856EF4CE4049914F dq3t:253e4373
+sq well:64DD405C42BA0EF9 dq3t:33fcadf1
+# no like in the captures yet: their own shapes in the rock's colors, until they are redrawn
+sq well:5C0518B594A2AD28 ~dq3t:3a4b6712 tint 6:55 # where rock and floor meet aslant
+sq well:528094A89415C203 ~dq3t:3a4b6712 tint 6:55
+sq well:E0CB534EFA533945 ~dq3t:3a4b6712 tint 6:55
+sq well:91E1243A4DE1C1DB ~dq3t:3a4b6712 tint 6:55
+sq well:D9E22079089887D8 ~dq3t:3a4b6712 tint 6:55
+sq well:E4F461D4B192AD4F ~dq3t:3a4b6712 tint 6:55
+sq well:D6881F920250D794 ~dq3t:3a4b6712 tint 6:55
+sq well:7B43CCF32D095748 ~dq3t:3a4b6712 # a standing stone
+sq well:5C2B7048007DC1A9 ~dq3t:3a4b6712
+sq well:79D9895CBA053D17 ~dq3t:3a4b6712 tint 20:60 # the great boulder (four squares)
+sq well:629246FD9164CF3A ~dq3t:3a4b6712 tint 20:60
+sq well:7A122B2798C1413A ~dq3t:3a4b6712 tint 20:60
+sq well:3CC5D38494224BFD ~dq3t:3a4b6712 tint 20:60
+sq well:1D55372BF296EA47 ~dq3t:84d1bc46 gray 95 # the patterned stone
+
+# ---- the tower ----
+# The stone is that of Dragon Quest III's tower on the island by its first town: its stone brick for the walls,
+# in the grey the NES tower has (the same brick darker where the NES draws the wall in shadow; its slate wall
+# tops were tried first and read as a grid of lines), its patterned floor, its dragon statue, its pillars, its
+# stairs. The floor keeps the castle's: the NES tower's floor is the same red-violet.
+sq tower:A78FBF5775107294 dq3c:37817fc5 here # floor
+sq tower:A3C180DA80659B9A dq3w:efc08409 gray 85 dark -12 here # wall
+sq tower:B7FCB9B3A141B21B dq3w:efc08409 gray 85 dark -12 here # wall
+sq tower:091E8E5062C966E1 dq3w:efc08409 gray 85 dark -12 here # wall
+sq tower:339CBCC27B767E70 dq3w:efc08409 gray 85 dark -12 here # wall
+sq tower:368D966FC25065A8 dq3w:efc08409 gray 85 dark 42 here # wall in shadow
+sq tower:E71129D7C5F8DF6E dq3w:efc08409 gray 85 dark 42 here # wall in shadow
+sq tower_top:A78FBF5775107294 dq3c:37817fc5 here # floor
+sq tower_top:A3C180DA80659B9A dq3w:efc08409 gray 85 dark -12 here # wall
+sq tower_top:B7FCB9B3A141B21B dq3w:efc08409 gray 85 dark -12 here # wall
+sq tower_top:339CBCC27B767E70 dq3w:efc08409 gray 85 dark -12 here # wall
+sq tower_top:091E8E5062C966E1 dq3w:efc08409 gray 85 dark -12 here # wall
+sq tower_top:368D966FC25065A8 dq3w:efc08409 gray 85 dark 42 here # wall in shadow
+sq tower_top:E71129D7C5F8DF6E dq3w:efc08409 gray 85 dark 42 here # wall in shadow
+sq tower:68E0482A58AFF73F dq3h:4ec6fd25 dark -38 # sky
+sq tower:1D55392BF296EDAD dq3w:8ad4ae05 here # the patterned floor
+sq tower:7E2F4A59F22BB523 dq3c:37817fc5 over dq3w:90858dec.hi here # pillar, its head
+sq tower:F9AD0746B6B0C49D dq3c:37817fc5 over dq3w:e7991b51.hi here # pillar, its foot
+sq tower:34D2276C155C7BC6 dq3c:37817fc5 over dq3w:1154c159.hi here # the dragon statue (four squares)
+sq tower:7AD44C792EF880A8 dq3c:37817fc5 over dq3w:bae87c5b.hi here
+sq tower:265911B09BB8ABB8 dq3c:37817fc5 over dq3w:c8e82613.hi here
+sq tower:833746FE98E9C03B dq3c:37817fc5 over dq3w:6e105f36.hi here
+sq tower:852F4F70CFD534ED dq3w:3290b79c here # stairs down
+sq tower:5880E2775F1BA537 dq3c:37817fc5 over dq3t:aa6b8d51.hi here # stairs up
+# no like in the captures yet: their own shapes in the tower's stone or in gold, until they are redrawn
+sq tower:D676378C144255D4 ~dq3w:efc08409 gray 85 here # the lattice around the rooms
+sq tower:C364605549465CB1 ~dq3w:1154c159 here # the standing statue and its foot
+sq tower:9204B5175273538A ~dq3w:1154c159 here
+sq tower:8559E49EC246BE37 ~dq3t:316d8b20 here # the great door (four squares)
+sq tower:F41F4BCCAA06367B ~dq3t:316d8b20 here
+sq tower:8AC25C106C5B6103 ~dq3t:316d8b20 here
+sq tower:2E1292A413D1779C ~dq3t:316d8b20 here
+sq tower_top:5598EC42178C6D77 dq3h:df287325 # dark
+sq tower_top:1D55392BF296EDAD dq3w:8ad4ae05 here # the patterned floor
+sq tower_top:7E2F4A59F22BB523 dq3c:37817fc5 over dq3w:90858dec.hi here # pillar, its head
+sq tower_top:F9AD0746B6B0C49D dq3c:37817fc5 over dq3w:e7991b51.hi here # pillar, its foot
+sq tower_top:5880E2775F1BA537 dq3c:37817fc5 over dq3t:aa6b8d51.hi here # stairs
+sq tower_top:83A11E06C4CD49A2 ~dq3w:1154c159 here # the standing statue and its foot
+sq tower_top:3683C823C83560F5 ~dq3w:1154c159 here
+sq tower_top:C3645E554946594B ~dq3t:316d8b20 here # the golden statues
+sq tower_top:9204B31752735024 ~dq3t:316d8b20 here
+sq tower_top:2CCEC96ED59DA77E ~dq3w:f6ff8c79 here # the dais and its steps
+sq tower_top:4EB376EE257C32E8 ~dq3w:f6ff8c79 here
+sq tower_top:AA1A5C155D029866 ~dq3w:f6ff8c79 here
+sq tower_top:D0559285EA0460D8 ~dq3w:f6ff8c79 here
+sq tower_top:A3F28D9883C525F8 ~dq3w:f6ff8c79 here
+sq tower_top:4254192D06F8614F ~dq3w:f6ff8c79 here
+sq tower_top:F2917DB457DE50ED ~dq3w:f6ff8c79 here
+sq tower_top:3FD70181A7D5397A ~dq3w:f6ff8c79 here
+sq tower_top:24EF027F1B381B7E ~dq3w:f6ff8c79 here
+sq tower_top:F8BC4C0A7509ECD7 ~dq3w:f6ff8c79 here
+
+# ---- the overworld ----
+sq ow:A76524FB474BC0C0 dq3ow:3ac67643 # sea
+sq ow:0988127FFEB9B990 dq3ow:5777881f # forest
+sq ow:6877C3C4BF831557 dq3ow:d6ee9d16 # mountain
+sq ow:173A98CBC7910EFD dq3ow:d2cd8ecf # grass
+sq ow:210198C253102322 dq3ow:5f05b3d4 # hill
+sq ow:9A333EA78F23AD92 dq3ow:cf1c8dc8 # desert
+sq ow:E3CEA1E6E0C69E14 dq3ow:11c3ff51 # thick forest
+sq ow:31F1DD0CF95E2892 dq3ow:ce33983b # rocks in the sea
+sq ow:996B70995D31A396 dq3ow:b744b1aa # village
+sq ow:FEF2BA5FD322F041 dq3ow:1e36323d # shrine
+sq ow:87623E73B6620703 dq3ow:eb880a88 # castle: the keep
+sq ow:859EAF07CAD73984 dq3ow:2b95e97e # castle: the tower
+sq ow:B5C69C27A95DA8A5 dq3ow:9ede4639 # castle: the gate
+sq ow:7E1938C0416CC701 dq3ow:4763897c # castle: the tower's foot
+sq ow:4C53A4F894A8D3C5 dq3ow:b4c8d365 # marsh
+sq ow:D56E2E8F5A7C8455 dq3ow:0d775db4 # cave
+sq ow:450414CE962B744A dq3ow:56134ef5 # bridge
+sq ow:549152FFC277B47A dq3ow:edc37bd2 # tower
+sq ow:E0202BFA43B4D927 dq3ow:d27faebd # the wide tower
+sq ow:1D4CECE50956220E ~dq3ow:0d775db4 # the wide cave mouth (two squares): its own shape in the colors of Dragon Quest III's cave
+sq ow:18421AA69A36CC4F ~dq3ow:0d775db4
+# the coast: the sides the land is on
+sq ow:73768ECBD1BFD2CB dq3ow:b98eee0f # south
+sq ow:71D6D5AD323344BD dq3ow:027c7b31 # north
+sq ow:2DE3BB1F4FE8549F dq3ow:c3df9508 # west
+sq ow:90BECB8C2CD2289A dq3ow:d29d1bfd # east
+sq ow:B291D5901954E829 dq3ow:354185e6 # east and south
+sq ow:BB0B445141A29212 dq3ow:734132f6 # north and west
+sq ow:AB3820EC0143503A dq3ow:8efbdac0 # north and east
+sq ow:D421C0C5AA186F22 dq3ow:38e4b17b # south and west
+sq ow:2C0D0AFCA1ED8092 dq3ow:ef04f14a # north and south
+sq ow:3621C42083D6142D dq3ow:6f5cfc1b # east and west
+sq ow:262EDB0FA5EF4609 dq3ow:588350cc # north, east and south
+sq ow:B9FF7F0BE4F47BB8 dq3ow:38e4b17b+dq3ow:354185e6+dq3ow:38e4b17b+dq3ow:354185e6 # east, south and west: the two corners' halves
+sq ow:36A736D69191F657 dq3ow:734132f6+dq3ow:734132f6+dq3ow:38e4b17b+dq3ow:38e4b17b # north, south and west
+sq ow:69F18CA77D3D6961 dq3ow:734132f6+dq3ow:8efbdac0+dq3ow:734132f6+dq3ow:8efbdac0 # north, east and west
+sq ow:BA49B9EB07364D4C dq3ow:734132f6+dq3ow:8efbdac0+dq3ow:38e4b17b+dq3ow:354185e6 # a pond
+
+# ---- the people (Dragon Quest III's, 16x24) ----
+# pictures of a set: up, up, right, right, down, down, left, left ("m" = mirrored)
+# The player's soldier has no picture of his own in these games: the castle soldier, his blue turned to rose.
+cast people:castle:0 dq3:g9 poses 4,5,2,3,6,7,0,1 hue 200-260>315 # Ragnar
+cast people:town:0 dq3:g9 poses 4,5,2,3,6,7,0,1 hue 200-260>315
+cast people:overworld:0 dq3:g9 poses 4,5,2,3,6,7,0,1 hue 200-260>315
+# the castle
+cast people:castle:4 dq3:g6 poses 0,1,m2,m2,0,1,2,2 # woman
+cast people:castle:5 dq3:g9 poses 4,5,2,3,6,7,0,1 hue 200-260>355 # the king's guard: the soldier in red
+cast people:castle:6 dq3:g3 poses 4,5,6,7,0,1,2,3 # old man
+cast people:castle:7 dq3:g1 poses 2,2,m0,m1,2,2,0,1 # the man in green: the merchant (the town's shopkeeper is the same figure)
+cast people:castle:8 dq3:g0 poses 0,1,0,1,0,1,0,1 # young man
+cast people:castle:9 dq3:g9 poses 4,5,2,3,6,7,0,1 # soldier
+cast people:castle:10 dq3:g3 poses 4,5,6,7,0,1,2,3 hue 200-260>280 # the old wizard: the old man in violet
+cast people:castle:11 dq3:g20 poses 0,1,0,1,0,1,0,1 # the king
+# the town
+cast people:town:4 dq3:g3 poses 4,5,6,7,0,1,2,3 hue 200-260>170 # the priest: the old man in green
+cast uncensored:town_uncensored:4 dq3:g3 poses 4,5,6,7,0,1,2,3 hue 200-260>170
+cast people:town:5 dq3:g3 poses 4,5,6,7,0,1,2,3 # old man
+cast people:town:6 dq3:g1 poses 2,2,m0,m1,2,2,0,1 # shopkeeper
+cast people:town:7 dq3:g6 poses 0,1,m2,m2,0,1,2,2 # woman
+cast people:town:8 dq3:g9 poses 4,5,2,3,6,7,0,1 # soldier
+cast people:town:9 dq3:g18 poses 0,1,0,1,0,1,0,1 # boy
+cast people:town:10 dq3:g3 poses 4,5,6,7,0,1,2,3 hue 200-260>280 # the old wizard
+cast people:town:11 dq3:g19 poses 0,1,0,1,0,1,0,1 # the man in the turban
+# the other maps of chapter 1 (most of their people are Burland's, with the same pictures)
+cast ch1:burland2:7 dq3:g6 poses 0,1,m2,m2,0,1,2,2 hue 0-8>285 # the lady upstairs: the woman, her red dress violet
+cast ch1:burland3:4 dq3:g18 poses 0,1,0,1,0,1,0,1 # child
+cast ch1:izmit0:9 dq3:g15 poses 0,1,m3,m4,3,4,3,4 # the sister: the woman in blue stands in for her
