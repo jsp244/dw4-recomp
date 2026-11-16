@@ -1079,7 +1079,7 @@ static void save_screenshot(void) {
 
 static void update_title(void) {
     char title[200];
-    snprintf(title, sizeof title, "Dragon Warrior IV (native port)%s", rom_ok && !sys.use_recomp ? " [interpreter]" : "");
+    snprintf(title, sizeof title, "Dragon Quest IV (native port)%s", rom_ok && !sys.use_recomp ? " [interpreter]" : "");
     SDL_SetWindowTitle(window, title);
 }
 
@@ -2075,7 +2075,7 @@ static void build_menu(void) {
     tabs[TAB_UPDATES] = (ui_tab){ "Updates", upd_items, 3, 1 };
     memset(&menu, 0, sizeof menu);
     menu.tabs = tabs; menu.ntabs = N_TABS;
-    menu.title = "DRAGON WARRIOR IV";
+    menu.title = "DRAGON QUEST IV";
     menu.subtitle = "native port";
     if (touchpad_enabled()) menu.hint = "Tap to choose.   In game: MENU at the top opens this menu";
     else if (handheld) menu.hint = "D-pad, A to choose, B back.   In game: LT + RT opens this menu";
@@ -2207,7 +2207,7 @@ static void draw_menu(void) {
 /* ------------------------------------------------------------------ */
 static void fatal_box(const char *msg) {
     fprintf(stderr, "%s\n", msg);
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Dragon Warrior IV", msg, NULL);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Dragon Quest IV", msg, NULL);
 }
 
 /* --chord-test: the Start + Select rollback, through the same functions as the game loop */
@@ -2657,7 +2657,7 @@ int main(int argc, char **argv) {
     /* ---- window ---- */
     int win_w, win_h;
     window_size_for_config(&win_w, &win_h);
-    window = SDL_CreateWindow("Dragon Warrior IV (native port)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    window = SDL_CreateWindow("Dragon Quest IV (native port)", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               win_w, win_h, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI |
                               (cfg.display_mode == 1 ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
     if (!window) { fatal_box(SDL_GetError()); SDL_Quit(); return 1; }

@@ -1,5 +1,5 @@
-Dragon Warrior IV - native PC port
-==================================
+Dragon Quest IV (Dragon Warrior IV) - native PC port
+====================================================
 
 This program contains no game data. To play you need your own Dragon Warrior IV
 (USA) cartridge dump as a .nes file, made from a cartridge you own. The program

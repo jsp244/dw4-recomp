@@ -1,5 +1,5 @@
-Dragon Warrior IV native port - Android (handhelds and phones)
-==============================================================
+Dragon Quest IV (Dragon Warrior IV) native port - Android (handhelds and phones)
+================================================================================
 
 There are two APKs. Pick the one for your device:
 
@@ -8,7 +8,7 @@ There are two APKs. Pick the one for your device:
   drawn over the picture.
 - dw4-android-phone.apk: for phones and tablets. A translucent on-screen controller
   (d-pad, B, A, Select, Start, MENU) is drawn over the picture. It installs as its own app,
-  "Dragon Warrior IV Touch", so it can sit next to the handheld one; their saves are
+  "Dragon Quest IV Touch", so it can sit next to the handheld one; their saves are
   separate.
 
 Both run on Android 7 or newer (arm64; they also carry an x86_64 build for emulators and

@@ -1,5 +1,5 @@
-Dragon Warrior IV native port - Steam Deck edition
-==================================================
+Dragon Quest IV (Dragon Warrior IV) native port - Steam Deck edition
+====================================================================
 
 This build starts in fullscreen at the Deck's own 1280x800 with the 16:10 widescreen
 view (more of the map, and the people on it, at both sides), and the menus are driven

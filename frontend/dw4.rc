@@ -14,8 +14,8 @@ BEGIN
     BEGIN
         BLOCK "040904B0"
         BEGIN
-            VALUE "FileDescription", "Dragon Warrior IV native port"
-            VALUE "ProductName",     "Dragon Warrior IV native port"
+            VALUE "FileDescription", "Dragon Quest IV (Dragon Warrior IV) native port"
+            VALUE "ProductName",     "Dragon Quest IV (Dragon Warrior IV) native port"
             VALUE "FileVersion",     "0.1.0"
             VALUE "ProductVersion",  "0.1.0"
             VALUE "OriginalFilename", "dw4.exe"
