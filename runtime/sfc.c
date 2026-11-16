@@ -33,7 +33,9 @@
  * night through its palette. Each square and figure therefore carries the NES colors it was
  * made for; while the game's palette holds other colors for it, its pixels are scaled, channel
  * by channel, by how the two sets of colors compare: black when the game has faded to black,
- * dark and blue at night.
+ * dark and blue at night. A square's three colors count by how much of the NES square is drawn
+ * in each (the pack says): a wall that is all grey stays as it is in a place whose third color,
+ * which the wall does not use, is another one.
  *
  * Tall art. A Super Famicom tree is taller than a map square: its crown lies over the square
  * above, and over anyone standing there. A square of the pack may therefore have a top, sixteen
@@ -42,9 +44,11 @@
  *
  * Pack: "DW4S", version 2 (1: no tops), the number of squares, the number of figures, then
  *   per square: key (64 bits), the four NES colors it was made for, the number of animation
- *     frames, the game frames each one lasts, a flags byte (bit 0: a top follows the frames), a
- *     byte of padding, then the frames, each 256 pixels (ARGB, row by row), then the top (256
- *     pixels, alpha 0 where it is clear);
+ *     frames, the game frames each one lasts, a flags byte (bit 0: a top follows the frames; its
+ *     high four bits: how much of the NES square is in its third color, 0 to 15), a byte with the
+ *     same for the first color (low four bits) and the second (high; all three 0 in an older
+ *     pack: they count alike), then the frames, each 256 pixels (ARGB, row by row), then the top
+ *     (256 pixels, alpha 0 where it is clear);
  *   per figure: key, the twelve NES colors of its four quarters' palettes, where its picture
  *     starts from the NES figure's top left corner (two signed bytes), its width and height,
  *     then the pixels (ARGB; alpha 0 where it is clear).
@@ -65,7 +69,7 @@
 #define FNV_OFFSET 0xcbf29ce484222325ULL
 #define FNV_PRIME 0x100000001b3ULL
 
-typedef struct { uint64_t key; uint8_t ref[4], frames, ticks; const uint32_t *px, *top; } square_t;
+typedef struct { uint64_t key; uint8_t ref[4], frames, ticks, w[3]; const uint32_t *px, *top; } square_t;
 static int any_tops;
 typedef struct { uint64_t key; uint8_t ref[12]; int8_t dx, dy; uint8_t w, h; const uint32_t *px; int next; } figure_t;
 
@@ -182,6 +186,8 @@ int sfc_init(const char *pack_path) {
         square_t *s = &squares[n_squares];
         s->key = rd64(d + o);
         memcpy(s->ref, d + o + 8, 4);
+        s->w[0] = d[o + 15] & 15; s->w[1] = d[o + 15] >> 4; s->w[2] = d[o + 14] >> 4;
+        if (!(s->w[0] | s->w[1] | s->w[2])) s->w[0] = s->w[1] = s->w[2] = 1;
         s->frames = d[o + 12] ? d[o + 12] : 1; s->ticks = d[o + 13] ? d[o + 13] : 1;
         int has_top = d[o + 14] & 1;
         o += 16;
@@ -310,16 +316,18 @@ static void resolve_band(place_t *p, int n) {
 }
 
 /* how the colors the game has now compare with the ones the art was made for: a factor per
-   channel, 256 = the same. Returns 1 when they are the same colors. */
-static int tint_of(const uint8_t *ref, const uint8_t *now, int n, int emph, uint8_t gray, uint16_t tint[3]) {
+   channel, 256 = the same. w: how much each color counts (NULL: all alike; a color that counts
+   for nothing may be any). Returns 1 when they are the same colors. */
+static int tint_of(const uint8_t *ref, const uint8_t *now, const uint8_t *w, int n, int emph, uint8_t gray, uint16_t tint[3]) {
     int same = emph == 0;
-    for (int i = 0; i < n && same; i++) same = (now[i] & gray & 0x3F) == (ref[i] & 0x3F);
+    for (int i = 0; i < n && same; i++) same = (w && !w[i]) || (now[i] & gray & 0x3F) == (ref[i] & 0x3F);
     if (same) { tint[0] = tint[1] = tint[2] = 256; return 1; }
     for (int c = 0; c < 3; c++) {
         unsigned a = 0, b = 0;
         for (int i = 0; i < n; i++) {
-            a += (nes_rgb[emph * 64 + (now[i] & gray & 0x3F)] >> (16 - 8 * c)) & 255;
-            b += (nes_rgb[ref[i] & 0x3F] >> (16 - 8 * c)) & 255;
+            unsigned k = w ? w[i] : 1;
+            a += k * ((nes_rgb[emph * 64 + (now[i] & gray & 0x3F)] >> (16 - 8 * c)) & 255);
+            b += k * ((nes_rgb[ref[i] & 0x3F] >> (16 - 8 * c)) & 255);
         }
         unsigned t = (a * 256 + b / 2 + 128) / (b + 1);
         tint[c] = (uint16_t)(t > 640 ? 640 : t);
@@ -404,7 +412,7 @@ static const figure_t *figure_of(const uint8_t tile[4], const uint8_t attr[4], c
         if (!g->next) break;
     }
     if (!best) best = first;
-    tint_of(best->ref, now, 12, emph, gray, tint);
+    tint_of(best->ref, now, NULL, 12, emph, gray, tint);
     return best;
 }
 
@@ -505,7 +513,7 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
             if (!p->tinted) {
                 const uint8_t *pal = ppu.hd_palettes[HD_PALSET(b)];
                 uint8_t now[3] = { pal[p->pal * 4 + 1], pal[p->pal * 4 + 2], pal[p->pal * 4 + 3] };
-                p->tinted = (uint8_t)(1 + !tint_of(sq->ref + 1, now, 3, em, gray, p->tint));
+                p->tinted = (uint8_t)(1 + !tint_of(sq->ref + 1, now, sq->w, 3, em, gray, p->tint));
             }
             unsigned f = sq->frames > 1 ? (unsigned)((ppu.frame / sq->ticks) % sq->frames) : 0;
             uint32_t px = sq->px[f * 256 + ((q >> 1) * 8 + HD_ROW(b)) * 16 + (q & 1) * 8 + HD_COL(b)];
@@ -564,7 +572,7 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
                 const uint8_t *pal = ppu.hd_palettes[HD_PALSET(b)];
                 uint8_t now[3] = { pal[p->pal * 4 + 1], pal[p->pal * 4 + 2], pal[p->pal * 4 + 3] };
                 uint8_t e = emph[y];
-                p->tinted = (uint8_t)(1 + !tint_of(p->sq->ref + 1, now, 3, (e >> 5) & 7, (e & 1) ? 0x30 : 0x3F, p->tint));
+                p->tinted = (uint8_t)(1 + !tint_of(p->sq->ref + 1, now, p->sq->w, 3, (e >> 5) & 7, (e & 1) ? 0x30 : 0x3F, p->tint));
             }
             o[x] = p->tinted == 1 ? (0xFF000000u | v) : tinted(v, p->tint);
         }

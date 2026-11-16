@@ -76,6 +76,8 @@ usage:
     pack.py build OUT.pak MAPFILE...
     pack.py freeze MAPFILE
 The pack holds the games' art: it stays with your own copies (*.pak is git-ignored).
+Each square's record also says how much of the NES square is drawn in each of its three colors: the game tints a
+square when its palette holds other colors than the art was made for, and counts each color by that.
 """
 import json
 import os
@@ -222,6 +224,19 @@ def toned(p, extra):
         r, g, b = colorsys.hls_to_rgb(h, min(1.0, l * (1 - dark)), s * (1 - gray))
         p = 0xFF000000 | (int(r * 255 + 0.5) << 16) | (int(g * 255 + 0.5) << 8) | int(b * 255 + 0.5)
     return p
+
+
+def weights(nes):
+    """how much of the NES square is drawn in its first, second and third color (0 to 15 each; 1 at least for a
+    color it has at all): the game's tint counts them so (runtime/sfc.c)"""
+    n = [0, 0, 0, 0]
+    for hexed in nes["tiles"]:
+        t = bytes.fromhex(hexed)
+        for y in range(8):
+            for x in range(8):
+                n[((t[y] >> (7 - x)) & 1) | (((t[y + 8] >> (7 - x)) & 1) << 1)] += 1
+    w = [0 if not c else max(1, (c * 15 + 128) // 256) for c in n[1:]]
+    return w if any(w) else [1, 1, 1]
 
 
 def row_list(text, where):
@@ -394,7 +409,7 @@ def build(out, paths):
         top = m.art(extra["top"], m.libs, where)["px"] if "top" in extra else None
         if top and tone:
             top = tuple(None if p is None else toned(solid(p), extra) for p in top)
-        return (bytes(e["colors"]), frames, ticks, top)
+        return (bytes(e["colors"]), frames, ticks, top, weights(e))
 
     on_ground = []
     for where, nes, refs, ticks, extra in m.sq:
@@ -479,8 +494,9 @@ def build(out, paths):
             figures.append((key, ref_colors, (16 - a["w"]) // 2, 16 - a["h"], a["w"], a["h"], px))
     with open(out, "wb") as f:
         f.write(b"DW4S" + struct.pack("<III", 2, len(squares), len(figures)))
-        for key, (ref, frames, ticks, top) in sorted(squares.items()):
-            f.write(struct.pack("<Q4sBBBB", key, ref, len(frames), max(1, min(255, ticks)), 1 if top else 0, 0))
+        for key, (ref, frames, ticks, top, w) in sorted(squares.items()):
+            f.write(struct.pack("<Q4sBBBB", key, ref, len(frames), max(1, min(255, ticks)), (1 if top else 0) | (w[2] << 4),
+                                w[0] | (w[1] << 4)))
             for px in frames:
                 f.write(struct.pack("<256I", *[solid(p) for p in px]))
             if top:
