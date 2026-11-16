@@ -8,8 +8,8 @@ A map file says which Super Famicom art takes the place of which NES map square 
     figs NAME FILE.figs           a library of Super Famicom figures (sfcfig.py)
     people NAME FILE.json         an inventory of NES figures (nesmap.py figures)
 
-    sq NES SFC [SFC...] [ticks N] [over SFC] [top SFC] [here] [hue A-B>C] [tint H:S] [gray P] [dark P] [basegray P]
-                        [rows LIST] [cols LIST]
+    sq NES SFC [SFC...] [ticks N] [over SFC] [top SFC] [here] [hue A-B>C] [tint H:S] [gray P] [dark P]
+                        [basegray P] [basetint H:S] [basedark P] [basehue A-B>C] [rows LIST] [cols LIST] [clear V]
                                           the NES square NES drawn as the square SFC; several = animation
                                           frames, each lasting N game frames (default 16). "over X" lays X's
                                           upper layer on every frame (a tree's trunk on other ground); "top X"
@@ -23,7 +23,8 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           light; "P@A-B": only of the colors between hues A and B, so a
                                           brazier's stone and not its fire).
                                           With "over", these tone what is laid over and the top, and
-                                          "basegray P" the ground under it: for art that is the
+                                          "basegray P" (and "basetint", "basedark", "basehue" likewise)
+                                          the ground under it: for art that is the
                                           right thing in another place's colors (a tan castle's stone for a grey
                                           one's); "tint 25:55" gives every color hue 25 at 55 percent of
                                           full color, its light kept (grey boulders as a cave's brown rock).
@@ -31,7 +32,15 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           SFC in that order (sixteen, counted from 0 at the top): for a wall the
                                           Super Famicom game has only with an edge drawn on it, where the NES
                                           game lays one square side by side and the bricks have to run on;
-                                          "cols LIST" does the same with its columns (counted from the left)
+                                          "cols LIST" does the same with its columns (counted from the left).
+                                          "over ~X clear 3" lays the NES square's own shapes over the ground
+                                          in X's colors, all but those of its fourth color (0-3 as the NES
+                                          palette orders them; "clear 0,3" for two; "0e": only where that
+                                          color reaches the square's edge, so the black around a thing and
+                                          not the black drawn inside it; "dots": and the specks of one or
+                                          two pixels left over, the grain the NES draws on sand): a
+                                          signpost the Super Famicom games have no picture of then stands
+                                          on their real grass
     fig NES SFC [dx DX] [dy DY]           the NES figure NES drawn as the figure SFC, its picture starting
                                           DX, DY pixels from the NES figure's corner (default: same feet)
     cast INV:DUMP:KIND LIB:gSET poses U,U,R,R,D,D,L,L [hue A-B>C]
@@ -49,6 +58,9 @@ and its lightest color for the NES square's four, dark to light): for the few th
 have no picture of, so that they sit in the scene's colors until they are redrawn.
 A+B+C+D for SFC makes a square of four squares' quarters (the top left of A, the top right of B, the bottom
 left of C, the bottom right of D), for the corners the Super Famicom games have no single square for.
+=NES for SFC is the art the NES square NES is itself drawn with: the ground a thing stands on. Such a line is made
+once for any kind of map and once for every kind in which that ground has art of its own ("here"), so a stool laid
+over "=town:FLOOR" stands on the road in a town and on the castle's floor in a castle.
 SFC.lo is a library square's ground layer alone, SFC.hi its upper layer alone (clear elsewhere); a library cut
 from a game with one layer has neither.
 NES is NAME:#NUMBER as the inventory's sheet numbers it or NAME:KEY (the square's 16-digit key); SFC is NAME:#NUMBER
@@ -114,23 +126,60 @@ NES_LUMA = [102, 43, 36, 43, 52, 49, 42, 40, 44, 46, 49, 48, 48, 0, 0, 0,
             254, 220, 214, 216, 219, 217, 215, 216, 221, 224, 226, 225, 224, 184, 0, 0]
 
 
-def recolored(nes, sfc_px):
-    """the NES square's pattern in four of the Super Famicom square's colors"""
+def recolored(nes, sfc_px, clear=()):
+    """the NES square's pattern in four of the Super Famicom square's colors; the NES colors (0-3) named in `clear`
+    stay clear ("0e": only its pixels joined to the square's edge), and the others take the square's colors between
+    them"""
+    dots = "dots" in clear
+    clear = [c for c in clear if c != "dots"]
+    whole = tuple(int(c) for c in clear if not str(c).endswith("e"))
+    edge = tuple(int(str(c)[:-1]) for c in clear if str(c).endswith("e"))
     def luma(c):
         if c > 0xFFFF:
             return ((c >> 16) & 255) * 3 + ((c >> 8) & 255) * 6 + (c & 255)
         return (c & 31) * 3 + ((c >> 5) & 31) * 6 + ((c >> 10) & 31)
-    shades = sorted(set(sfc_px), key=luma)
-    pick = [shades[0], shades[(len(shades) - 1) // 3], shades[(len(shades) - 1) * 2 // 3], shades[-1]]
-    order = sorted(range(4), key=lambda v: NES_LUMA[nes["colors"][v] & 0x3F])      # the NES values, dark to light
-    to = {v: pick[rank] for rank, v in enumerate(order)}
-    px = [0] * 256
+    shades = sorted(set(p for p in sfc_px if p is not None), key=luma)
+    order = sorted((v for v in range(4) if v not in whole), key=lambda v: NES_LUMA[nes["colors"][v] & 0x3F])  # dark to light
+    last = max(1, len(order) - 1)
+    to = {v: shades[(len(shades) - 1) * rank // last] for rank, v in enumerate(order)}
+    for v in whole:
+        to[v] = None
+    val = [0] * 256
     for q, hexed in enumerate(nes["tiles"]):
         t = bytes.fromhex(hexed)
         for y in range(8):
             for x in range(8):
-                v = ((t[y] >> (7 - x)) & 1) | (((t[y + 8] >> (7 - x)) & 1) << 1)
-                px[((q >> 1) * 8 + y) * 16 + (q & 1) * 8 + x] = to[v]
+                val[((q >> 1) * 8 + y) * 16 + (q & 1) * 8 + x] = ((t[y] >> (7 - x)) & 1) | (((t[y + 8] >> (7 - x)) & 1) << 1)
+    px = [to[v] for v in val]
+    for c in edge:                      # from the edge inwards, through the pixels of that color
+        todo = [i for i in range(256) if val[i] == c and (i < 16 or i >= 240 or i % 16 in (0, 15))]
+        while todo:
+            i = todo.pop()
+            if px[i] is None:
+                continue
+            px[i] = None
+            for j in (i - 16, i + 16, i - 1 if i % 16 else -1, i + 1 if i % 16 != 15 else -1):
+                if 0 <= j < 256 and val[j] == c and px[j] is not None:
+                    todo.append(j)
+    if dots:                            # what is left in pieces of one or two pixels (touching, corners too) goes as well
+        seen = set()
+        for i in range(256):
+            if px[i] is None or i in seen:
+                continue
+            piece, todo = [], [i]
+            seen.add(i)
+            while todo:
+                k = todo.pop()
+                piece.append(k)
+                for dy in (-16, 0, 16):
+                    for dx in (-1, 0, 1):
+                        j = k + dy + dx
+                        if 0 <= j < 256 and abs(j % 16 - k % 16) <= 1 and px[j] is not None and j not in seen:
+                            seen.add(j)
+                            todo.append(j)
+            if len(piece) <= 2:
+                for k in piece:
+                    px[k] = None
     return tuple(px)
 
 
@@ -206,7 +255,8 @@ class Maps:
                         while i < len(t):
                             if t[i] == "ticks":
                                 ticks = int(t[i + 1]); i += 2
-                            elif t[i] in ("over", "top", "hue", "tint", "gray", "dark", "basegray", "rows", "cols"):
+                            elif t[i] in ("over", "top", "hue", "tint", "gray", "dark", "basegray", "basetint", "basedark",
+                                          "basehue", "rows", "cols", "clear"):
                                 extra[t[i]] = t[i + 1]; i += 2
                             elif t[i] == "here":
                                 extra["here"] = True; i += 1
@@ -292,16 +342,9 @@ def build(out, paths):
     m = Maps(paths)
     squares, figures = {}, []
     skipped = 0
-    for where, nes, refs, ticks, extra in m.sq:
-        e = m.nes_entry(nes, m.nes, where)
-        if e is None:
-            skipped += 1
-            continue
-        frames = [recolored(e, m.art(r[1:], m.libs, where)["px"]) if r.startswith("~") else m.art(r, m.libs, where)["px"] for r in refs]
-        key = int(e["key"], 16) ^ (OVERWORLD_MIX if e.get("scene") else 0) ^ (int(e["map"], 16) if extra.get("here") else 0)
-        if key in squares:
-            print("%s: square %s given again (the first stays)" % (where, nes))
-            continue
+
+    def made(e, frames, ticks, extra, where):
+        """the pack's square for the NES square e: the frames after the line's rows, tones, "over" and "top" """
         tone = "hue" in extra or "tint" in extra or "gray" in extra or "dark" in extra
         if "rows" in extra:
             order = row_list(extra["rows"], where)
@@ -309,10 +352,15 @@ def build(out, paths):
         if "cols" in extra:
             order = row_list(extra["cols"], where)
             frames = [tuple(px[y * 16 + c] for y in range(16) for c in order) for px in frames]
-        if "basegray" in extra:
-            frames = [tuple(toned(solid(p), {"gray": extra["basegray"]}) for p in px) for px in frames]
+        base = {k[4:]: v for k, v in extra.items() if k.startswith("base")}
+        if base:
+            frames = [tuple(toned(solid(p), base) for p in px) for px in frames]
         if "over" in extra:             # (with something laid over, the tones are its own: the ground keeps its colors)
-            over = m.art(extra["over"], m.libs, where)["px"]
+            if extra["over"].startswith("~"):
+                over = recolored(e, m.art(extra["over"][1:], m.libs, where)["px"],
+                                 tuple(v for v in extra.get("clear", "").split(",") if v))
+            else:
+                over = m.art(extra["over"], m.libs, where)["px"]
             if tone:
                 over = tuple(None if o is None else toned(solid(o), extra) for o in over)
             frames = [tuple(o if o is not None else p for p, o in zip(px, over)) for px in frames]
@@ -321,7 +369,40 @@ def build(out, paths):
         top = m.art(extra["top"], m.libs, where)["px"] if "top" in extra else None
         if top and tone:
             top = tuple(None if p is None else toned(solid(p), extra) for p in top)
-        squares[key] = (bytes(e["colors"]), frames, ticks, top)
+        return (bytes(e["colors"]), frames, ticks, top)
+
+    on_ground = []
+    for where, nes, refs, ticks, extra in m.sq:
+        e = m.nes_entry(nes, m.nes, where)
+        if e is None:
+            skipped += 1
+            continue
+        if refs and refs[0].startswith("="):
+            on_ground.append((where, nes, refs, ticks, extra, e))
+            continue
+        frames = [recolored(e, m.art(r[1:], m.libs, where)["px"]) if r.startswith("~") else m.art(r, m.libs, where)["px"] for r in refs]
+        key = int(e["key"], 16) ^ (OVERWORLD_MIX if e.get("scene") else 0) ^ (int(e["map"], 16) if extra.get("here") else 0)
+        if key in squares:
+            print("%s: square %s given again (the first stays)" % (where, nes))
+            continue
+        squares[key] = made(e, frames, ticks, extra, where)
+    # a thing on another square's ground ("=NES"): for any kind of map, and for every kind that ground has art of its own for
+    kinds = sorted(set(int(x["map"], 16) for inv in m.nes.values() for x in inv if "map" in x))
+    for where, nes, refs, ticks, extra, e in on_ground:
+        g = m.nes_entry(refs[0][1:], m.nes, where)
+        if g is None:
+            skipped += 1
+            continue
+        ground = int(g["key"], 16) ^ (OVERWORLD_MIX if g.get("scene") else 0)
+        key = int(e["key"], 16) ^ (OVERWORLD_MIX if e.get("scene") else 0)
+        for kind in ([int(e["map"], 16)] if extra.get("here") else [0] + kinds):
+            under = squares.get(ground ^ kind) or (squares.get(ground) if extra.get("here") else None)
+            if under is None:
+                if not kind:
+                    raise SystemExit("%s: the ground %s has no art yet" % (where, refs[0][1:]))
+                continue
+            if (key ^ kind) not in squares:
+                squares[key ^ kind] = made(e, list(under[1]), ticks, extra, where)
     for where, nes, ref, opt in m.fig:
         e = m.nes_entry(nes, m.people, where)
         if e is None:

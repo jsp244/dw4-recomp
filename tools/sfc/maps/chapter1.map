@@ -7,7 +7,8 @@
 # braziers stand in the brick's grey on the castle's front; its olive bushes are green here).
 # The first line for a square stays. A line with "here" is for the kind of map its NES square was listed in (the
 # game's number at $28: one NES square is a town's road, a castle's floor and a house's floor) and is looked up
-# before the lines for any kind.
+# before the lines for any kind. A thing laid over "=town:3E51A0A88427F85B" stands on the floor the place itself has
+# (that square is a town's road, a castle's floor and a room's floor).
 
 lib dq3t ../../../generated/sfc/dq3_town.sfclib
 lib dq3c ../../../generated/sfc/dq3_castle.sfclib
@@ -49,12 +50,11 @@ sq castle:4837C70D8A6B1AF4 dq3t:1b1c559a here hue 40-100>115 dark 8 # bush
 sq castle:4C42029459ACE647 dq3c:3e9bb0cf here # the patterned border
 sq castle:173A98CBC7910EFD dq3c:e911c8dc here # grass
 sq castle:9D475928B28B0EDA dq3c:80f7ec3d here # carpet
-sq castle:398ABC1806F71B4C dq3c:a2de7dcd here # stool
 sq castle:9DBBE19B3CF1FED7 dq1:a8f0d174 here # pillar, top
 sq castle:BD680820EF4BDDAD dq1:4cfee83d here # pillar, foot
 sq castle:38D894D557619B08 dq3c:601c59ec here # chest of drawers
 sq castle:B5B4419A63FD7B01 dq3c:37817fc5 over dq3v:ecf9c237.hi here # treasure chest: Dragon Quest III's, from the cave on its cape
-sq castle:D860E376B08B4F9D dq3t:f6d6f46d here # table
+sq castle:D860E376B08B4F9D =town:3E51A0A88427F85B over dq3t:316d8b20.hi # table, on the floor the place has
 sq castle:057F5DA64D40C2DD ~dq3t:316d8b20 here # bookshelf: in no capture yet either
 sq castle:998253DBED836007 dq3t:aa6b8d51 here # stairs
 sq castle:53B1A507205103D5 ~dq3h:6b0f9bc2 here # bed: no lying bed in Dragon Quest III (its beds stand upright on the map)
@@ -70,10 +70,10 @@ sq town:900DF8803990C72C dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 # wall: Drago
 sq town:76A84895692C38FC dq1:7fe8dc4d rows 4,1-15 # wall, its foot
 sq town:B548BC577D2B5C03 dq3t:14c72e3f # flowers
 sq town:A8EB8D7D34D5EF09 dq3t:759db578 # counter
-sq town:398ABC1806F71B4C dq3c:a2de7dcd # stool
+sq town:398ABC1806F71B4C =town:3E51A0A88427F85B over dq3c:a2de7dcd.hi # stool, on the floor the place has (the road's cobble in a town's houses)
 sq town:A3CE01D4E7A119A8 dq3c:289f35a2 # the church's sign
 sq uncensored:AD61DD4BDC0175ED dq3c:289f35a2 # the same with its cross
-sq town:1B02248CBF40CBF4 dq3t:f6d6f46d # round table
+sq town:1B02248CBF40CBF4 =town:3E51A0A88427F85B over dq3c:75608358.hi # the round stone table (Tempe's standing stones are this square too)
 sq town:998253DBED836007 dq3t:aa6b8d51 # stairs
 sq town:475539467B32795D dq3c:ef6e87f5 # door
 sq town:AA7D67E01603EB04 dq3t:71dfbc59 # well
@@ -104,24 +104,22 @@ sq castle:4837C70D8A6B1AF4 dq3t:1b1c559a hue 40-100>115 dark 8 # bush
 sq castle:4C42029459ACE647 dq3c:3e9bb0cf # the patterned border
 sq castle:173A98CBC7910EFD dq3c:e911c8dc # grass
 sq castle:9D475928B28B0EDA dq3c:80f7ec3d # carpet
-sq castle:398ABC1806F71B4C dq3c:a2de7dcd # stool
 sq castle:9DBBE19B3CF1FED7 dq1:a8f0d174 # pillar, top
 sq castle:BD680820EF4BDDAD dq1:4cfee83d # pillar, foot
 sq castle:38D894D557619B08 dq3c:601c59ec # chest of drawers
 sq castle:B5B4419A63FD7B01 dq3v:ecf9c237 # treasure chest (the old well's and the tower's too)
-sq castle:D860E376B08B4F9D dq3t:f6d6f46d # table
 sq castle:057F5DA64D40C2DD ~dq3t:316d8b20 # bookshelf
 sq castle:998253DBED836007 dq3t:aa6b8d51 # stairs
 sq castle:53B1A507205103D5 ~dq3h:6b0f9bc2 # bed: no lying bed in Dragon Quest III (its beds stand upright on the map)
 sq castle:2BCE986FBA9CB02D ~dq3h:6b0f9bc2
-sq castle:8A58BF897366E20F dq3ow:3ac67643 dark -25 # the bright water of the bath
+sq castle:8A58BF897366E20F ~dq3ow:3ac67643 dark -25 # the barrier's striped floor (Santeem's treasury has it too): its own stripes in the water's blues
 sq castle:01F33E98E81225CB dq3c:ef6e87f5 # the castle's door
 
 # ---- Burland's castle, the upper floor ----
 sq castle_up:3E51A0A88427F85B dq3c:37817fc5 here # floor
 sq castle_up:68E0482A58AFF73F dq3h:4ec6fd25 dark -38 # the sky around an upper floor
 sq castle_up:A79AABFAEDE3778E dq3c:d3085b3e hue 320-360>215 # the drapes behind the throne (Dragon Quest III's banner, red there)
-sq castle_up:A1B91B40C89DE342 dq3c:a2de7dcd here # chair
+sq castle_up:A1B91B40C89DE342 =town:3E51A0A88427F85B over dq3c:a2de7dcd.hi # chair
 sq castle_up:852F4F70CFD534ED dq3h:3290b79c # stairs down
 sq castle_up:81BD48EBEA5317FE dq3c:80f7ec3d over dq3c:995211d2.hi top dq3c:d3467418.hi # the throne, its back over the square above
 sq castle_up:2E19A154F0671C08 dq3c:80f7ec3d over dq3c:083a5635.hi top dq3c:7a31dbbd.hi
@@ -238,6 +236,7 @@ sq tower:8AC25C106C5B6103 ~dq3t:316d8b20 here
 sq tower:2E1292A413D1779C ~dq3t:316d8b20 here
 sq tower_top:5598EC42178C6D77 dq3h:df287325 # dark
 sq tower_top:1D55392BF296EDAD dq3w:8ad4ae05 here # the patterned floor
+sq tower_top:708358192C8B40EF dq3w:8ad4ae05 gray 100 dark -85 here # the white dais around it: the same stone, white
 sq tower_top:7E2F4A59F22BB523 dq3c:37817fc5 over dq3w:90858dec.hi here # pillar, its head
 sq tower_top:F9AD0746B6B0C49D dq3c:37817fc5 over dq3w:e7991b51.hi here # pillar, its foot
 sq tower_top:5880E2775F1BA537 dq3c:37817fc5 over dq3t:aa6b8d51.hi here # stairs
@@ -261,6 +260,7 @@ sq ow:A76524FB474BC0C0 dq3ow:3ac67643 # sea
 sq ow:0988127FFEB9B990 dq3ow:5777881f # forest
 sq ow:6877C3C4BF831557 dq3ow:d6ee9d16 # mountain
 sq ow:173A98CBC7910EFD dq3ow:d2cd8ecf # grass
+sq ow:347E848804C87C28 =ow:173A98CBC7910EFD over ~dq3t:316d8b20 clear 1,3 # signpost: its own shape in wood, on the grass
 sq ow:210198C253102322 dq3ow:5f05b3d4 # hill
 sq ow:9A333EA78F23AD92 dq3ow:cf1c8dc8 # desert
 sq ow:E3CEA1E6E0C69E14 dq3ow:11c3ff51 # thick forest

@@ -24,7 +24,9 @@ runs. Do not share your `.nes` file or anything built from it.
   (scanlines, CRT, glow), integer / fit / stretch scaling, keyboard and controller
   rebinding, RetroAchievements (through the vendored rcheevos library).
 - Textures: Pixel Remaster, the game's tiles recolored and shaded as they are drawn, and a
-  tool for hand-made tile packs (below).
+  tool for hand-made tile packs (below); SNES Remaster, the map and the people on it drawn
+  with the Super Famicom Dragon Quest games' art, from a pack built out of your own copies
+  of those games (below).
 - Widescreen: 16:9 and 16:10 pictures with more of the map, and the people on it, at both
   sides wherever the game is on a map (below).
 - ROM hacks as IPS patches, switched on and off while the game runs (below).
@@ -102,6 +104,18 @@ python tools/remaster/remaster_art.py pack remaster.pak tree.art
 ```
 
 A pack is drawn over the cartridge's tiles: keep it with your own copy of the game.
+
+## SNES Remaster textures
+
+Graphics > Textures > SNES Remaster draws the map's squares and the people on it with the
+art of the Super Famicom Dragon Quest games: each 16x16 square of the NES map is replaced
+whole by a square of that art, chosen to fit the material and the colors the NES game gave
+the place. None of the art is in this repository or in the packages. `tools/sfc` takes it
+from your own dumps of Dragon Quest I & II and Dragon Quest III (Japan, Super Famicom) into
+a pack, `sfc.pak`; the choice is offered when that file lies beside the program
+(`tools/sfc/README.md` has the two commands). The pack covers the places of chapters 1 and
+2 so far, and grows place by place: a square or a person it has no art for is drawn as
+Pixel Remaster draws it, and so are the windows, the text and the battles.
 
 ## Widescreen
 

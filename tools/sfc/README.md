@@ -43,6 +43,19 @@ Quest III's boulder wall in each cave's own color, and the tower's walls its dre
 exists only in another place's colors, the map file tones it (`gray`, `dark`, `hue`): Dragon Quest
 III's round towers, gate and braziers stand in the brick's grey on Burland's castle front.
 
+A thing that stands on a floor (a stool, a table, a pot, a statue) is its upper layer alone, laid over
+the ground the place itself has (`=town:KEY over ...`): the NES game draws one square for a town's
+road, a castle's floor and a room's floor, and the stool stands on each. A thing the Super Famicom
+games have no picture of keeps its NES shape in their colors, laid over their real ground
+(`over ~... clear ...`), until it is redrawn: signposts, the stepped rim of Tempe's altar, the great
+doors, the casino's slot machines.
+
+`maps/chapter1.map` pairs Burland, Izmit and the places between them; `maps/chapter2.map` what
+Santeem, Surene, Tempe, Frenor, the Birdsong Tower, the shrine of the travel door and Endor add
+(a line for any kind of map serves every place that has the square). `scenes/dw4_places.txt`
+lists every place of the game; `extract.py` dumps them all and writes one inventory for each kind
+of map (`generated/sfc/nes_kXX.json`).
+
 ## Adding a map
 
 1. Get the game to the map and dump it: `nes-headless --rom ... --input SCRIPT --frames N --map-dump x.map`,

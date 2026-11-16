@@ -26,7 +26,8 @@ Graphics      Display mode (windowed / fullscreen / fullscreen exclusive),
               fit: fills the screen, keeps the shape / stretch: fills, distorts),
               aspect ratio (square pixels 8:7 / 4:3 CRT / 16:9 or 16:10 widescreen:
               more of the map beside the picture, below),
-              textures (Original, or Pixel Remaster: below),
+              textures (Original, Pixel Remaster, or SNES Remaster with a pack of
+              your own: both below),
               title screen (Dragon Quest IV or Dragon Warrior IV: below),
               filter (nearest / linear / sharp),
               shader (off / scanlines / CRT / CRT curved / glow) and its strength,
@@ -182,6 +183,17 @@ Textures is set to Pixel Remaster. Packs are
 drawn over the cartridge's tiles, so none comes with the program; tools/remaster in
 the source shows how to make one.
 
+SNES Remaster textures
+----------------------
+Textures: SNES Remaster draws the map and the people on it with the art of the Super
+Famicom Dragon Quest games. That art does not come with the program: the choice appears
+when a pack of it, sfc.pak, lies in the program's folder (Android:
+Android/data/<package>/files). The pack is built from your own dumps of Dragon Quest
+I & II and Dragon Quest III (Japan, Super Famicom) with the tools in the source
+(tools/sfc/README.md). It covers the places of chapters 1 and 2 so far; whatever it has
+no art for, and the windows, the text and the battles, look as they do with Pixel
+Remaster.
+
 RetroAchievements
 -----------------
 With a free account at retroachievements.org the game's achievements unlock
@@ -217,6 +229,7 @@ screenshots/               F12 screenshots
 dw4.ini                    settings and the remembered ROM path
 retroachievements.txt      RetroAchievements session (user name + token), if logged in
 remaster.pak               your own hand-made tiles for Textures: Pixel Remaster (optional)
+sfc.pak                    the Super Famicom games' art for Textures: SNES Remaster (optional)
 dw4.old                    the previous version, after an update (dw4.exe.old)
 
 These live next to the program when that folder is writable. If it is not (Program

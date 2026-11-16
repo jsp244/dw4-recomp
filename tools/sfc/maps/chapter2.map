@@ -1,0 +1,112 @@
+# Chapter 2: Santeem's castle, Surene, Tempe, Frenor, the Birdsong Tower, the desert Bazaar, the shrine of the
+# travel door and Endor (its colosseum is still to come).
+# Their walls, grounds, plants and water are squares chapter 1's places have too (chapter1.map pairs them: a
+# line for any kind of map serves here as well); this file pairs what is new in them. The inventories are the
+# whole game's, one for each kind of map (the game's number at $28): nes_kXX.
+# A thing the Super Famicom games have no picture of keeps its NES shape, laid over their real ground ("over ~");
+# "=town:3E51A0A88427F85B" is the floor the place itself has (a town's road, a castle's floor, a room's).
+
+lib dq3t ../../../generated/sfc/dq3_town.sfclib
+lib dq3c ../../../generated/sfc/dq3_castle.sfclib
+lib dq3h ../../../generated/sfc/dq3_house.sfclib
+lib dq1 ../../../generated/sfc/dq1_castle.sfclib
+lib dq3w ../../../generated/sfc/dq3_tower.sfclib
+lib dq3ow ../../../generated/sfc/dq3_ow.sfclib
+nes castle ../../../generated/sfc/nes_castle.json
+nes town ../../../generated/sfc/nes_town.json
+nes izmit ../../../generated/sfc/nes_izmit.json
+nes k02 ../../../generated/sfc/nes_k02.json
+nes k03 ../../../generated/sfc/nes_k03.json
+nes k04 ../../../generated/sfc/nes_k04.json
+nes k08 ../../../generated/sfc/nes_k08.json
+nes k09 ../../../generated/sfc/nes_k09.json
+nes k0B ../../../generated/sfc/nes_k0B.json
+nes k0C ../../../generated/sfc/nes_k0C.json
+nes k0D ../../../generated/sfc/nes_k0D.json
+nes k0E ../../../generated/sfc/nes_k0E.json
+nes k25 ../../../generated/sfc/nes_k25.json
+nes k27 ../../../generated/sfc/nes_k27.json
+
+# ---- Santeem's castle ($0D), its upper floors ($09) ----
+sq k0D:8395EB7502B3D289 =town:3E51A0A88427F85B over dq3c:76136076.hi # the long table, its left half
+sq k0D:97A5A5749143ADCC =town:3E51A0A88427F85B over dq3c:4212a5f1.hi # its right half
+sq k0D:F8E3142E813E98B0 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 over dq3t:f3543fd3.hi # the barred door in the wall
+sq k09:9B135A6CA8DFD59F =town:3E51A0A88427F85B over dq3t:2872764e.hi # the suit of armor beside the carpet
+sq k09:B611C1DEE3CE5192 ~dq3c:ef6e87f5 # a door seen from its side
+
+# ---- rooms upstairs ($03) ----
+sq k03:29CF3EBF1C7B09BC dq3h:13537dc6 # stool on the wooden floor
+sq k03:93D9668EB7C46550 dq3h:bc978def over dq3t:316d8b20.hi # table on the wooden floor
+sq k03:8FE254204EC3B7B4 =town:3E51A0A88427F85B over dq3t:5fa25d75.hi # pot
+sq k03:E10517B2A237C91A =town:3E51A0A88427F85B over dq3t:4a397bc3.hi # the kitchen's basin
+
+# ---- Surene ($0B) ----
+sq k0B:38EEB7EE6951108C dq3t:e911c8dc over ~dq3t:316d8b20 clear 0e,2e # signpost, on the grass
+sq k0B:6134B0EC16921172 ~dq3t:316d8b20 # the plank bridge
+
+# ---- Tempe ($02) ----
+sq k02:2A888DE4163EB74F dq3t:e911c8dc over dq3t:01b3e1de.hi # a grave, on the grass
+sq k02:2F1EBB6674B4B80F dq3t:a1e452fd gray 60 dark 32 # the altar's blackened ground
+sq k02:8296C08F5BCA8625 dq3t:84d1bc46 gray 60 # the altar's paving
+# the altar's stepped rim, in stone, over the road
+sq k02:1447CFE9A1F6415E =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80
+sq k02:88C714F4D0FF591B =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80
+sq k02:9D277C9B64222548 =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80
+sq k02:80A4FD6F22F0ED20 =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80
+sq k02:E7D5F4321EA10A79 =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80
+sq k02:B89CF060EBFE19FF =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80
+sq k02:44DC52A12B4C3399 =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80
+sq k02:D6683969372C8B0E =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80 # the steps up to it
+
+# ---- Frenor ($0E) ----
+sq k0E:EA9DCAC464F24779 =town:3E51A0A88427F85B over ~dq3c:a5a6a12d clear 3,0e # the stone figure in the garden
+
+# ---- the Birdsong Tower ($25; its foot and its top $27) ----
+# The stone is chapter 1's tower's (Dragon Quest III's tower brick in the NES tower's grey, darker where the NES
+# draws the wall's foot in shadow); the floor is the road's cobble in the green the NES gives it here.
+sq k25:A78FBF5775107294 dq3t:a1e452fd tint 140:42 dark 18 here # floor
+sq k25:2F1EBB6674B4B80F dq3t:a1e452fd tint 140:42 dark 55 here # floor at the edge of the dark
+sq k25:A3C180DA80659B9A dq3w:efc08409 gray 85 dark -12 # wall
+sq k25:B7FCB9B3A141B21B dq3w:efc08409 gray 85 dark -12
+sq k25:091E8E5062C966E1 dq3w:efc08409 gray 85 dark -12
+sq k25:339CBCC27B767E70 dq3w:efc08409 gray 85 dark -12
+sq k25:368D966FC25065A8 dq3w:efc08409 gray 85 dark 42 # the wall's foot, in shadow
+sq k25:E71129D7C5F8DF6E dq3w:efc08409 gray 85 dark 42
+sq k25:D676378C144255D4 dq3t:a1e452fd basetint 140:42 basedark 18 over ~dq3w:efc08409 clear 3 gray 85 here # the grating over the floor
+sq k25:7E2F4A59F22BB523 dq3t:a1e452fd basetint 140:42 basedark 18 over dq3w:90858dec.hi here # pillar, its head
+sq k25:F9AD0746B6B0C49D dq3t:a1e452fd basetint 140:42 basedark 18 over dq3w:e7991b51.hi here # pillar, its foot
+sq k25:34D2276C155C7BC6 dq3t:a1e452fd basetint 140:42 basedark 18 over dq3w:1154c159.hi here # the winged statue (four squares)
+sq k25:7AD44C792EF880A8 dq3t:a1e452fd basetint 140:42 basedark 18 over dq3w:bae87c5b.hi here
+sq k25:265911B09BB8ABB8 dq3t:a1e452fd basetint 140:42 basedark 18 over dq3w:c8e82613.hi here
+sq k25:833746FE98E9C03B dq3t:a1e452fd basetint 140:42 basedark 18 over dq3w:6e105f36.hi here
+sq k25:5880E2775F1BA537 dq3t:a1e452fd basetint 140:42 basedark 18 over dq3t:aa6b8d51.hi here # stairs
+sq k25:8833C233808D4CE9 ~dq3t:316d8b20 # the great golden door (four squares)
+sq k25:DA2DE12AF37DB04B ~dq3t:316d8b20
+sq k25:49E3C51E2C42BDFC ~dq3t:316d8b20
+sq k25:640CC0452A02AEED ~dq3t:316d8b20
+sq k27:A78FBF5775107294 dq3t:a1e452fd gray 60 # the paving at the tower's foot
+sq k27:5880E2775F1BA537 dq3t:a1e452fd basegray 60 over dq3t:aa6b8d51.hi # stairs
+
+# ---- the shrine of the travel door ($08) ----
+sq k08:74F3EA8951EFE951 ~dq3ow:3ac67643 dark -25 # the travel door: its own swirl in the water's blues
+sq k08:2FCF46DC6846533D =town:3E51A0A88427F85B over ~dq1:b68350b8 clear 3 # the broken wall on either side of the way through
+sq k08:55236557CDBC4575 =town:3E51A0A88427F85B over ~dq1:b68350b8 clear 3
+sq k08:28F311A296AE13E5 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 over dq3t:f3543fd3.hi # the barred door in the wall (Endor's casino has it too)
+
+# ---- Endor: the castle ($0B outside, $09 the throne's floor), the casino ($0C) ----
+sq k0B:03F28602EB6CB0AE =town:3E51A0A88427F85B over ~dq3t:f3543fd3 clear 3 # the castle's great door (four squares), in iron
+sq k0B:1F96094BF68F5FC3 =town:3E51A0A88427F85B over ~dq3t:f3543fd3 clear 3
+sq k0B:3AE8B33CBC9BF9D5 =town:3E51A0A88427F85B over ~dq3t:f3543fd3 clear 3
+sq k0B:56A4587A0DEC4DE9 =town:3E51A0A88427F85B over ~dq3t:f3543fd3 clear 3
+sq k09:81D8E34B639DEADF dq1:7fe8dc4d rows 4,1-15 over dq3c:73e744a5.hi # a banner on the wall
+sq k0C:F73CED4DAE72DEB7 =castle:9D475928B28B0EDA over ~dq3c:7a31dbbd clear 0e # a slot machine, in a throne's red and gold, on the carpet
+
+# ---- the desert Bazaar ($04; the game has it on the overworld in this chapter only) ----
+sq k04:CB36A768C6F37ADC =izmit:9A333EA78F23AD92 over dq3c:1e0d21c0.hi # barrel, on the sand
+sq k04:FD125E02D44A7D66 =izmit:9A333EA78F23AD92 over dq3t:5fa25d75.hi # pot
+sq k04:F113722F153EEC87 =izmit:9A333EA78F23AD92 over ~dq3t:316d8b20 clear 2e,dots # the stakes of a pen
+sq k04:F665B2ED1FE1262A ~dq3t:316d8b20 # a stall's railing, and its ends
+sq k04:60FD374414777C34 ~dq3t:316d8b20
+sq k04:8D14CA960CADDD44 ~dq3t:316d8b20
+sq k04:80844C155B6122AF ~dq3t:316d8b20
+sq k04:BA174DCAABA80171 ~dq3t:316d8b20
