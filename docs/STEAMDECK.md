@@ -1,7 +1,8 @@
 Dragon Warrior IV native port - Steam Deck edition
 ==================================================
 
-This build starts in fullscreen at the Deck's own 1280x800, and the menus are driven
+This build starts in fullscreen at the Deck's own 1280x800 with the 16:10 widescreen
+view (more of the map, and the people on it, at both sides), and the menus are driven
 with the Deck's controls. It contains no game data: you need your own
 Dragon Warrior IV (USA) cartridge dump (.nes).
 
@@ -36,8 +37,9 @@ Every button can be changed on the menu's Controls tab.
 
 Tips
 ----
-- Graphics > Scaling: Fit (the default) fills the screen's height with the 4:3 picture,
-  with bars at the sides. Integer keeps exact pixels at 3x.
+- Graphics > Scaling: Fit (the default) fills the 1280x800 screen with the 16:10 picture.
+  Integer keeps exact pixels at 3x. Battles and the title keep the 4:3 picture between
+  bars.
 - Deck OLED: for perfectly even motion set the refresh rate to 60 Hz for this game in
   the quick access menu (Performance). The NES runs at 60 Hz.
 - Latency: Graphics > Low-latency sync (on by default) hands each frame to the screen

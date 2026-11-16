@@ -38,6 +38,7 @@
 #include "input.h"
 #include "gpu_sync.h"
 #include "remaster.h"
+#include "widescreen.h"
 #include "update.h"
 #include "rewind.h"
 #include "achievements.h"
@@ -75,7 +76,7 @@ typedef struct {
     int resolution;      /* index into res_list for the menu (0 = auto); res_w/res_h is the saved setting */
     int res_w, res_h;    /* chosen size, 0 = auto: the window size, the exclusive display mode, or the render size in fullscreen */
     int scaling;         /* 0 integer, 1 fit, 2 stretch */
-    int aspect;          /* 0 square pixels, 1 4:3 CRT */
+    int aspect;          /* 0 square pixels, 1 4:3 CRT, 2 16:9 widescreen (the map shown beside the picture, black bars on other screens), 3 16:10 */
     int textures;        /* 0 original, 1 remastered (runtime/remaster.c: recolored and shaded in the Pixel Remaster's manner) */
     int filter;          /* 0 nearest, 1 linear, 2 sharp */
     int shader;          /* 0 off, 1 scanlines, 2 CRT, 3 CRT curved, 4 glow */
@@ -105,7 +106,7 @@ static const char *const runahead_names[] = { "Off", "1 frame", "2 frames", "3 f
 static const char *const latency_names[]  = { "Low", "Normal", "Safe" };
 static const char *const window_sizes[]  = { "1x", "2x", "3x", "4x", "5x", "6x" };
 static const char *const scalings[]      = { "Integer (exact pixels)", "Fit (fills the screen)", "Stretch (distorts)" };
-static const char *const aspects[]       = { "Square pixels 8:7", "4:3 (CRT)" };
+static const char *const aspects[]       = { "Square pixels 8:7", "4:3 (CRT)", "16:9 (widescreen)", "16:10 (widescreen)" };
 static const char *const texture_names[] = { "Original", "Remastered" };
 static const char *const filters[]       = { "Nearest", "Linear", "Sharp" };
 static const char *const onoff[]         = { "Off", "On" };
@@ -143,7 +144,10 @@ static char sav_path[2048], state_dir[1200];
 static char rom_status[240];
 static char ra_user_buf[64], ra_pass_buf[128];   /* the Achievements tab's text rows; the password is wiped after each login attempt */
 static uint32_t palette[512];
-static uint32_t frame_rgb[FB_W * FB_H];   /* the picture to show, frame_w x frame_h (see frame_to_rgb) */
+static uint32_t frame_rgb[WS_W * WS_H];   /* the picture to show, frame_w x frame_h (see frame_to_rgb) */
+static uint8_t wide_fb[WS_W * WS_H];      /* widescreen: that part of the canvas around the PPU's picture */
+static uint8_t wide_emph[WS_H];           /* and the $2001 bits of each of its rows */
+static uint32_t wide_hbg[WS_W * WS_H], wide_hspr[WS_W * WS_H];   /* and each pixel's source tile, for the remastered textures */
 static int frame_w = FB_W, frame_h = FB_H;
 static uint8_t wram_snapshot[8192];
 static SDL_Window *window;
@@ -379,7 +383,7 @@ static void write_config(void) {
     if (cfg.res_w > 0) fprintf(f, "resolution=%dx%d  ; auto (window size), or WxH: the window size, the display mode in exclusive fullscreen, or the render size in fullscreen\n", cfg.res_w, cfg.res_h);
     else fputs("resolution=auto       ; auto (window size), or WxH: the window size, the display mode in exclusive fullscreen, or the render size in fullscreen\n", f);
     fprintf(f, "scaling=%d             ; 0 integer (exact pixels, may leave borders), 1 fit (fills the screen), 2 stretch (distorts)\n", cfg.scaling);
-    fprintf(f, "aspect=%d              ; 0 square pixels, 1 4:3 CRT\n", cfg.aspect);
+    fprintf(f, "aspect=%d              ; 0 square pixels, 1 4:3 CRT, 2 16:9 widescreen, 3 16:10 widescreen (the map shown beside the picture, black bars on other screens)\n", cfg.aspect);
     fprintf(f, "filter=%d              ; 0 nearest, 1 linear, 2 sharp\n", cfg.filter);
     fprintf(f, "shader=%d              ; 0 off, 1 scanlines, 2 CRT, 3 CRT curved, 4 glow\n", cfg.shader);
     fprintf(f, "shader_strength=%d     ; 0 light, 1 medium, 2 strong\n", cfg.shader_strength);
@@ -439,7 +443,7 @@ static void load_config(void) {
             else cfg.res_w = cfg.res_h = 0;
         }
         else if (!strcmp(key, "scaling")) { int v = atoi(val); if (v >= 0 && v <= 2) cfg.scaling = v; }
-        else if (!strcmp(key, "aspect")) { int v = atoi(val); if (v >= 0 && v <= 1) cfg.aspect = v; }
+        else if (!strcmp(key, "aspect")) { int v = atoi(val); if (v >= 0 && v <= 3) cfg.aspect = v; }
         else if (!strcmp(key, "filter")) { int v = atoi(val); if (v >= 0 && v <= 2) cfg.filter = v; }
         else if (!strcmp(key, "shader")) { int v = atoi(val); if (v >= 0 && v <= 4) cfg.shader = v; }
         else if (!strcmp(key, "shader_strength")) { int v = atoi(val); if (v >= 0 && v <= 2) cfg.shader_strength = v; }
@@ -468,18 +472,39 @@ static void load_config(void) {
 /* ------------------------------------------------------------------ */
 /* video                                                               */
 /* ------------------------------------------------------------------ */
+/* the 16:9 and 16:10 aspect choices are the widescreen modes: the map (and the people on it)
+   shown beside the picture while the game is on a map, the normal 4:3 picture between black
+   bars on its other screens, never a stretch */
+static int widescreen_on(void) { return cfg.aspect >= 2; }
+
 static double target_aspect(int src_h) {
-    return cfg.aspect == 1 ? 4.0 / 3.0 : (double)FB_W / src_h;
+    switch (cfg.aspect) {
+    case 1: return 4.0 / 3.0;
+    case 2: return 16.0 / 9.0;
+    case 3: return 16.0 / 10.0;
+    default: return (double)FB_W / src_h;
+    }
 }
+
+/* width of a pixel relative to its height: square, or the 4:3 CRT look, which the widescreen
+   modes keep (they add picture at the sides instead of changing the pixel shape) */
+static double pixel_aspect(void) { return cfg.aspect == 0 ? 1.0 : 1.25; }
 
 /* the output the picture is composed for, set by its users before source_rect */
 static int pic_out_w, pic_out_h;
 
-/* The part of the PPU's picture shown: all of it, or without the lines the overscan crop hides. */
+/* The part of the frame shown: of the PPU's picture, or in a widescreen mode of the canvas around
+   it (widescreen.h), the part that makes a 16:9 or 16:10 picture at the pixel aspect; without the
+   lines the overscan crop hides. */
 static void source_rect(SDL_Rect *src) {
-    src->x = 0; src->w = FB_W;
     src->y = cfg.overscan ? OVERSCAN : 0;
     src->h = cfg.overscan ? FB_H - 2 * OVERSCAN : FB_H;
+    if (widescreen_on()) {
+        src->w = widescreen_visible_width(src->h, pixel_aspect(), target_aspect(src->h));
+        src->x = (WS_W - src->w) / 2;
+    } else {
+        src->x = 0; src->w = FB_W;
+    }
 }
 
 static void dest_rect(int ww, int wh, const SDL_Rect *src, SDL_Rect *dst) {
@@ -516,12 +541,18 @@ static void ensure_textures(int k) {
     }
 }
 
-/* the part src of the PPU's picture (see source_rect) as ARGB in frame_rgb, frame_w x frame_h */
+/* the part src of the frame (see source_rect: of the PPU's picture, or in a widescreen mode of
+   the canvas with the map beside it) as ARGB in frame_rgb, frame_w x frame_h */
 static void frame_to_rgb(const SDL_Rect *src) {
     const uint8_t *fb = ppu.fb + src->y * FB_W + src->x, *emph = ppu.line_emph + src->y;
     const uint32_t *hbg = ppu.hd_bg + src->y * FB_W + src->x, *hspr = ppu.hd_spr + src->y * FB_W + src->x;
     int stride = FB_W, remastered = cfg.textures && ppu_hd_capture && remaster_ready();
     frame_w = src->w; frame_h = src->h;
+    if (widescreen_on()) {
+        if (remastered) widescreen_render_hd(wide_fb, wide_emph, wide_hbg, wide_hspr, src->x, src->y, src->w, src->h);
+        else widescreen_render(wide_fb, wide_emph, src->x, src->y, src->w, src->h);
+        fb = wide_fb; emph = wide_emph; hbg = wide_hbg; hspr = wide_hspr; stride = frame_w;
+    }
     if (remastered) {
         remaster_frame(frame_rgb, frame_w, fb, hbg, hspr, stride, emph, frame_w, frame_h);
         return;
@@ -1413,8 +1444,13 @@ static void refresh_gfx_info(void) {
     }
     if (!why[0] && (!full_w || !full_h)) {
         /* short lines: the info font has room for about 60 characters */
+        double ratio = (double)out_w / out_h;
+        int match = ratio > 1.7 ? 2 : ratio > 1.55 ? 3 : 1;      /* the aspect choice shaped like this output */
         if (cfg.scaling == 0 && !full_w && !full_h)
             snprintf(why, sizeof why, "\nBorders: Integer only uses whole multiples. Fit uses the whole height.");
+        else if (match != cfg.aspect)
+            snprintf(why, sizeof why, "\n%s: the picture is %s than the %s. The %s aspect matches its shape.",
+                     full_w ? "Bars above and below" : "Bars at the sides", full_w ? "wider" : "taller", where, aspects[match]);
         else if (cfg.scaling == 0)
             snprintf(why, sizeof why, "\nInteger rounds down to a whole multiple. Fit fills the %s.", where);
     }
@@ -1524,7 +1560,7 @@ static void build_menu(void) {
     g[1] = (ui_item){ "Resolution", UI_CHOICE, GFX_CHANGED, &cfg.resolution, res_names, n_res, 0, 0, 0, NULL, "", NULL };
     g[2] = (ui_item){ "Window size", UI_CHOICE, GFX_CHANGED, &window_size_idx, window_sizes, 6, 0, 0, 0, NULL, "", NULL };
     g[3] = (ui_item){ "Scaling", UI_CHOICE, GFX_CHANGED, &cfg.scaling, scalings, 3, 0, 0, 0, NULL, "", NULL };
-    g[4] = (ui_item){ "Aspect ratio", UI_CHOICE, GFX_CHANGED, &cfg.aspect, aspects, 2, 0, 0, 0, NULL, "", NULL };
+    g[4] = (ui_item){ "Aspect ratio", UI_CHOICE, GFX_CHANGED, &cfg.aspect, aspects, 4, 0, 0, 0, NULL, "", NULL };
     g[5] = (ui_item){ "Textures", UI_CHOICE, GFX_CHANGED, &cfg.textures, texture_names, 2, 0, 0, 0, NULL, "", NULL };
     g[6] = (ui_item){ "Filter", UI_CHOICE, GFX_CHANGED, &cfg.filter, filters, 3, 0, 0, 0, NULL, "", NULL };
     g[7] = (ui_item){ "Shader", UI_CHOICE, GFX_CHANGED, &cfg.shader, shader_names, 5, 0, 0, 0, NULL, "", NULL };
@@ -2133,11 +2169,13 @@ int main(int argc, char **argv) {
         SDL_DisplayMode dm;
         int have_dm = SDL_GetDesktopDisplayMode(0, &dm) == 0 && dm.h > 0 && dm.w > 0;
         if (FIXED_FULLSCREEN || deck_mode) {
-            /* a handheld: fill its screen */
+            /* a handheld: fill its screen, in the widescreen shape that matches it
+               (Steam Deck 1280x800 = 16:10, a 1920x1080 handheld = 16:9, a 4:3 screen = 4:3) */
+            double ratio = have_dm ? (double)(dm.w > dm.h ? dm.w : dm.h) / (dm.w > dm.h ? dm.h : dm.w) : 1.6;
             cfg.display_mode = 1;
             cfg.scaling = 1;
             cfg.res_w = cfg.res_h = 0;
-            cfg.aspect = 1;
+            cfg.aspect = ratio > 1.7 ? 2 : ratio > 1.55 ? 3 : 1;
         } else if (have_dm) {
             /* a window that takes about 80 % of the screen's height, in whole multiples */
             int k = (int)(dm.h * 0.8 / (FB_H - 2 * OVERSCAN));

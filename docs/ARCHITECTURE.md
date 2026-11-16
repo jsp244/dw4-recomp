@@ -19,6 +19,7 @@
 | Cartridge | `runtime/cart.c`, `mapper.c` | iNES loader, hashes, MMC1 (SUROM), battery RAM |
 | System | `runtime/sys.c`, `mem.c` | bus, controllers, frame loop, save states |
 | Remaster | `runtime/remaster.c` | the recolored, shaded picture |
+| Widescreen | `runtime/widescreen.c` | the map and the people beyond the screen's edges |
 | Harness | `runtime/headless.c` | scripted and random play, screenshots, traces, coverage, cosimulation |
 | Frontend | `frontend/` | SDL2 program: launcher, pacing, audio, input, rewind, achievements, updater |
 
@@ -155,6 +156,31 @@ faces down or right; speckled textures and sprite outlines keep their color; let
 `nes-headless --hd-dump` writes a frame's sources and the CHR RAM;
 `tools/remaster/remaster_art.py` turns art painted over such frames into a pack.
 
+## Widescreen
+
+The canvas is 352x240: the PPU's picture with a 48-pixel band on each side (16:9 shows 32
+of them, 16:10 shows 16).
+
+- **The map.** Bank 22's `$8DD4` answers, for a column (`$0D`) and row (`$03E1`) counted
+  around the player, the four tiles (`$00-$03`) and the palette (`$04`) of that map square,
+  through whichever of the game's map readers the current map uses. `widescreen.c` runs it
+  for the squares of the bands inside a sandbox (`nes_sandbox_*` in `sys.c`: CPU, RAM,
+  battery RAM and mapper saved, the routine run in the interpreter with no PPU or APU time
+  passing and their registers cut off, everything restored). Answers are kept by map square
+  and asked again an eighth at a time, about 25 calls a frame.
+- **Position.** The camera's square is `$EC`/`$ED`; the pixels within it come from the
+  PPU's scroll at the start of the frame. The game's memory is one frame ahead of the
+  picture, so at the end of a step the neighbouring camera squares are tried too.
+- **Is it the map?** The routine's answers for four columns of the screen are compared with
+  the nametables. At least a third must agree, and some of those must have something drawn
+  in them (before a map is loaded the routine answers with empty squares, which agree with
+  any empty screen). Otherwise the bands are black.
+- **People.** The object table (30 entries from `$6FA0`: position in sixteenths of a
+  pixel, kind, facing, flags, floor) gives everyone on the map; those in the bands are
+  drawn with the tiles of the game's sprite definitions at `$7200`.
+- **The left strip.** The game has the PPU blank the first eight pixels of every line;
+  the canvas fills them from the map as well.
+
 ## Frontend
 
 The SDL2 program loads the ROM, checks its hash (the translated code is used only with
@@ -176,6 +202,4 @@ compositor's frame timeline, and the phone edition draws a touch controller
 ## Where to take it next
 
 - Hand-made tile packs for the remaster (kept with one's own copy of the game).
-- Widescreen: needs the map and scroll formats decoded, to draw what lies beyond the
-  screen edges.
 - More coverage for `entries.txt` from later chapters.

@@ -25,9 +25,10 @@ runs. Do not share your `.nes` file or anything built from it.
   rebinding, RetroAchievements (through the vendored rcheevos library).
 - Textures: Remastered, the game's tiles recolored and shaded as they are drawn, and a
   tool for hand-made tile packs (below).
+- Widescreen: 16:9 and 16:10 pictures with more of the map, and the people on it, at both
+  sides wherever the game is on a map (below).
 
-Not there yet: widescreen (it needs the game's map formats decoded) and a hand-made tile
-pack.
+Not there yet: a hand-made tile pack.
 
 ## Building (Windows, MSYS2 MinGW64)
 
@@ -99,6 +100,21 @@ python tools/remaster/remaster_art.py pack remaster.pak tree.art
 
 A pack is drawn over the cartridge's tiles: keep it with your own copy of the game.
 
+## Widescreen
+
+Graphics > Aspect ratio > 16:9 or 16:10 keeps the pixels' shape and adds picture at the
+sides: 32 or 16 more pixels of the map on each side, with the townspeople standing there.
+Battles, the title and other screens that are not the map keep the normal picture between
+black bars.
+
+Nothing about the maps is stored or decoded by the port. The game has a routine that names
+the tiles of any map square around the player (it repaints the map with it when a window
+closes); the port runs that routine on the side for the squares beyond the screen's edges,
+with the machine saved before and restored after, so the game itself is untouched (the
+cosimulation hashes are the same with widescreen drawing every frame). The people come
+from the game's own table of who stands where. `nes-headless --ws-check` asks the routine
+for the squares that are on the screen and compares them with what the PPU was given.
+
 ## How it works
 
 `recomp/recomp.py` finds the code in the 32 PRG banks and writes one C file per bank,
@@ -146,7 +162,7 @@ python recomp/recomp.py --rom rom/your.nes --out generated --coverage cov.bin --
 
 ```
 recomp/      the recompiler, symbols.txt, entries.txt
-runtime/     CPU helpers and interpreter, PPU, APU, MMC1, save states, remaster, test harness
+runtime/     CPU helpers and interpreter, PPU, APU, MMC1, save states, remaster, widescreen, test harness
 frontend/    SDL2 program: launcher, video, audio, input, touch controls, rewind, achievements, updater
 android/     the Android app: manifest, activity, CMake file, build_apk.py
 tools/       icon generator, remaster pack tool, the Linux/Deck build, Deck and Android helpers

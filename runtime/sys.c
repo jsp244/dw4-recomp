@@ -51,6 +51,50 @@ void nes_run_frame(void) {
     }
 }
 
+/* ---- the sandbox (nes.h) ---- */
+static struct {
+    cpu_t cpu;
+    uint8_t ram[2048], wram[8192];
+    mapper_t mapper;
+    uint64_t instructions;
+    void (*trace_hook)(void);
+    uint8_t *cov;
+} sandbox;
+
+void nes_sandbox_begin(void) {
+    sandbox.cpu = cpu;
+    memcpy(sandbox.ram, ram, sizeof ram);
+    memcpy(sandbox.wram, cart.wram, sizeof cart.wram);
+    sandbox.mapper = mapper;
+    sandbox.instructions = sys.instructions;
+    sandbox.trace_hook = sys.trace_hook; sandbox.cov = sys.cov;
+    sys.trace_hook = NULL; sys.cov = NULL;
+    sys.sandbox = true;
+    cpu.nmi_pending = 0; cpu.int_pending = 0; cpu.irq_line = 0; cpu.jammed = 0; cpu.irq_delay_active = 0;
+}
+
+int nes_sandbox_call(uint16_t addr, int max_steps) {
+    uint8_t sp = cpu.sp;
+    push16(0xFFFF);                 /* the routine's RTS lands on $0000, where no code of the game runs */
+    cpu.pc = addr;
+    while (max_steps-- > 0 && !cpu.jammed) {
+        cpu_step();
+        if (cpu.pc == 0x0000 && cpu.sp == sp) return 1;
+    }
+    return 0;
+}
+
+void nes_sandbox_end(void) {
+    cpu = sandbox.cpu;
+    memcpy(ram, sandbox.ram, sizeof ram);
+    memcpy(cart.wram, sandbox.wram, sizeof cart.wram);
+    mapper = sandbox.mapper;
+    mapper_update_pointers();
+    sys.instructions = sandbox.instructions;
+    sys.trace_hook = sandbox.trace_hook; sys.cov = sandbox.cov;
+    sys.sandbox = false;
+}
+
 /* ---- save states ----
    Version 2: the PPU frame buffer is left out (every frame rewrites all of it, and
    the frontend always runs a frame after a load) and the audio sample ring lives

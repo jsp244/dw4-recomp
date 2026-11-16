@@ -18,6 +18,7 @@ static uint8_t pad_read(int n) {
 }
 
 uint8_t mem_read_slow(uint16_t a) {
+    if (sys.sandbox && a < 0x4020) return 0;
     if (a < 0x4000) {
         return ppu_reg_read(a & 7);
     }
@@ -46,6 +47,7 @@ uint8_t nes_peek(uint16_t a) {
 void mem_write_slow(uint16_t a, uint8_t v) {
     if (a < 0x2000) { ram[a & 0x7ff] = v; return; }
     cpu.open_bus = v;
+    if (sys.sandbox && a < 0x4020) return;
     if (a < 0x4000) { ppu_reg_write(a & 7, v); return; }
     if (a < 0x4020) {
         if (a == 0x4014) { ppu_oam_dma(v); return; }

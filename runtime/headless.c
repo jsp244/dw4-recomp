@@ -7,6 +7,7 @@
 #include "png.h"
 #include "palette.h"
 #include "remaster.h"
+#include "widescreen.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -114,6 +115,40 @@ static void fb_to_rgb(uint8_t *rgb) {
     }
 }
 
+/* the widescreen canvas (the PPU's picture with the map beside it, or black bands) as a PNG;
+   returns 1 when the bands hold the map */
+static int write_widescreen(const char *path, int remastered) {
+    static uint8_t idx[WS_W * WS_H], emph[WS_H], rgb[WS_W * WS_H * 3];
+    static uint32_t hbg[WS_W * WS_H], hspr[WS_W * WS_H], argb[WS_W * WS_H];
+    int on;
+    if (remastered) {
+        on = widescreen_render_hd(idx, emph, hbg, hspr, 0, 0, WS_W, WS_H);
+        remaster_frame(argb, WS_W, idx, hbg, hspr, WS_W, emph, WS_W, WS_H);
+    } else {
+        on = widescreen_render(idx, emph, 0, 0, WS_W, WS_H);
+        for (int y = 0; y < WS_H; y++)
+            for (int x = 0; x < WS_W; x++) argb[y * WS_W + x] = pal[((emph[y] >> 5) & 7) * 64 + (idx[y * WS_W + x] & 0x3F)];
+    }
+    for (int i = 0; i < WS_W * WS_H; i++) {
+        rgb[i * 3] = (uint8_t)(argb[i] >> 16); rgb[i * 3 + 1] = (uint8_t)(argb[i] >> 8); rgb[i * 3 + 2] = (uint8_t)argb[i];
+    }
+    png_write_rgb(path, WS_W, WS_H, rgb);
+    return on;
+}
+
+/* the canvas's middle against the PPU's own picture: the number of pixels that differ, not counting
+   the first eight of each line where the PPU blanks them and the canvas shows the map instead */
+static long widescreen_middle_diff(void) {
+    static uint8_t idx[WS_W * WS_H], emph[WS_H];
+    long bad = 0;
+    int on = widescreen_render(idx, emph, 0, 0, WS_W, WS_H);
+    for (int y = 0; y < WS_H; y++) {
+        int strip = on && (ppu.line_emph[y] & 0x08) && !(ppu.line_emph[y] & 0x02);
+        for (int x = strip ? 8 : 0; x < 256; x++) bad += idx[y * WS_W + WS_BAND + x] != ppu.fb[y * 256 + x];
+    }
+    return bad;
+}
+
 /* the frame with the remastered graphics as a PNG (rgb: a 256x240x3 scratch buffer) */
 static void write_remastered(const char *path, uint8_t *rgb) {
     static uint32_t argb[256 * 240];
@@ -170,6 +205,10 @@ static void usage(void) {
         "  --fuzz SEED         random controller input (the same for the same seed), from --fuzz-start N (default 0)\n"
         "  --png FILE          write the last frame as PNG\n"
         "  --png-every N       write FILE with the frame number appended every N frames\n"
+        "  --widescreen FILE   write the last frame as the widescreen canvas, the map beside the picture\n"
+        "                      (also every N frames; with --remaster given, in the remastered graphics)\n"
+        "  --ws-check          every frame: ask the map code for the squares on the screen and compare them\n"
+        "                      with what the PPU was given to draw; prints the totals\n"
         "  --remaster FILE     write the last frame with the remastered graphics (also every N frames)\n"
         "  --remaster-pack F   the pack of hand-made tiles for --remaster\n"
         "  --hd-dump FILE      write the last frame's pixel sources (tools/remaster): palette, line\n"
@@ -189,7 +228,8 @@ static void usage(void) {
 int main(int argc, char **argv) {
     const char *rom = NULL, *png = NULL, *wav = NULL, *trace = NULL, *cov = NULL, *hash = NULL, *sav = NULL, *input = NULL, *debug_log = NULL, *ram_dump = NULL;
     const char *state_save = NULL, *state_load = NULL, *remaster = NULL, *remaster_pack = NULL, *hd_dump = NULL;
-    int fuzz_start = 0;
+    int fuzz_start = 0, ws_check = 0;
+    const char *wide = NULL;
     int frames = 600, png_every = 0, ram_dump_every = 0, nestest = 0, blargg = 0, recomp = 0, quiet = 0, trace_start = 0;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--rom") && i + 1 < argc) rom = argv[++i];
@@ -201,6 +241,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--png") && i + 1 < argc) png = argv[++i];
         else if (!strcmp(argv[i], "--png-every") && i + 1 < argc) png_every = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--remaster") && i + 1 < argc) remaster = argv[++i];
+        else if (!strcmp(argv[i], "--widescreen") && i + 1 < argc) wide = argv[++i];
+        else if (!strcmp(argv[i], "--ws-check")) ws_check = 1;
         else if (!strcmp(argv[i], "--remaster-pack") && i + 1 < argc) remaster_pack = argv[++i];
         else if (!strcmp(argv[i], "--hd-dump") && i + 1 < argc) hd_dump = argv[++i];
         else if (!strcmp(argv[i], "--wav") && i + 1 < argc) wav = argv[++i];
@@ -283,6 +325,8 @@ int main(int argc, char **argv) {
     uint32_t audio_n = 0, audio_cap = wav ? 48000u * (uint32_t)(frames / 60 + 2) : 0;
     uint8_t *rgb = malloc(256 * 240 * 3);
     int ev = 0;
+    long ws_middle = 0;
+    long ws_frames = 0, ws_map_frames = 0, ws_cells = 0, ws_bad = 0, ws_bad_frames = 0, ws_wide_on = 0, ws_wide = 0;
     int blargg_result = -1;
     int reset_hold = 0;
 
@@ -311,6 +355,18 @@ int main(int argc, char **argv) {
             fb_to_rgb(rgb);
             png_write_rgb(name, 256, 240, rgb);
         }
+        if (ws_check) {
+            int cells, bad = widescreen_check(&cells);
+            ws_frames++;
+            ws_middle += widescreen_middle_diff();
+            if (bad >= 0) { ws_map_frames++; ws_cells += cells; ws_bad += bad; ws_bad_frames += bad > 0; }
+            if (bad > 0 && !quiet) printf("frame %d: %d of %d squares differ from the screen\n", frame, bad, cells);
+        }
+        if (wide && png_every && (frame % png_every) == 0) {
+            char name[1100];
+            snprintf(name, sizeof name, "%s.%05d.png", wide, frame);
+            ws_wide_on += write_widescreen(name, remaster != NULL); ws_wide++;
+        }
         if (remaster && png_every && (frame % png_every) == 0) {
             char name[1100];
             snprintf(name, sizeof name, "%s.%05d.png", remaster, frame);
@@ -336,6 +392,13 @@ int main(int argc, char **argv) {
 
     if (png) { fb_to_rgb(rgb); png_write_rgb(png, 256, 240, rgb); }
     if (remaster) write_remastered(remaster, rgb);
+    if (wide) { ws_wide_on += write_widescreen(wide, remaster != NULL); ws_wide++; }
+    if (wide && !quiet) printf("widescreen: %ld of %ld pictures have the map in their bands\n", ws_wide_on, ws_wide);
+    if (wide || ws_check) printf("widescreen: the map routine was run %lu times, %.1f a frame\n", widescreen_calls(), (double)widescreen_calls() / frames);
+    if (ws_check)
+        printf("ws-check: %ld of %ld frames show the map; %ld of %ld squares on them differ from the screen (%ld frames with a difference)\n",
+               ws_map_frames, ws_frames, ws_bad, ws_cells, ws_bad_frames);
+    if (ws_check) printf("ws-check: %ld pixels of the canvas's middle differ from the PPU's picture\n", ws_middle);
     if (hd_dump) {   /* "DWHD" 1, scroll t, fine x, ctrl, palette[32], line masks[240], fb, hd_bg, hd_spr (little-endian),
                         the number of palette snapshots, 3 bytes padding, the four snapshots (ppu.hd_palettes)
                         and the 8 KiB of CHR RAM the sources' tile numbers are slots of */

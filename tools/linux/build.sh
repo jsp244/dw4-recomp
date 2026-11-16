@@ -15,6 +15,8 @@ ROM=$(ls rom/*.nes 2>/dev/null | head -n 1 || true)
 if [ -n "$ROM" ]; then
     echo "== cosimulation (interpreter vs native code)"
     python3 tests/cosim.py --frames 9000
+    echo "== widescreen: the map code's squares against the screen, and the canvas's middle against the picture"
+    ./build/nes-headless-recomp --rom "$ROM" --recomp --frames 9000 --keys "$(python3 -c 'import sys; sys.path.insert(0, "tests"); import cosim; print(cosim.DEFAULT_KEYS)')" --fuzz 1 --fuzz-start 5000 --ws-check --quiet | grep ws-check
     # no display in a container: SDL's offscreen video and dummy audio drivers
     export SDL_VIDEODRIVER=offscreen SDL_AUDIODRIVER=dummy
     for b in build-linux build-deck; do

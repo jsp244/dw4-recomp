@@ -28,8 +28,10 @@ own storage, checks its hash and remembers it, so this happens once.
 Alternatively put the .nes file in Android/data/org.dw4.nativeport/files/ on the shared
 storage (org.dw4.nativeport.touch for the phone app); the app finds it there by itself.
 
-The picture fills the screen's height in the 4:3 shape, with bars at the sides on wider
-screens. Scaling and aspect can be changed on the Graphics tab.
+The picture fills the screen in the shape that matches it: 16:9 widescreen on a 1920x1080
+screen, 16:10 on a 1280x800 one, 4:3 on a 4:3 one. Widescreen shows more of the map at
+both sides; battles and the title keep the 4:3 picture between bars. Scaling and aspect
+can be changed on the Graphics tab.
 
 Controls on a phone
 -------------------

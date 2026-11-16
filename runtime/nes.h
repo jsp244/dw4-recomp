@@ -272,6 +272,7 @@ typedef struct {
     uint64_t a12_clocks;        /* MMC3 IRQ counter clocks observed (statistics) */
     uint64_t irq_count;         /* IRQs serviced */
     uint64_t frames_run;        /* nes_run_frame calls, run-ahead's included */
+    bool     sandbox;           /* a routine of the game is being run on the side (nes_sandbox_*): no PPU/APU time, no hardware access */
 } sys_t;
 
 /* Global hardware state */
@@ -355,6 +356,14 @@ void    nes_set_pad(int pad, uint8_t buttons);
 size_t  nes_state_size(void);
 int     nes_state_save(void *buf, size_t size);
 int     nes_state_load(const void *buf, size_t size);
+/* One of the game's own routines run on the side, to ask it something (widescreen.c): begin saves
+   the CPU, the RAM, the battery RAM and the mapper; call runs the routine at addr in the
+   interpreter until it returns (1) or max_steps instructions have gone by (0), with the hardware
+   frozen: no PPU or APU time passes, their registers read 0 and ignore writes, and bank switches
+   work; end puts everything back. Between begin and end the caller may set RAM and the mapper. */
+void    nes_sandbox_begin(void);
+int     nes_sandbox_call(uint16_t addr, int max_steps);
+void    nes_sandbox_end(void);
 
 /* recompiled code entry (generated/ or stubs) */
 int     recomp_run(void);        /* run native code from cpu.pc; returns 0 if no native routine for cpu.pc */
@@ -388,6 +397,7 @@ static inline uint16_t zp_read16(uint8_t a) {
 /* interrupts. Returns nonzero when an interrupt must be serviced.     */
 /* ------------------------------------------------------------------ */
 static inline int sys_sync(void) {
+    if (sys.sandbox) return 0;
     ppu_run_to(cpu.cycles * 3);
     apu_run_to(cpu.cycles);
     uint8_t i = cpu.i;

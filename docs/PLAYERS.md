@@ -24,7 +24,8 @@ Graphics      Display mode (windowed / fullscreen / fullscreen exclusive),
               fullscreen), window size 1x-6x (shown while the resolution is Auto),
               scaling (integer: exact pixel multiples, may leave borders /
               fit: fills the screen, keeps the shape / stretch: fills, distorts),
-              aspect ratio (square pixels 8:7 / 4:3 CRT),
+              aspect ratio (square pixels 8:7 / 4:3 CRT / 16:9 or 16:10 widescreen:
+              more of the map beside the picture, below),
               textures (Original, or Remastered: below),
               filter (nearest / linear / sharp),
               shader (off / scanlines / CRT / CRT curved / glow) and its strength,
@@ -86,6 +87,14 @@ is 1 by default: the program plays one frame ahead and shows that one. Walking
 moves a whole square at a time on the game's own beat, so a step can still start
 up to a quarter of a second after the press, as on the console. Set run-ahead to
 Off if the picture ever stutters.
+
+Widescreen
+----------
+Aspect ratio: 16:9 or 16:10 shows more of the map at both sides of the picture, with
+the people standing there, wherever you are walking about: towns, castles, caves, the
+overworld. Nothing is stretched. Battles, the title and other screens that are not the
+map keep the normal picture between black bars. The extra map comes from your ROM's
+own map code as you play.
 
 Shaders
 -------
