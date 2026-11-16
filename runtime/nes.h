@@ -368,6 +368,9 @@ void    nes_sandbox_end(void);
 /* recompiled code entry (generated/ or stubs) */
 int     recomp_run(void);        /* run native code from cpu.pc; returns 0 if no native routine for cpu.pc */
 extern const char *recomp_rom_sha1; /* sha1 the native code was generated from, or NULL */
+/* a patched ROM: dirty has 1 for every PRG byte that differs from the dump the native code was made
+   from; the routines holding such bytes are left to the interpreter. NULL = no patch. Returns how many. */
+int     recomp_patch(const uint8_t *dirty, uint32_t prg_size);
 
 /* ------------------------------------------------------------------ */
 /* Inline memory access                                                */

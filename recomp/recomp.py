@@ -630,7 +630,7 @@ class Recompiler:
         return func_names
 
     def emit_main(self, outdir, sha1):
-        lines = ['#include "recomp_rt.h"', "", f'const char *recomp_rom_sha1 = "{sha1}";', ""]
+        lines = ['#include "recomp_rt.h"', "#include <stdlib.h>", "", f'const char *recomp_rom_sha1 = "{sha1}";', ""]
         for u in self.units.values():
             lines.append(f"extern const recomp_unit_t unit_{u.name};")
         lines.append("")
@@ -641,6 +641,34 @@ class Recompiler:
             cell = f"&unit_{u.name}" if u else "NULL"
             lines.append("    { " + (f"NULL, {cell}" if is_fixed(bank) else f"{cell}, NULL") + " },")
         lines.append("};")
+        lines.append(f"static const uint16_t recomp_nfuncs[{self.nbanks}] = {{ " +
+                     ", ".join(str(len(self.units[b].comps)) if b in self.units else "0" for b in range(self.nbanks)) + " };")
+        lines.append("")
+        lines.append("/* Patched ROMs (runtime/patch.c): per bank, the routines that hold a byte the patch changed.")
+        lines.append("   They were translated from the unpatched ROM, so the interpreter runs them instead. An")
+        lines.append("   instruction is at most four bytes long: the ones that can hold a changed byte start at it or")
+        lines.append("   up to three bytes before it. */")
+        lines.append(f"static uint8_t *recomp_off[{self.nbanks}];")
+        lines.append("")
+        lines.append("int recomp_patch(const uint8_t *dirty, uint32_t prg_size) {")
+        lines.append("    int n = 0;")
+        lines.append(f"    for (int b = 0; b < {self.nbanks}; b++) {{ free(recomp_off[b]); recomp_off[b] = NULL; }}")
+        lines.append("    if (!dirty) return 0;")
+        lines.append(f"    for (uint32_t b = 0; b < {self.nbanks}; b++) {{")
+        lines.append("        const recomp_unit_t *u = recomp_units[b][0] ? recomp_units[b][0] : recomp_units[b][1];")
+        lines.append(f"        if (!u || (b + 1) * 0x{UNIT_SIZE:X}u > prg_size) continue;")
+        lines.append(f"        for (uint32_t o = 0; o < 0x{UNIT_SIZE:X}u; o++) {{")
+        lines.append(f"            if (!dirty[b * 0x{UNIT_SIZE:X}u + o]) continue;")
+        lines.append("            for (uint32_t k = 0; k < 4 && k <= o; k++) {")
+        lines.append("                uint16_t idx = u->entry[o - k];")
+        lines.append("                if (!idx) continue;")
+        lines.append("                if (!recomp_off[b]) recomp_off[b] = calloc(recomp_nfuncs[b] + 1u, 1);")
+        lines.append("                if (recomp_off[b] && !recomp_off[b][idx - 1]) { recomp_off[b][idx - 1] = 1; n++; }")
+        lines.append("            }")
+        lines.append("        }")
+        lines.append("    }")
+        lines.append("    return n;")
+        lines.append("}")
         lines.append("")
         lines.append("int recomp_run(void) {")
         lines.append("    uint16_t pc = cpu.pc;")
@@ -652,6 +680,7 @@ class Recompiler:
         lines.append("    if (!u) return 0;")
         lines.append(f"    uint16_t idx = u->entry[pc & 0x{UNIT_SIZE - 1:X}];")
         lines.append("    if (!idx) return 0;")
+        lines.append("    if (recomp_off[bank] && recomp_off[bank][idx - 1]) return 0;")
         lines.append("    sys.native_blocks++;")
         lines.append("    u->funcs[idx - 1]();")
         lines.append("    return 1;")
