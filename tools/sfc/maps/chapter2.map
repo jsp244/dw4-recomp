@@ -1,5 +1,5 @@
 # Chapter 2: Santeem's castle, Surene, Tempe, Frenor, the Birdsong Tower, the desert Bazaar, the shrine of the
-# travel door and Endor (its colosseum is still to come).
+# travel door and Endor with its colosseum.
 # Their walls, grounds, plants and water are squares chapter 1's places have too (chapter1.map pairs them: a
 # line for any kind of map serves here as well); this file pairs what is new in them. The inventories are the
 # whole game's, one for each kind of map (the game's number at $28): nes_kXX.
@@ -26,6 +26,8 @@ nes k0D ../../../generated/sfc/nes_k0D.json
 nes k0E ../../../generated/sfc/nes_k0E.json
 nes k25 ../../../generated/sfc/nes_k25.json
 nes k27 ../../../generated/sfc/nes_k27.json
+nes k2D ../../../generated/sfc/nes_k2D.json
+lib dq3f ../../../generated/sfc/dq3_front.sfclib
 figs dq3 ../../../generated/sfc/dq3.figs
 people ch2 ../../../generated/sfc/nes_people_ch2.json
 
@@ -113,6 +115,43 @@ sq k04:60FD374414777C34 ~dq3t:316d8b20
 sq k04:8D14CA960CADDD44 ~dq3t:316d8b20
 sq k04:80844C155B6122AF ~dq3t:316d8b20
 sq k04:BA174DCAABA80171 ~dq3t:316d8b20
+
+# ---- Endor's colosseum ($2D) ----
+sq k2D:173A95CBC79109E4 dq3ow:cf1c8dc8 # the arena's sand
+sq k2D:AAD8CE1147D3E4B4 =k2D:173A95CBC79109E4 over ~dq3ow:cf1c8dc8 clear 1,2,3 # sand in the wall's shadow: the NES's own stipple, in the sand's dark
+sq k2D:9C4F737026015804 =k2D:173A95CBC79109E4 over ~dq3ow:cf1c8dc8 clear 1,2,3
+sq k2D:5E60364ECBF097E5 dq3t:e911c8dc # the stands' grass
+sq k2D:C33B854782FE60ED =k2D:5E60364ECBF097E5 over ~dq3t:e911c8dc clear 1,2,3 # grass in the royal box's shadow
+sq k2D:E8901C6C9562B842 =k2D:173A95CBC79109E4 over dq3f:2709e28b.hi gray 92 dark 18 # a tower's foot, on the sand
+sq k2D:C395D47D69C1BC4C =k2D:173A95CBC79109E4 over dq3f:20766aa2.hi gray 92 dark 18
+sq k2D:CC157040EFE7E2AC =k2D:173A95CBC79109E4 over dq3f:20766aa2.hi gray 92 dark 18
+sq k2D:8DC446C604326534 dq1:991fffb5 # the dark brick between the towers
+sq k2D:8B6B21330215B8BF =k2D:173A95CBC79109E4 over dq3c:75608358.hi # the stone drums at the way in
+sq k2D:C3488C9F2C98476E =k2D:173A95CBC79109E4 over ~dq3w:efc08409 clear 3 # the royal box's pillars
+sq k2D:03F28602EB6CB0AE =k2D:173A95CBC79109E4 over ~dq3t:f3543fd3 clear 3 # the great door (four squares), in iron
+sq k2D:1F96094BF68F5FC3 =k2D:173A95CBC79109E4 over ~dq3t:f3543fd3 clear 3
+sq k2D:3AE8B33CBC9BF9D5 =k2D:173A95CBC79109E4 over ~dq3t:f3543fd3 clear 3
+sq k2D:56A4587A0DEC4DE9 =k2D:173A95CBC79109E4 over ~dq3t:f3543fd3 clear 3
+# the crowd: the NES draws eight spectators as map squares (two looking each way, towards the arena); they are
+# Dragon Quest III's townspeople, head and shoulders, on the stands' grass
+sq k2D:1B79747ACD9EC591 =k2D:5E60364ECBF097E5 over @dq3:g6:0 # looking down: the woman
+sq k2D:6DA5A66B246A04C5 =k2D:5E60364ECBF097E5 over @dq3:g0:0 # the young man
+sq k2D:C8130EF95BFF8177 =k2D:5E60364ECBF097E5 over @dq3:g6:m2 # looking right
+sq k2D:21145410FDD289AC =k2D:5E60364ECBF097E5 over @dq3:g3:6
+sq k2D:0C1AFCAF9839DCB9 =k2D:5E60364ECBF097E5 over @dq3:g6:2 # looking left
+sq k2D:961233E3742259D7 =k2D:5E60364ECBF097E5 over @dq3:g9:0
+sq k2D:D78BCD0EE870D89C =k2D:5E60364ECBF097E5 over @dq3:g17:0 # seen from behind
+sq k2D:F48D84353B5F66E3 =k2D:5E60364ECBF097E5 over @dq3:g3:4
+# and each of them again as the game redraws them to make the crowd cheer: the figure's other step, or the same
+# one a pixel lower
+sq k2D:131CBD5698C0FCC2 =k2D:5E60364ECBF097E5 over @dq3:g6:1
+sq k2D:9760BF636C316540 =k2D:5E60364ECBF097E5 over @dq3:g0:1
+sq k2D:478C84DF84F34C88 =k2D:5E60364ECBF097E5 over @dq3:g6:m2+1
+sq k2D:9C3DCBCB64E6E628 =k2D:5E60364ECBF097E5 over @dq3:g3:7
+sq k2D:80098F58196376F8 =k2D:5E60364ECBF097E5 over @dq3:g6:2+1
+sq k2D:80A8C182DB00BA0F =k2D:5E60364ECBF097E5 over @dq3:g9:1
+sq k2D:7F6A382C007A8064 =k2D:5E60364ECBF097E5 over @dq3:g17:1
+sq k2D:F1A0FCB7570C9B95 =k2D:5E60364ECBF097E5 over @dq3:g3:5
 
 # ---- chapter 2's people ----
 # Its townspeople are Dragon Quest III's, as in chapter 1. Alena, Cristo and Brey (kinds 0 to 2 of every map) are not

@@ -33,6 +33,10 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           Super Famicom game has only with an edge drawn on it, where the NES
                                           game lays one square side by side and the bricks have to run on;
                                           "cols LIST" does the same with its columns (counted from the left).
+                                          "over @FIGS:gSET:POSE" lays the upper sixteen rows of a figure
+                                          there (m before POSE mirrors it, +N after it sets it N pixels
+                                          lower): the spectators the NES draws
+                                          as map squares are Dragon Quest III's townspeople then.
                                           "over ~X clear 3" lays the NES square's own shapes over the ground
                                           in X's colors, all but those of its fourth color (0-3 as the NES
                                           palette orders them; "clear 0,3" for two; "0e": only where that
@@ -362,7 +366,22 @@ def build(out, paths):
         if base:
             frames = [tuple(toned(solid(p), base) for p in px) for px in frames]
         if "over" in extra:             # (with something laid over, the tones are its own: the ground keeps its colors)
-            if extra["over"].startswith("~"):
+            if extra["over"].startswith("@"):
+                lib, _, rest = extra["over"][1:].partition(":g")
+                group, _, pose = rest.partition(":")
+                pose, _, lower = pose.partition("+")
+                found = [x for x in m.figs.get(lib, []) if x["group"] == int(group) and x["pose"] == int(pose.lstrip("m"))]
+                if not found:
+                    raise SystemExit("%s: no figure %s" % (where, extra["over"]))
+                w, h, fp = found[0]["w"], found[0]["h"], found[0]["px"]
+                over = [None] * 256
+                for y in range(int(lower or 0), 16):
+                    for x in range(min(16, w)):
+                        p = fp[(y - int(lower or 0)) * w + (w - 1 - x if pose.startswith("m") else x)]
+                        if (p >> 24) & 255:
+                            over[y * 16 + x + (16 - min(16, w)) // 2] = p
+                over = tuple(over)
+            elif extra["over"].startswith("~"):
                 over = recolored(e, m.art(extra["over"][1:], m.libs, where)["px"],
                                  tuple(v for v in extra.get("clear", "").split(",") if v))
             else:
