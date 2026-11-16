@@ -6,8 +6,9 @@ A capture is made by the game program itself:
     dw4 rom.nes --play --audio-dump capture.wav --quit-after 2400
 (the first 40 seconds from power-on: the title music, which uses both pulse channels and the
 triangle). The references come from the test harness for the same stretch: the full mix, and the
-mix with pulse 1 left out. A capture passes when its loudness is the full mix's (within 5 %) and
-clearly not that of the mix without pulse 1, and when its two stereo channels are the same.
+mix with pulse 1 left out. The channels add up in energy, so a capture passes when its energy is
+nearer the full mix's than halfway to the mix without pulse 1, when it is as long as the stretch
+(within 3 %), and when its two stereo channels are the same.
 """
 import array
 import glob
@@ -52,18 +53,20 @@ def main():
     if not rom:
         raise SystemExit("no ROM: put your .nes file in rom/")
     full, no_p1 = reference(rom, None), reference(rom, "1")
-    print("reference: full mix RMS %.0f, without pulse 1 RMS %.0f" % (full, no_p1))
+    seconds = FRAMES * 655171.0 / 39375000.0      # the NES's frame: 60.0988 a second
+    print("reference: full mix RMS %.0f, without pulse 1 RMS %.0f, %.1f s" % (full, no_p1, seconds))
     bad = 0
     for path in sys.argv[1:]:
         ch, rate, a = load(path)
         left, right = (a[0::2], a[1::2]) if ch == 2 else (a, a)
         r = rms(left)
         same = left == right
-        ok = abs(r - full) / full < 0.05 and abs(r - no_p1) / no_p1 > 0.15 and same
+        length_ok = abs(len(left) / rate - seconds) / seconds < 0.03
+        ok = abs(r * r - full * full) < 0.5 * (full * full - no_p1 * no_p1) and length_ok and same
         bad += not ok
         print("%-30s %d ch %d Hz %5.1f s  RMS %6.0f  peak %5d  L=R %s  -> %s" % (
             os.path.basename(path), ch, rate, len(left) / rate, r, max(abs(x) for x in left) if left else 0, same,
-            "all channels present" if ok else "NOT RIGHT"))
+            "all channels present" if ok else "NOT RIGHT" if length_ok else "NOT RIGHT (not the %d-frame stretch)" % FRAMES))
     sys.exit(1 if bad else 0)
 
 

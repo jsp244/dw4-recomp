@@ -2635,10 +2635,12 @@ int main(int argc, char **argv) {
                 double sd, sp, sl;
                 if (pace_mode == 1 && gpu_sync_deadline(&sd, &sp, &sl) && sl > 0)
                     snprintf(lead_txt, sizeof lead_txt, "  deadline->screen %.2f ms", sl * tick_ms);
+                int rate_lo, rate_hi;
+                audio_out_rate_range(&rate_lo, &rate_hi);
                 fprintf(stats_file, "%s: frame %.3f ms (%.2f fps)  input->present %.2f ms  work %.2f ms  margin %.1f ms  "
-                        "vblank %.3f ms  audio queued %d ms  apu rate %d  missed deadlines %d%s\n",
+                        "vblank %.3f ms  audio queued %d ms  apu rate %d (%d-%d)  missed deadlines %d%s\n",
                         pace_names[pace_mode], ms, 1000.0 / ms, stats_lat / stats_frames, stats_work / stats_frames,
-                        margin * tick_ms, vblank * tick_ms, audio_out_queued_ms(), audio_out_rate(), missed, lead_txt);
+                        margin * tick_ms, vblank * tick_ms, audio_out_queued_ms(), audio_out_rate(), rate_lo, rate_hi, missed, lead_txt);
                 fflush(stats_file);
                 stats_t0 = t2; stats_frames = 0; stats_lat = stats_work = 0;
             }

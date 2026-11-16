@@ -13,16 +13,18 @@
 #include "nes.h"
 
 static const struct { int target_ms, max_ms, prime_ms, device_samples; } presets[3] = {
-    { 16, 60, 10, 256 },     /* low: ~25 ms including the device buffer */
-    { 32, 100, 20, 512 },    /* normal */
-    { 70, 180, 50, 1024 },   /* safe: for systems that stutter */
+    { 16, 60, 16, 256 },     /* low: ~25 ms including the device buffer */
+    { 32, 100, 32, 512 },    /* normal */
+    { 70, 180, 70, 1024 },   /* safe: for systems that stutter */
 };
 
 static SDL_AudioDeviceID dev;
 static SDL_RWops *dump;         /* --audio-dump: a WAV of what is queued */
 static Uint32 dump_bytes;
 static int base_rate, cur_rate, preset;
+static int rate_lo, rate_hi;   /* the range cur_rate moved over (statistics) */
 static double trim;          /* learned rate correction (integral term) */
+static double queued_avg = -1;   /* the queue's length in ms, smoothed; -1 = no reading yet */
 
 static int open_device(void) {
     SDL_AudioSpec want, have;
@@ -79,6 +81,7 @@ void audio_out_clear(void) {
     if (!dev) return;
     static int16_t silence[2 * 9600];
     SDL_ClearQueuedAudio(dev);
+    queued_avg = -1;
     Uint32 n = (Uint32)(base_rate * presets[preset].prime_ms / 1000);
     if (n > 9600) n = 9600;
     SDL_QueueAudio(dev, silence, n * 2 * sizeof(int16_t));
@@ -91,23 +94,42 @@ int audio_out_queued_ms(void) {
 
 int audio_out_rate(void) { return cur_rate; }
 
+void audio_out_rate_range(int *lo, int *hi) {
+    *lo = rate_lo ? rate_lo : cur_rate; *hi = rate_hi ? rate_hi : cur_rate;
+    rate_lo = rate_hi = 0;
+}
+
 void audio_out_pump(int muted, int volume) {
     static int16_t buf[4096], st[2 * 4096];
     if (dev && !muted) {
         int target = presets[preset].target_ms;
-        double err = (double)(target - audio_out_queued_ms()) / target;   /* +1 empty .. -1 at twice the target */
+        /* The queue's length, read once a frame, jumps by a device block (about 10 ms) according
+           to when the device last took one. Steering by the raw reading moved the rate over some
+           350 Hz within every second: the pitch wavered by +-6 cents many times a second, which
+           the NES's pure tones give away as a rough, unsteady sound. So the reading is smoothed
+           over about half a second, and the steering is gentle and limited to half a percent:
+           the pitch now moves by a fraction of a cent, slowly. */
+        double q = audio_out_queued_ms();
+        if (queued_avg < 0) queued_avg = q;
+        else queued_avg += 0.03 * (q - queued_avg);
+        double err = (target - queued_avg) / target;   /* +1 empty .. -1 at twice the target */
         if (err > 1.0) err = 1.0;
         if (err < -1.0) err = -1.0;
         /* a slow integral term learns a steady clock difference (a 120.6 Hz display paces the
            game 0.35 % fast), so the queue settles at the target instead of above it */
-        trim += 0.000024 * err;
+        trim += 0.00001 * err;
         if (trim > 0.01) trim = 0.01;
         if (trim < -0.01) trim = -0.01;
-        cur_rate = (int)(base_rate * (1.0 + 0.012 * err + trim) + 0.5);
+        double adj = 0.004 * err + trim;
+        if (adj > 0.005) adj = 0.005;
+        if (adj < -0.005) adj = -0.005;
+        cur_rate = (int)(base_rate * (1.0 + adj) + 0.5);
     } else {
         cur_rate = base_rate;
     }
     apu.sample_rate = (uint32_t)cur_rate;
+    if (!rate_lo || cur_rate < rate_lo) rate_lo = cur_rate;
+    if (cur_rate > rate_hi) rate_hi = cur_rate;
 
     uint32_t n = apu_samples_available();
     while (n > 0) {

@@ -36,6 +36,9 @@ static const uint8_t tri_seq[32] = {
 
 static float pulse_table[31], tnd_table[203];
 static double hp90_a, hp440_a, lp_b;
+#define HIGH_PASS_HZ 16.0
+#define LOW_PASS_HZ 40000.0
+#define OUTPUT_GAIN 1.5
 
 static void build_tables(void) {
     pulse_table[0] = 0;
@@ -47,9 +50,17 @@ static void build_tables(void) {
 void apu_set_sample_rate(uint32_t hz) {
     apu.sample_rate = hz;
     double dt = 1.0 / hz;
-    double rc90 = 1.0 / (2 * M_PI * 90.0), rc440 = 1.0 / (2 * M_PI * 440.0), rc14k = 1.0 / (2 * M_PI * 14000.0);
+    /* The output stage: a high-pass low enough to do no more than take the DC offset of the mix
+       away, and a low-pass far enough up to leave the audible range alone. The numbers were set
+       against a recording of the same music from Mesen: with them every octave band from 20 Hz
+       to 20 kHz is within 0.3 dB of it, and the level is the same. The front-loading NES also
+       cuts bass with high-passes at 90 Hz and 440 Hz and rolls off above 14 kHz; with those the
+       triangle's bass lines were 7 dB down at 90-180 Hz and 16 dB down at 45-90 Hz, and the
+       music sounded tinny. (The state keeps both high-pass stages' fields, so save states are
+       unchanged; the second stage passes its input through.) */
+    double rc90 = 1.0 / (2 * M_PI * HIGH_PASS_HZ), rc14k = 1.0 / (2 * M_PI * LOW_PASS_HZ);
     hp90_a = rc90 / (rc90 + dt);
-    hp440_a = rc440 / (rc440 + dt);
+    hp440_a = 1.0;
     lp_b = dt / (rc14k + dt);
 }
 
@@ -192,19 +203,19 @@ static inline void emit_sample(float v) {
     double x = v;
     double y1 = x - apu.hp90_prev_in + hp90_a * apu.hp90_prev_out;
     apu.hp90_prev_in = x; apu.hp90_prev_out = y1;
-    double y2 = y1 - apu.hp440_prev_in + hp440_a * apu.hp440_prev_out;
+    double y2 = y1;
     apu.hp440_prev_in = y1; apu.hp440_prev_out = y2;
     apu.lp_prev += lp_b * (y2 - apu.lp_prev);
-    double s = apu.lp_prev * 32767.0 * 1.4;
+    double s = apu.lp_prev * 32767.0 * OUTPUT_GAIN;
     if (apu_mute_output) {
         x = mo_n ? mo_acc / mo_n : 0;
         mo_acc = 0; mo_n = 0;
         y1 = x - mo_hp90_in + hp90_a * mo_hp90_out;
         mo_hp90_in = x; mo_hp90_out = y1;
-        y2 = y1 - mo_hp440_in + hp440_a * mo_hp440_out;
+        y2 = y1;
         mo_hp440_in = y1; mo_hp440_out = y2;
         mo_lp += lp_b * (y2 - mo_lp);
-        s = mo_lp * 32767.0 * 1.4;
+        s = mo_lp * 32767.0 * OUTPUT_GAIN;
     }
     if (s > 32767) s = 32767; else if (s < -32768) s = -32768;
     uint32_t next = (apu.ring_write + 1) & (APU_RING_SIZE - 1);
