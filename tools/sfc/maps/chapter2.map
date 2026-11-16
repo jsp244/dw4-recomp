@@ -41,7 +41,8 @@ sq k03:8FE254204EC3B7B4 =town:3E51A0A88427F85B over dq3t:5fa25d75.hi # pot
 sq k03:E10517B2A237C91A =town:3E51A0A88427F85B over dq3t:4a397bc3.hi # the kitchen's basin
 
 # ---- Surene ($0B) ----
-sq k0B:38EEB7EE6951108C dq3t:e911c8dc over ~dq3t:316d8b20 clear 0e,2e # signpost, on the grass
+sq k0B:38EEB7EE6951108C =izmit:9A333EA78F23AD92 over ~dq3t:316d8b20 clear 0e,2e,outline # signpost, on the sand the NES draws under it (most stand on sand)
+sq k08:38EEB7EE6951108C dq3t:e911c8dc over ~dq3t:316d8b20 clear 0e,2e,outline here # (this kind of place has it on grass only)
 sq k0B:6134B0EC16921172 ~dq3t:316d8b20 # the plank bridge
 
 # ---- Tempe ($02) ----
@@ -104,7 +105,7 @@ sq k0C:F73CED4DAE72DEB7 =castle:9D475928B28B0EDA over ~dq3c:7a31dbbd clear 0e # 
 # ---- the desert Bazaar ($04; the game has it on the overworld in this chapter only) ----
 sq k04:CB36A768C6F37ADC =izmit:9A333EA78F23AD92 over dq3c:1e0d21c0.hi # barrel, on the sand
 sq k04:FD125E02D44A7D66 =izmit:9A333EA78F23AD92 over dq3t:5fa25d75.hi # pot
-sq k04:F113722F153EEC87 =izmit:9A333EA78F23AD92 over ~dq3t:316d8b20 clear 2e,dots # the stakes of a pen
+sq k04:F113722F153EEC87 =izmit:9A333EA78F23AD92 over ~dq3t:316d8b20 clear 2e,dots,outline # the stakes of a pen
 sq k04:F665B2ED1FE1262A ~dq3t:316d8b20 # a stall's railing, and its ends
 sq k04:60FD374414777C34 ~dq3t:316d8b20
 sq k04:8D14CA960CADDD44 ~dq3t:316d8b20

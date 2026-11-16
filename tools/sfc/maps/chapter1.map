@@ -260,7 +260,7 @@ sq ow:A76524FB474BC0C0 dq3ow:3ac67643 # sea
 sq ow:0988127FFEB9B990 dq3ow:5777881f # forest
 sq ow:6877C3C4BF831557 dq3ow:d6ee9d16 # mountain
 sq ow:173A98CBC7910EFD dq3ow:d2cd8ecf # grass
-sq ow:347E848804C87C28 =ow:173A98CBC7910EFD over ~dq3t:316d8b20 clear 1,3 # signpost: its own shape in wood, on the grass
+sq ow:347E848804C87C28 =ow:173A98CBC7910EFD over ~dq3t:316d8b20 clear 1,3,dots # signpost: its own shape in wood, on the grass
 sq ow:210198C253102322 dq3ow:5f05b3d4 # hill
 sq ow:9A333EA78F23AD92 dq3ow:cf1c8dc8 # desert
 sq ow:E3CEA1E6E0C69E14 dq3ow:11c3ff51 # thick forest

@@ -38,7 +38,8 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           palette orders them; "clear 0,3" for two; "0e": only where that
                                           color reaches the square's edge, so the black around a thing and
                                           not the black drawn inside it; "dots": and the specks of one or
-                                          two pixels left over, the grain the NES draws on sand): a
+                                          two pixels left over, the grain the NES draws on sand;
+                                          "outline": and a dark line drawn around what is left): a
                                           signpost the Super Famicom games have no picture of then stands
                                           on their real grass
     fig NES SFC [dx DX] [dy DY]           the NES figure NES drawn as the figure SFC, its picture starting
@@ -130,8 +131,8 @@ def recolored(nes, sfc_px, clear=()):
     """the NES square's pattern in four of the Super Famicom square's colors; the NES colors (0-3) named in `clear`
     stay clear ("0e": only its pixels joined to the square's edge), and the others take the square's colors between
     them"""
-    dots = "dots" in clear
-    clear = [c for c in clear if c != "dots"]
+    dots, outline = "dots" in clear, "outline" in clear
+    clear = [c for c in clear if c not in ("dots", "outline")]
     whole = tuple(int(c) for c in clear if not str(c).endswith("e"))
     edge = tuple(int(str(c)[:-1]) for c in clear if str(c).endswith("e"))
     def luma(c):
@@ -180,6 +181,11 @@ def recolored(nes, sfc_px, clear=()):
             if len(piece) <= 2:
                 for k in piece:
                     px[k] = None
+    if outline:                         # the clear pixels beside what is left, in the darkest color
+        beside = [i for i in range(256) if px[i] is None and any(
+            0 <= j < 256 and abs(j % 16 - i % 16) <= 1 and px[j] is not None for j in (i - 16, i + 16, i - 1, i + 1))]
+        for i in beside:
+            px[i] = shades[0]
     return tuple(px)
 
 
