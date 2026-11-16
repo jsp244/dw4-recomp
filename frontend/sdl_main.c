@@ -133,6 +133,7 @@ static int rom_ok;                    /* a verified Dragon Warrior IV ROM is loa
 static int game_started;              /* the machine has run since the ROM was loaded */
 static int running = 1;
 static int quit_after;                /* --quit-after N: leave after N game frames (timed test runs) */
+static const char *audio_dump_path;   /* --audio-dump FILE: a WAV of everything handed to the audio device */
 static int restart_after_quit;        /* Updates tab: start the installed version once shut down */
 
 static char base_dir[1024];           /* directory of the executable, with trailing separator */
@@ -1922,7 +1923,7 @@ static int trigger_selftest(void) {
 static void usage(void) {
     printf("usage: dw4 [rom.nes] [--play] [--selftest N out.png] [--ui-shot out.png [tab [frames]]]\n"
            "                   [--game-shot out.png [frames] [--state-load state]] [--rewind-test N] [--list-controllers [out.txt]]\n"
-           "                   [--list-modes [out.txt]] [--chord-test] [--trigger-test] [--stats out.txt] [--quit-after N]\n"
+           "                   [--list-modes [out.txt]] [--chord-test] [--trigger-test] [--stats out.txt] [--quit-after N] [--audio-dump out.wav]\n"
            "                   [--touch] [--touch-test] [--update-check] [--update-test VERSION [args...]]\n"
            "                   [--launcher | --no-launcher]\n"
            "  --update-check: what the Updates tab's check finds. --update-test: the same as if this build were\n"
@@ -2093,6 +2094,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--list-controllers")) { list_pads = 1; if (i + 1 < argc) list_pads_file = argv[++i]; }
         else if (!strcmp(argv[i], "--list-modes")) { list_modes_flag = 1; if (i + 1 < argc) list_modes_file = argv[++i]; }
         else if (!strcmp(argv[i], "--stats") && i + 1 < argc) stats_path = argv[++i];
+        else if (!strcmp(argv[i], "--audio-dump") && i + 1 < argc) audio_dump_path = argv[++i];
         else if (!strcmp(argv[i], "--play")) autoplay = 1;
         else if (!strcmp(argv[i], "--quit-after") && i + 1 < argc) quit_after = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--update-check")) update_test = 1;
@@ -2346,6 +2348,7 @@ int main(int argc, char **argv) {
     /* ---- audio ---- */
     if (SDL_WasInit(SDL_INIT_AUDIO)) {
         audio_ok = audio_out_init(SAMPLE_RATE, cfg.audio_latency);
+        if (audio_dump_path && !audio_out_dump(audio_dump_path)) fprintf(stderr, "cannot write %s\n", audio_dump_path);
         if (!audio_ok) fprintf(stderr, "could not open audio: %s\n", SDL_GetError());
     }
     if (autoplay && rom_ok) start_game();   /* --play: skip the launcher */

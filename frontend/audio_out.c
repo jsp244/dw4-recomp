@@ -19,6 +19,8 @@ static const struct { int target_ms, max_ms, prime_ms, device_samples; } presets
 };
 
 static SDL_AudioDeviceID dev;
+static SDL_RWops *dump;         /* --audio-dump: a WAV of what is queued */
+static Uint32 dump_bytes;
 static int base_rate, cur_rate, preset;
 static double trim;          /* learned rate correction (integral term) */
 
@@ -48,6 +50,29 @@ void audio_out_set_preset(int p) {
     preset = p;
     if (dev) { SDL_CloseAudioDevice(dev); dev = 0; }
     if (base_rate) open_device();
+}
+
+int audio_out_dump(const char *path) {
+    dump = SDL_RWFromFile(path, "wb");
+    if (!dump) return 0;
+    Uint8 hdr[44] = { 'R','I','F','F', 0,0,0,0, 'W','A','V','E', 'f','m','t',' ', 16,0,0,0, 1,0, 2,0, 0,0,0,0, 0,0,0,0, 4,0, 16,0, 'd','a','t','a', 0,0,0,0 };
+    Uint32 rate = (Uint32)(base_rate ? base_rate : 48000), byte_rate = rate * 4;
+    for (int i = 0; i < 4; i++) { hdr[24 + i] = (Uint8)(rate >> (8 * i)); hdr[28 + i] = (Uint8)(byte_rate >> (8 * i)); }
+    SDL_RWwrite(dump, hdr, 1, sizeof hdr);
+    dump_bytes = 0;
+    return 1;
+}
+
+static void dump_close(void) {
+    if (!dump) return;
+    Uint32 riff = 36 + dump_bytes;
+    Uint8 le[4];
+    for (int i = 0; i < 4; i++) le[i] = (Uint8)(riff >> (8 * i));
+    SDL_RWseek(dump, 4, RW_SEEK_SET); SDL_RWwrite(dump, le, 1, 4);
+    for (int i = 0; i < 4; i++) le[i] = (Uint8)(dump_bytes >> (8 * i));
+    SDL_RWseek(dump, 40, RW_SEEK_SET); SDL_RWwrite(dump, le, 1, 4);
+    SDL_RWclose(dump);
+    dump = NULL;
 }
 
 void audio_out_clear(void) {
@@ -90,14 +115,17 @@ void audio_out_pump(int muted, int volume) {
         if (!got) break;
         n -= got;
         for (uint32_t i = 0; i < got; i++) st[2 * i] = st[2 * i + 1] = buf[i];
-        if (muted || !dev) continue;
-        if (SDL_GetQueuedAudioSize(dev) > (Uint32)(base_rate * presets[preset].max_ms / 1000) * 2 * sizeof(int16_t)) continue;
+        if (muted) continue;
         if (volume != 100) for (uint32_t i = 0; i < 2 * got; i++) st[i] = (int16_t)(st[i] * volume / 100);
+        if (dump) { SDL_RWwrite(dump, st, 1, got * 2 * sizeof(int16_t)); dump_bytes += got * 2 * (Uint32)sizeof(int16_t); }
+        if (!dev) continue;
+        if (SDL_GetQueuedAudioSize(dev) > (Uint32)(base_rate * presets[preset].max_ms / 1000) * 2 * sizeof(int16_t)) continue;
         SDL_QueueAudio(dev, st, got * 2 * sizeof(int16_t));
     }
 }
 
 void audio_out_shutdown(void) {
+    dump_close();
     if (dev) SDL_CloseAudioDevice(dev);
     dev = 0;
 }

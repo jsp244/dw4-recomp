@@ -30,6 +30,8 @@ if [ -n "$ROM" ]; then
         grep -E "^(display_mode|aspect|scaling|resolution)=" $b/dw4.ini | tr '\n' ' '; echo
         sed -i 's/^textures=.*/textures=1/' $b/dw4.ini   # the remastered graphics
         ./$b/dw4 "$ROM" --game-shot "/tmp/tex-$b.png" 900 | grep game-shot
+        ./$b/dw4 "$ROM" --play --audio-dump "/tmp/audio-$b.wav" --quit-after 2400 > /dev/null   # what it hands to the audio device
+        python3 tests/audio_check.py "/tmp/audio-$b.wav"
         ./$b/dw4 --update-check | tail -n 2 || true   # the Updates tab's check (needs the network)
     done
 fi

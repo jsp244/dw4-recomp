@@ -8,6 +8,7 @@
 #include "palette.h"
 #include "remaster.h"
 #include "widescreen.h"
+#include "patch.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -101,6 +102,41 @@ static uint8_t fuzz_pad(void) {
     if (fuzz_gap) { fuzz_gap = 0; return 0; }
     fuzz_left--;
     return fuzz_btn;
+}
+
+/* --apu-log: the writes to each sound register, the values written to $4015 (channel enables) and
+   $4017 (frame counter), and per channel the frames in which it could be heard */
+static unsigned long apu_writes[0x18], apu_4015[32], apu_4017[4], apu_heard[5], apu_log_frames;
+static int apu_log_on;
+
+static void apu_log_hook(uint16_t a, uint8_t v) {
+    if (a >= 0x4000 && a < 0x4018) apu_writes[a - 0x4000]++;
+    if (a == 0x4015) apu_4015[v & 31]++;
+    if (a == 0x4017) apu_4017[v >> 6]++;
+}
+
+static void apu_log_frame(void) {
+    apu_log_frames++;
+    for (int i = 0; i < 2; i++) {
+        const apu_pulse_t *p = &apu.pulse[i];
+        apu_heard[i] += p->length > 0 && p->timer_period >= 8 && (p->const_volume ? p->volume : p->env_decay) > 0;
+    }
+    apu_heard[2] += apu.tri.length > 0 && apu.tri.linear > 0 && apu.tri.timer_period >= 2;
+    apu_heard[3] += apu.noise.length > 0 && (apu.noise.const_volume ? apu.noise.volume : apu.noise.env_decay) > 0;
+    apu_heard[4] += apu.dmc.bytes_remaining > 0;
+}
+
+static void apu_log_print(void) {
+    static const char *const ch[5] = { "pulse 1", "pulse 2", "triangle", "noise", "DMC" };
+    printf("apu-log: writes per register $4000-$4017:");
+    for (int i = 0; i < 0x18; i++) printf("%s%lu", i % 4 ? " " : " | ", apu_writes[i]);
+    printf("\napu-log: $4015 values written:");
+    for (int i = 0; i < 32; i++) if (apu_4015[i]) printf(" %02X x%lu", i, apu_4015[i]);
+    printf("\napu-log: $4017 values written (top two bits):");
+    for (int i = 0; i < 4; i++) if (apu_4017[i]) printf(" %02X x%lu", i << 6, apu_4017[i]);
+    printf("\napu-log: frames in which a channel could be heard, of %lu:", apu_log_frames);
+    for (int i = 0; i < 5; i++) printf(" %s %lu", ch[i], apu_heard[i]);
+    printf("\n");
 }
 
 static void fb_to_rgb(uint8_t *rgb) {
@@ -201,6 +237,8 @@ static void usage(void) {
         "usage: nes-headless --rom FILE [options]\n"
         "  --frames N          run N frames (default 600)\n"
         "  --keys SPEC         input events: 'frame:BTN+BTN;frame:-' (BTN = A B SELECT START UP DOWN LEFT RIGHT, '-' = none)\n"
+        "  --ips FILE          apply an IPS patch (a ROM hack) to the loaded ROM; may be given several times,\n"
+        "                      applied in that order. With --recomp the routines it touches are interpreted\n"
         "  --input FILE        input script: lines of 'frame BTN+BTN'\n"
         "  --fuzz SEED         random controller input (the same for the same seed), from --fuzz-start N (default 0)\n"
         "  --png FILE          write the last frame as PNG\n"
@@ -214,6 +252,8 @@ static void usage(void) {
         "  --hd-dump FILE      write the last frame's pixel sources (tools/remaster): palette, line\n"
         "                      masks, pixels and each layer's source tile per pixel\n"
         "  --wav FILE          write audio to a 48 kHz WAV\n"
+        "  --apu-log           print what the game wrote to the sound chip and how much each channel sounded\n"
+        "  --mute MASK         leave channels out of the WAV: 1 pulse 1, 2 pulse 2, 4 triangle, 8 noise (hex, sum)\n"
         "  --trace FILE        write a per-instruction trace (interpreter)\n"
         "  --nestest N         nestest mode: start at $C000 and run N instructions\n"
         "  --blargg            poll the blargg test status at $6000 and exit when done\n"
@@ -228,7 +268,8 @@ static void usage(void) {
 int main(int argc, char **argv) {
     const char *rom = NULL, *png = NULL, *wav = NULL, *trace = NULL, *cov = NULL, *hash = NULL, *sav = NULL, *input = NULL, *debug_log = NULL, *ram_dump = NULL;
     const char *state_save = NULL, *state_load = NULL, *remaster = NULL, *remaster_pack = NULL, *hd_dump = NULL;
-    int fuzz_start = 0, ws_check = 0;
+    int fuzz_start = 0, ws_check = 0, n_ips = 0;
+    const char *ips[16];
     const char *wide = NULL;
     int frames = 600, png_every = 0, ram_dump_every = 0, nestest = 0, blargg = 0, recomp = 0, quiet = 0, trace_start = 0;
     for (int i = 1; i < argc; i++) {
@@ -236,6 +277,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--frames") && i + 1 < argc) frames = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--keys") && i + 1 < argc) parse_keys(argv[++i]);
         else if (!strcmp(argv[i], "--input") && i + 1 < argc) input = argv[++i];
+        else if (!strcmp(argv[i], "--ips") && i + 1 < argc && n_ips < 16) ips[n_ips++] = argv[++i];
         else if (!strcmp(argv[i], "--fuzz") && i + 1 < argc) fuzz_state = (uint32_t)strtoul(argv[++i], NULL, 0) * 2654435761u + 1;
         else if (!strcmp(argv[i], "--fuzz-start") && i + 1 < argc) fuzz_start = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--png") && i + 1 < argc) png = argv[++i];
@@ -246,6 +288,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--remaster-pack") && i + 1 < argc) remaster_pack = argv[++i];
         else if (!strcmp(argv[i], "--hd-dump") && i + 1 < argc) hd_dump = argv[++i];
         else if (!strcmp(argv[i], "--wav") && i + 1 < argc) wav = argv[++i];
+        else if (!strcmp(argv[i], "--apu-log")) { apu_log_on = 1; apu_write_hook = apu_log_hook; }
+        else if (!strcmp(argv[i], "--mute") && i + 1 < argc) { apu_mute_mask = (uint8_t)strtol(argv[++i], NULL, 16); apu_mute_output = true; }
         else if (!strcmp(argv[i], "--trace") && i + 1 < argc) trace = argv[++i];
         else if (!strcmp(argv[i], "--nestest") && i + 1 < argc) nestest = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--blargg")) blargg = 1;
@@ -269,6 +313,19 @@ int main(int argc, char **argv) {
     apu_set_sample_rate(48000);
     if (nes_load(rom) != 0) return 1;
     if (sav) cart_load_battery(sav);
+    for (int k = 0; k < n_ips; k++) {
+        const char *err;
+        long n = patch_apply_file(ips[k], &err);
+        if (n < 0) { fprintf(stderr, "%s: %s\n", ips[k], err); return 1; }
+        if (!quiet) printf("patch %s: %ld bytes changed\n", ips[k], n);
+    }
+    if (n_ips) {
+        int off = patch_commit();
+        nes_power();      /* the reset vector and everything else, from the patched image */
+        if (sav) cart_load_battery(sav);
+        if (!quiet) printf("patches: %d applied, %ld bytes differ from the dump, %d translated routines left to the interpreter\n",
+                           patch_count(), patch_bytes(), off);
+    }
     if (state_load) {
         size_t len = nes_state_size();
         void *buf = malloc(len);
@@ -335,6 +392,7 @@ int main(int argc, char **argv) {
         while (ev < n_events && events[ev].frame <= frame) { nes_set_pad(0, events[ev].buttons); ev++; }
         if (fuzz_state && frame >= fuzz_start) nes_set_pad(0, fuzz_pad());
         nes_run_frame();
+        if (apu_log_on) apu_log_frame();
         if (hash_file) fprintf(hash_file, "%d %016llx\n", frame, (unsigned long long)frame_hash());
         if (audio) {
             uint32_t avail = apu_samples_available();
@@ -420,6 +478,7 @@ int main(int argc, char **argv) {
         }
     }
     if (wav) { write_wav(wav, audio, audio_n, 48000, channels); free(audio); }
+    if (apu_log_on) apu_log_print();
     if (hash_file) fclose(hash_file);
     if (trace_file && trace_file != stdout) fclose(trace_file);
     if (cov) {

@@ -10,5 +10,8 @@ void audio_out_clear(void);                        /* drop queued sound and re-p
 void audio_out_shutdown(void);
 int  audio_out_queued_ms(void);
 int  audio_out_rate(void);                         /* current APU sample rate after rate control */
+/* for tests: also write everything handed to the audio device (stereo, at the volume set) to a
+   WAV file, whether or not a device could be opened; the file is completed by audio_out_shutdown */
+int  audio_out_dump(const char *path);             /* 1 on success */
 
 #endif

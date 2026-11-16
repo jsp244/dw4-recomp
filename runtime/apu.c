@@ -79,9 +79,17 @@ static inline void envelope_clock(bool *start, uint8_t *divider, uint8_t *decay,
     } else (*divider)--;
 }
 
+/* The period a sweep would move the channel to; a target above $7FF mutes the channel even when
+   the sweep is off. Negated, the change is subtracted (pulse 1 subtracts one more, its adder being
+   ones' complement) and a result below zero is zero: it never mutes. The game keeps both pulse
+   channels at "negate, shift 0" ($88), which for pulse 1 is the current period minus itself minus
+   one. */
 static inline uint16_t sweep_target(apu_pulse_t *p, int idx) {
-    uint16_t delta = p->timer_period >> p->sweep_shift;
-    if (p->sweep_negate) return (uint16_t)(p->timer_period - delta - (idx == 0 ? 1 : 0));
+    int delta = p->timer_period >> p->sweep_shift;
+    if (p->sweep_negate) {
+        int t = p->timer_period - delta - (idx == 0 ? 1 : 0);
+        return (uint16_t)(t < 0 ? 0 : t);
+    }
     return (uint16_t)(p->timer_period + delta);
 }
 

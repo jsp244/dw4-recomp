@@ -145,6 +145,8 @@ make headless headless-recomp
 python tests/cosim.py                 # 12,000 frames, scripted then random play
 python tests/cosim.py --frames 120000 --fuzz 7
 sh tests/get_test_roms.sh && make test   # public CPU/PPU/APU test ROMs
+build/dw4 rom/your.nes --play --audio-dump capture.wav --quit-after 2400
+python tests/audio_check.py capture.wav   # every sound channel in what the program plays
 ```
 
 `nes-headless --help` lists the harness options: scripted or random input, PNG and WAV
