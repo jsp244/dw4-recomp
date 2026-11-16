@@ -175,30 +175,31 @@ python recomp/recomp.py --rom rom/your.nes --out generated --coverage cov.bin --
 
 ## Patches (ROM hacks)
 
-The Patches tab lists the hacks that come with the program and the `.ips` files in the
-`patches` folder next to it (drop a file on the window, or use "Add a patch file", to put one
-there). Each is On or Off. The ROM on disk is never changed: the image the machine runs is
-the dump plus the patches that are on, rebuilt from the dump whenever the set changes, so
-any of them can be taken out again.
+The Patches tab lists ROM hacks, each On or Off. The ROM on disk is never changed: the
+image the machine runs is the dump plus the patches that are on, rebuilt from the dump
+whenever the set changes, so any of them can be taken out again.
 
 Four hacks are built into the packages on the releases page, unchanged and under their
-authors' names, as the tab shows them:
+authors' names (a row reads "Delocalized by Translation Quest"), and that build offers exactly
+these, the set that was tested together:
 
 | Hack | Version | Author | Year | Page |
 |---|---|---|---|---|
-| Delocalized: a new translation from the Japanese, with fixes, and its seven option patches | 1.08 | Translation Quest (Chicken Knife, nejimakipiyo, AWildJuneAppeared, dattebayo) | 2026 | romhacking.net/hacks/9523 |
+| Delocalized: a new translation from the Japanese, with fixes | 1.08 | Translation Quest (Chicken Knife, nejimakipiyo, AWildJuneAppeared, dattebayo) | 2026 | romhacking.net/hacks/9523 |
 | Graphical Uncensoring | 1.0 | MetHy | 2024 | romhacking.net/hacks/8426 |
 | Manual Tactics: command every party member yourself in chapter 5 | 1.1 | karmic | 2025 | romhacking.net/hacks/9221 |
 | Seamonsters fix | 1.0 | Jegriva | 2017 | romhacking.net/hacks/3760 |
 
 They are their authors' work and are not in this repository: `make hacks` builds them in
 from the files named in `tools/hacks/hacks.txt` (checked against the hashes there), which
-you download from the pages above into `rom/hacks/`. A build without them shows links to
-the pages instead, and the same files work from the `patches` folder.
+you download from the pages above into `rom/hacks/`. A build without them works from files
+instead: it lists the `.ips` files of the `patches` folder next to the program (drop a file on
+the window, or use "Add a patch file"), knows the four hacks by what they change, and links
+to their pages.
 
 The three small ones touch different bytes and combine freely, in any order. Delocalized
 already contains all three (in its own adapted form), so with it on they are not applied a
-second time; its own option patches go on after it. Delocalized also moves the game from
+second time. Delocalized also moves the game from
 its MMC1 board to an MMC3, which the runtime follows.
 
 How a patched game runs: the translated code was made from the dump, so every routine of
@@ -207,7 +208,8 @@ patched image, along with any code a patch adds. `tests/cosim.py --ips FILE` che
 patched game the same way as the plain one (interpreter against translated code, frame by
 frame).
 
-Switching while the game runs (the tab, or F9: the original game and back) puts the new
+Switching while the game runs (the tab's switches, or its Compare row / F9: the original game
+for the moment, and back) puts the new
 image in place at a moment when the CPU cannot be caught in code that is no longer there.
 The runtime notes what pushed each return address on the stack and from which bank; a
 switch waits until the instruction the CPU stands on, and every call it still has to

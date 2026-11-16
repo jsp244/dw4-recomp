@@ -238,9 +238,9 @@ or return between the push and the return, and finds none.
 Built-in hacks. `tools/hacks/embed_hacks.py` turns the patch files listed in
 `tools/hacks/hacks.txt` (name, version, author, year, page, SHA-1) into `generated/hacks.h`;
 `runtime/hacks.c` exposes them, and `patch_prepare_list` takes a patch from memory as well as
-from a file. The Patches tab lists them first, an add-on under the hack it belongs to
-(applied only with it), and leaves out a file in the patches folder that is one of them
-byte for byte.
+from a file. A build with hacks built in offers exactly those (a row names the hack and its
+author); a build without them lists the `.ips` files of the patches folder and links to the
+four hacks' pages.
 
 The frontend orders the patches: a whole-game hack first, then the small hacks it knows,
 then add-ons and the rest by name; a small hack that writes bytes a whole-game hack also writes is

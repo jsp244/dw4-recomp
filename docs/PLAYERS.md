@@ -119,8 +119,7 @@ shared. Your ROM file is never changed; the patches are applied in memory, and e
 be switched On or Off at any time, also in the middle of a game.
 
 Four well-known hacks come with the program, ready to switch on. They are the work of
-their authors, included unchanged. Each row names the hack, its version, its author, the
-year and its number on romhacking.net (RHDN #9523 is romhacking.net/hacks/9523):
+their authors, included unchanged; each row names the hack and its author:
 
   Delocalized 1.08        by Translation Quest (Chicken Knife, nejimakipiyo,
                           AWildJuneAppeared, dattebayo), 2026. A new English translation
@@ -135,17 +134,13 @@ year and its number on romhacking.net (RHDN #9523 is romhacking.net/hacks/9523):
                           appearing. romhacking.net/hacks/3760
 
 The three small ones can be used together in any combination. With Delocalized on they
-are left out, because it brings its own versions of them. The rows marked + under
-Delocalized are its authors' option patches (a Western-style title, no manual control,
-and so on): they take effect while Delocalized is On.
+are left out, because it brings its own versions of them.
 
-Other IPS patches for Dragon Warrior IV (USA) can be added: drop the .ips file on the
-window, choose "Add a patch file", or copy it into the patches folder (shown at the top
-of the tab) and choose "Look for new files". One that makes the ROM bigger is refused.
-
-Comparing: F9 (or "Compare with the original" on the tab) switches all patches off and
-on again while you play, so you can see what a hack changed. Text appears changed the
-next time it is printed (talk to the person again), graphics the next time the scene
+Comparing: the "Compare" row on the tab (F9 on a keyboard) shows the original game for
+the moment, with every patch off but your On/Off choices kept, and brings the patches
+back when used again. It is for seeing what a hack changed at the spot you are in. Text
+appears changed the next time it is printed (talk to the person again), graphics the next
+time the scene
 loads. The switch itself takes a moment of the game's choosing, usually none you can
 notice; a message says when it has happened.
 
@@ -207,7 +202,6 @@ Files
 saves/<rom name>.sav       battery save (the game's adventure logs)
 saves/<rom name>.state1-9  save state slots (F5 / F8, F6 / F7 to pick one)
 screenshots/               F12 screenshots
-patches/                   ROM hacks as .ips files (the Patches tab)
 dw4.ini                    settings and the remembered ROM path
 retroachievements.txt      RetroAchievements session (user name + token), if logged in
 remaster.pak               your own hand-made tiles for Textures: Pixel Remaster (optional)

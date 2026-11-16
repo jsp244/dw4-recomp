@@ -12,4 +12,7 @@ int file_dialog_open(SDL_Window *parent, char *out, size_t out_len);
 /* 1 when file_dialog_open can show a dialog on this platform */
 int file_dialog_available(void);
 
+/* 1 (the default): the dialog offers IPS patch files next to cartridge dumps. */
+extern int file_dialog_patches;
+
 #endif

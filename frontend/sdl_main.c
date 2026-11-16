@@ -1467,12 +1467,16 @@ static void scan_patches(void) {
     if (e) { snprintf(ext, sizeof ext, "%s/", e); root = ext; }
 #endif
     snprintf(patch_dir, sizeof patch_dir, "%spatches", root);
-    make_dir(patch_dir);
+    /* A build with the hacks built in offers exactly those (they are the ones known to work
+       together); only a build without them reads a patches folder. */
+    int folder = hacks_count() == 0;
+    file_dialog_patches = folder;
+    if (folder) make_dir(patch_dir);
 #ifdef _WIN32
     wchar_t wpat[1400];
     char pat[1400];
     snprintf(pat, sizeof pat, "%s\\*", patch_dir);
-    if (MultiByteToWideChar(CP_UTF8, 0, pat, -1, wpat, 1400)) {
+    if (folder && MultiByteToWideChar(CP_UTF8, 0, pat, -1, wpat, 1400)) {
         WIN32_FIND_DATAW fd;
         HANDLE h = FindFirstFileW(wpat, &fd);
         if (h != INVALID_HANDLE_VALUE) {
@@ -1486,7 +1490,7 @@ static void scan_patches(void) {
         }
     }
 #else
-    DIR *d = opendir(patch_dir);
+    DIR *d = folder ? opendir(patch_dir) : NULL;
     if (d) {
         struct dirent *de;
         while ((de = readdir(d)) != NULL && n_files < MAX_PATCH_FILES)
@@ -1511,11 +1515,7 @@ static void scan_patches(void) {
                 if (patch_entries[q].hack && !strcmp(patch_entries[q].hack->id, h->parent)) e->parent = q;
             snprintf(e->label, sizeof e->label, "    + %.44s", h->name);
         } else {
-            /* "Name version - author, year - RHDN #number": the number of its page on romhacking.net */
-            char site[24] = "";
-            const char *id = strstr(h->page, "/hacks/");
-            if (id) { snprintf(site, sizeof site, " - RHDN #%.6s", id + 7); for (char *c = site; *c; c++) if (*c == '/') *c = 0; }
-            snprintf(e->label, sizeof e->label, "%.24s %.6s - %.18s, %.4s%s", h->name, h->version, h->author, h->year, site);
+            snprintf(e->label, sizeof e->label, "%.30s by %.20s", h->name, h->author);     /* the hack and its author */
             named[h->kind] = 1;
         }
         e->on = in_patch_list(e->key);
@@ -1646,6 +1646,7 @@ static void compare_patches(void) {
 static int add_patch_file(const char *path) {
     const char *name = path;
     for (const char *c = path; *c; c++) if (*c == '/' || *c == '\\') name = c + 1;
+    if (hacks_count()) { osd("This program has its patches built in (menu > Patches)"); return 0; }
     if (!ends_with_ips(name) || strlen(name) >= sizeof patch_entries[0].file) return 0;
     char dst[1500];
     snprintf(dst, sizeof dst, "%s/%s", patch_dir, name);
@@ -1677,9 +1678,8 @@ static void refresh_patch_items(void) {
     ui_item *t = patch_items;
     t[n] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
     if (hacks_count())
-        snprintf(t[n].info, sizeof t[n].info, "ROM hacks, applied to your ROM in memory and switched On and Off while you play. The ones "
-                 "listed with their authors come with the program (RHDN #: their page, romhacking.net/hacks/number). "
-                 "Others: put .ips files in this folder or drop them on the window:\n%.140s", patch_dir);
+        snprintf(t[n].info, sizeof t[n].info, "ROM hacks by their authors, built into the program. Each is applied to your ROM in memory "
+                 "(the file stays as it is) and can be switched On and Off while you play.");
     else
         snprintf(t[n].info, sizeof t[n].info, "ROM hacks as IPS files, applied to your ROM in memory and switched On and Off while you play. "
                  "Get them from their pages, then put the .ips files in this folder or drop them on the window:\n%.180s", patch_dir);
@@ -1700,10 +1700,15 @@ static void refresh_patch_items(void) {
         orphan += e->on && e->parent >= 0 && !patch_entries[e->parent].on;
         n++;
     }
-    t[n++] = (ui_item){ handheld ? "Compare with the original" : "Compare with the original  (F9)", UI_ACTION, ACT_PATCH_COMPARE, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
-    if (file_dialog_available())
-        t[n++] = (ui_item){ "Add a patch file...", UI_ACTION, ACT_PATCH_ADD, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
-    t[n++] = (ui_item){ "Look for new files", UI_ACTION, ACT_PATCH_RESCAN, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    /* the compare row says what it will do: all patches off for the moment (the On/Off choices stay), or back on */
+    t[n++] = (ui_item){ patches_shown ? (handheld ? "Compare: show the original game for now" : "Compare: show the original game for now  (F9)")
+                                      : (handheld ? "Compare: back to the game with patches" : "Compare: back to the game with patches  (F9)"),
+                        UI_ACTION, ACT_PATCH_COMPARE, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    if (!hacks_count()) {       /* only a build without built-in hacks takes files */
+        if (file_dialog_available())
+            t[n++] = (ui_item){ "Add a patch file...", UI_ACTION, ACT_PATCH_ADD, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+        t[n++] = (ui_item){ "Look for new files", UI_ACTION, ACT_PATCH_RESCAN, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    }
     t[n] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
     char *o = t[n].info;
     size_t room = sizeof t[n].info;
@@ -1712,7 +1717,7 @@ static void refresh_patch_items(void) {
     else if (patch_pending())
         snprintf(o, room, "The switch happens as soon as the game runs and is not inside the code that changes.");
     else if (!patches_shown && on)
-        snprintf(o, room, "Showing the original game (Compare). %d patch%s set to On.", on % 100, on == 1 ? " is" : "es are");
+        snprintf(o, room, "Compare: showing the original game for now. %d patch%s set to On and come%s back with the row above.", on % 100, on == 1 ? " is" : "es are", on == 1 ? "s" : "");
     else if (patch_count())
         snprintf(o, room, "%d patch%s on: %ld bytes changed. Changed text shows the next time it is printed, graphics at the next "
                  "scene. RetroAchievements are off while a patch is on.", patch_count() % 100, patch_count() == 1 ? "" : "es", patch_bytes() % 10000000);
