@@ -7,13 +7,14 @@ checks the file's hash and refuses anything that is not Dragon Warrior IV.
 
 Getting started
 ---------------
-1. Run dw4.exe.
+1. Run dw4.exe (Windows) or dw4 (Linux). The Steam Deck and Android editions have their
+   own notes: STEAMDECK.txt in the Deck package, docs/ANDROID.md in the source.
 2. On the ROM tab choose "Choose ROM file..." and pick your .nes file, or drop
    the file onto the window, or start the program with the file as an argument.
 3. Go to Play > Start game. The chosen file is remembered in dw4.ini.
 
-Menu (Esc in game, or Start + Select together)
-----------------------------------------------
+Menu (Esc in game, Start + Select together, or LT + RT on Android and the Steam Deck)
+-------------------------------------------------------------------------------------
 Play          Start / resume, reset, save state, load state, the save state slot
               (1-9, with the date the slot was last saved), end game, quit
 Graphics      Display mode (windowed / fullscreen / fullscreen exclusive),
@@ -47,7 +48,8 @@ D-pad: arrow keys    A (confirm): X    B (cancel): Z    Start: Enter    Select: 
 Rewind: hold Backspace (pad: RB)    Fast-forward: hold Tab (pad: RT, the right trigger)
 Gamepad: NES A = the A button, NES B = X (the button left of A, as on the NES
 pad), Start, Back = Select, D-pad or left stick.
-Start + Select pressed together opens the menu (also Guide or LB; on the keyboard
+Start + Select pressed together opens the menu (also Guide or LB; on Android and
+the Steam Deck also LT + RT together, which closes it again too; on the keyboard
 Enter + Right Shift, or Esc). The game never sees that Start or Select: the
 program steps back to the moment before the first of the two went down (except
 in RetroAchievements hardcore mode). Buttons still held when you leave the menu
@@ -100,7 +102,8 @@ colors per tile, light from the upper left, shadows that lean toward blue and li
 toward yellow, deeper water and warm grey stone, while text stays crisp. It is worked
 out from your ROM's own tiles while you play.
 A hand-made tile pack (remaster.pak) can replace that tile by tile: put it in the
-program's folder and it is used whenever Textures is set to Remastered. Packs are
+program's folder (Android: Android/data/<package>/files) and it is used whenever
+Textures is set to Remastered. Packs are
 drawn over the cartridge's tiles, so none comes with the program; tools/remaster in
 the source shows how to make one.
 
@@ -124,10 +127,12 @@ The Updates tab shows this program's version. Check for updates asks GitHub for
 the newest release (only when you press it). When there is a newer one, Install
 version X downloads it, checks it against the checksum GitHub lists for it and puts
 it in place of this program; your settings, saves, ROM and texture packs stay as they
-are, and the previous version is kept as dw4.exe.old. Restart now starts the new
-version at once (as with Quit, play since the game last saved is not kept); otherwise
-it starts next time. The program's folder has to be writable for this; if it is not,
-download the new version from the release page.
+are, and the previous version is kept as dw4.old (dw4.exe.old on Windows). Restart now
+starts the new version at once (as with Quit, play since the game last saved is not
+kept); otherwise it starts next time. The program's folder has to be writable for this;
+if it is not, download the new version from the release page. On Android the tab opens
+the release page instead: download the APK of your edition there and open it, and it
+installs over the app.
 
 Files
 -----
@@ -137,9 +142,9 @@ screenshots/               F12 screenshots
 dw4.ini                    settings and the remembered ROM path
 retroachievements.txt      RetroAchievements session (user name + token), if logged in
 remaster.pak               your own hand-made tiles for Textures: Remastered (optional)
-dw4.exe.old                the previous version, after an update
+dw4.old                    the previous version, after an update (dw4.exe.old)
 
-These live next to dw4.exe when that folder is writable. If it is not (Program
+These live next to the program when that folder is writable. If it is not (Program
 Files, a read-only location, or the program was started from inside the zip
 without extracting it), they go to %APPDATA%\DragonWarriorIVPort\DragonWarriorIV\
 instead; the ROM you chose is remembered either way. Extract the zip to a normal

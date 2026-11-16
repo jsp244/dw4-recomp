@@ -1,7 +1,7 @@
 # Dragon Warrior IV native PC port (static recompilation)
 
-A native Windows program that plays Dragon Warrior IV (NES, USA) from your own cartridge
-dump. The game's 6502 code is translated ahead of time into C by a recompiler and linked
+A native program for Windows, Linux, the Steam Deck and Android that plays Dragon Warrior IV
+(NES, USA) from your own cartridge dump. The game's 6502 code is translated ahead of time into C by a recompiler and linked
 against a small hardware runtime (CPU helpers, a dot-accurate PPU, the APU and the
 cartridge's MMC1 board), with a launcher, save states, rewind, low-latency video and
 optional remastered graphics.
@@ -26,8 +26,8 @@ runs. Do not share your `.nes` file or anything built from it.
 - Textures: Remastered, the game's tiles recolored and shaded as they are drawn, and a
   tool for hand-made tile packs (below).
 
-Not there yet: widescreen (it needs the game's map formats decoded), Linux, Steam Deck
-and Android packages, and a hand-made tile pack.
+Not there yet: widescreen (it needs the game's map formats decoded) and a hand-made tile
+pack.
 
 ## Building (Windows, MSYS2 MinGW64)
 
@@ -47,6 +47,35 @@ Play > Start game. `docs/PLAYERS.md` is the player's guide.
 
 Other targets: `make headless` (the test harness with the interpreter only),
 `make headless-recomp` (the harness with the recompiled code), `make cosim`, `make test`.
+
+### Linux and Steam Deck packages
+
+`tools/linux/Dockerfile` is the build environment (Ubuntu 22.04, SDL2 built as a static
+library that loads its video, audio and input backends at run time), so the binary needs
+only glibc 2.34 or newer and no SDL installed. With `generated/` made and your ROM in
+`rom/` for the tests:
+
+```sh
+docker build -t dw4-linux tools/linux
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e DW4_VERSION -e DW4_REPO \
+    -v "$PWD":/src -w /src dw4-linux sh tools/linux/build.sh
+```
+
+It builds both editions, runs the cosimulation and the frontend's self-tests offscreen,
+and writes `dist/dw4-linux-x86_64.tar.gz` and `dist/dw4-steamdeck.tar.gz`. The Deck edition
+is the same program with the Deck's defaults (fullscreen, the pad drives the menus,
+L2 + R2 opens the menu) plus `add-to-steam.py`, which adds it to the Steam library with
+artwork from SteamGridDB; `docs/STEAMDECK.md` is its guide.
+
+### Android
+
+`python android/build_apk.py` builds two APKs straight from the SDK tools, without Gradle
+(needs the Android SDK with a platform, build-tools, an NDK and CMake, and a JDK):
+`dist/dw4-android-handheld.apk` for handhelds with built-in controls and
+`dist/dw4-android-phone.apk`, the same app with a translucent on-screen controller,
+installed as "Dragon Warrior IV Touch". Both carry arm64 and x86_64 code. They are signed
+with a key the script makes on first use in `~/.android/dw4-release.keystore`; keep it,
+because an installed app only updates from the same key. `docs/ANDROID.md` is the guide.
 
 ## Remastered textures
 
@@ -118,10 +147,11 @@ python recomp/recomp.py --rom rom/your.nes --out generated --coverage cov.bin --
 ```
 recomp/      the recompiler, symbols.txt, entries.txt
 runtime/     CPU helpers and interpreter, PPU, APU, MMC1, save states, remaster, test harness
-frontend/    SDL2 program: launcher, video, audio, input, rewind, achievements, updater
-tools/       icon generator, remaster pack tool
+frontend/    SDL2 program: launcher, video, audio, input, touch controls, rewind, achievements, updater
+android/     the Android app: manifest, activity, CMake file, build_apk.py
+tools/       icon generator, remaster pack tool, the Linux/Deck build, Deck and Android helpers
 tests/       cosimulation, test-ROM runner, frontend tests
-docs/        ARCHITECTURE.md, PLAYERS.md
+docs/        ARCHITECTURE.md, PLAYERS.md, STEAMDECK.md, ANDROID.md
 rom/         your cartridge dump (ignored by git)
 generated/   the translated game (ignored by git)
 ```

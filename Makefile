@@ -91,7 +91,7 @@ endif
 # ---- the Updates tab: this build's version (git describe: the newest v* tag, plus the commits after
 #      it), the GitHub repository whose releases it checks (from the git remote) and its package
 #      there (the name `make dist` gives it). Builds without git, such as the container of
-#      a container, take DW4_VERSION and DW4_REPO from the environment. A stamp file rebuilds
+#      tools/linux/build.sh, take DW4_VERSION and DW4_REPO from the environment. A stamp file rebuilds
 #      frontend/update.c when they change.
 DW4_VERSION ?= $(or $(shell git describe --tags --match "v[0-9]*" --dirty 2>/dev/null),dev)
 DW4_REPO ?= $(shell git remote get-url origin 2>/dev/null | sed -n -E 's|^.*github\.com[:/]+([^/]+/[^/]+)$$|\1|p' | sed 's|\.git$$||')
@@ -173,6 +173,8 @@ dist: $(BUILD)/dw4$(EXE)
 	cp $(BUILD)/dw4$(EXE) dist/dw4/
 	cp docs/PLAYERS.md dist/dw4/README.txt
 	@test -z "$(RCHEEVOS_SRC)" || cp third_party/rcheevos/LICENSE dist/dw4/LICENSE-rcheevos.txt
+	@test "$(DECK_EDITION)" != 1 || cp docs/STEAMDECK.md dist/dw4/STEAMDECK.txt
+	@test "$(DECK_EDITION)" != 1 || install -m 755 tools/steamdeck/add-to-steam.py dist/dw4/
 	@test "$(WINDOWS)" = 1 || cp frontend/icon_preview.png dist/dw4/dw4.png
 	$(PYTHON) -c "import shutil; shutil.make_archive('dist/dw4-$(PLATFORM)', '$(ARCHIVE)', 'dist', 'dw4')"
 	@echo "package: dist/dw4-$(PLATFORM).$(if $(filter zip,$(ARCHIVE)),zip,tar.gz)"

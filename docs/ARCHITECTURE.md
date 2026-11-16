@@ -166,10 +166,16 @@ ring; Start + Select opens the menu by rolling back to before the first of the t
 presses. `frontend/update.c` checks GitHub releases and installs a newer package after
 verifying its size and SHA-256.
 
+The same frontend builds for Linux, for the Steam Deck (`DECK_EDITION=1`, or the Deck
+recognised at run time: fullscreen, the pad drives the menus, L2 + R2 opens the menu) and
+for Android, where it is `libmain.so` under SDL's activity (`android/`): the ROM comes
+through the system file picker, HTTP goes through the activity, pacing follows the
+compositor's frame timeline, and the phone edition draws a touch controller
+(`frontend/touchpad.c`).
+
 ## Where to take it next
 
 - Hand-made tile packs for the remaster (kept with one's own copy of the game).
 - Widescreen: needs the map and scroll formats decoded, to draw what lies beyond the
   screen edges.
-- Linux, Steam Deck and Android builds of the frontend.
 - More coverage for `entries.txt` from later chapters.
