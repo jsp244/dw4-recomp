@@ -14,7 +14,9 @@ int nes_load(const char *rom_path) {
 }
 
 void nes_power(void) {
+    /* the stack annotations are part of the machine's state: a power-on must give the same machine every time */
     memset(stk_kind, 0, sizeof stk_kind);
+    memset(stk_bank, 0, sizeof stk_bank);
     memset(ram, 0, sizeof ram);
     memset(cart.chr_ram, 0, sizeof cart.chr_ram);   /* the tiles of the last session are gone with the power */
     sys.pad_shift[0] = sys.pad_shift[1] = 0;

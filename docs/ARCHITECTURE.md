@@ -137,7 +137,7 @@ and NMI timing, PPU open bus and the read buffer, the DMC channel, APU reset, ru
 code from I/O registers, unofficial opcodes' dummy reads, and the MMC3 tests' scanline
 timing (not this game's mapper).
 
-## Remastered graphics
+## Pixel Remaster graphics
 
 With capture on, the PPU records for every pixel of each layer which tile it came from
 (its slot in the CHR RAM), which pixel of the tile, the palette and the value.

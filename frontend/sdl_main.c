@@ -111,7 +111,7 @@ static const char *const latency_names[]  = { "Low", "Normal", "Safe" };
 static const char *const window_sizes[]  = { "1x", "2x", "3x", "4x", "5x", "6x" };
 static const char *const scalings[]      = { "Integer (exact pixels)", "Fit (fills the screen)", "Stretch (distorts)" };
 static const char *const aspects[]       = { "Square pixels 8:7", "4:3 (CRT)", "16:9 (widescreen)", "16:10 (widescreen)" };
-static const char *const texture_names[] = { "Original", "Remastered" };
+static const char *const texture_names[] = { "Original", "Pixel Remaster" };
 static const char *const title_names[] = { "Dragon Warrior IV", "Dragon Quest IV" };
 static const char *const filters[]       = { "Nearest", "Linear", "Sharp" };
 static const char *const onoff[]         = { "Off", "On" };
@@ -400,7 +400,7 @@ static void write_config(void) {
     fprintf(f, "shader_strength=%d     ; 0 light, 1 medium, 2 strong\n", cfg.shader_strength);
     fprintf(f, "overscan=%d            ; crop 8 lines at the top and bottom\n", cfg.overscan);
     fprintf(f, "no_sprite_limit=%d     ; 1: draw every sprite on a line instead of 8 (no flicker)\n", cfg.no_sprite_limit);
-    fprintf(f, "textures=%d            ; 0 original, 1 remastered (recolored and shaded; remaster.pak next to the game adds hand-made tiles)\n", cfg.textures);
+    fprintf(f, "textures=%d            ; 0 original, 1 Pixel Remaster (recolored and shaded; remaster.pak next to the game adds hand-made tiles)\n", cfg.textures);
     fprintf(f, "title_quest=%d         ; the title screen: 1 the Dragon Quest IV logo, 0 the Dragon Warrior IV plaque\n", cfg.title_quest);
     fprintf(f, "low_latency=%d         ; 1: frame delay, locked to the display (Windows, Android) or timer pacing without vsync (Linux); 0: plain timer (Linux: vsync)\n", cfg.lowlat);
     fprintf(f, "runahead=%d            ; frames of run-ahead (0-3)\n", cfg.runahead);

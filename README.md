@@ -23,7 +23,7 @@ runs. Do not share your `.nes` file or anything built from it.
 - Nine save-state slots, rewind, fast-forward, run-ahead, vblank-locked pacing, shaders
   (scanlines, CRT, glow), integer / fit / stretch scaling, keyboard and controller
   rebinding, RetroAchievements (through the vendored rcheevos library).
-- Textures: Remastered, the game's tiles recolored and shaded as they are drawn, and a
+- Textures: Pixel Remaster, the game's tiles recolored and shaded as they are drawn, and a
   tool for hand-made tile packs (below).
 - Widescreen: 16:9 and 16:10 pictures with more of the map, and the people on it, at both
   sides wherever the game is on a map (below).
@@ -81,9 +81,9 @@ installed as "Dragon Warrior IV Touch". Both carry arm64 and x86_64 code. They a
 with a key the script makes on first use in `~/.android/dw4-release.keystore`; keep it,
 because an installed app only updates from the same key. `docs/ANDROID.md` is the guide.
 
-## Remastered textures
+## Pixel Remaster textures
 
-Graphics > Textures > Remastered colors every pixel from an "ink" its tile gives it: one
+Graphics > Textures > Pixel Remaster colors every pixel from an "ink" its tile gives it: one
 of the tile's four palette colors, a few steps darker or lighter on a hue-shifted ramp.
 Inks follow the palette, so fades, palette swaps and flashes still work. By default the
 inks are worked out from each tile's own pattern (light from the upper left, flat

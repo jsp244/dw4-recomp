@@ -58,7 +58,7 @@ Notes
   storage; Android's app backup includes them. Uninstalling the app deletes them.
 - RetroAchievements: log in on the Achievements tab (an on-screen or physical keyboard
   appears for the user name and password). Only the session token is stored.
-- Graphics > Textures: Remastered recolors and shades the game in the manner of the Pixel
+- Graphics > Textures: Pixel Remaster recolors and shades the game in the manner of the Pixel
   Remaster games. A hand-made tile pack, remaster.pak, if you have one, goes in
   Android/data/org.dw4.nativeport/files/ (…nativeport.touch for the phone app).
 - Updates: once the port has published releases, the Updates tab checks GitHub for a newer

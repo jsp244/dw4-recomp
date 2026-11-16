@@ -45,7 +45,7 @@ Tips
 - Latency: Graphics > Low-latency sync (on by default) hands each frame to the screen
   without vsync, so no frame waits in a queue. Switch it off for vsync: the smoothest
   scrolling, at up to one frame more latency.
-- Graphics > Textures: Remastered recolors and shades the game in the manner of the
+- Graphics > Textures: Pixel Remaster recolors and shades the game in the manner of the
   Pixel Remaster games (more colors per tile, soft light from the upper left). A
   hand-made tile pack, remaster.pak, if you have one, goes in the game folder.
 - ROM hacks (.ips files) go in the patches folder inside the game folder; the Patches tab

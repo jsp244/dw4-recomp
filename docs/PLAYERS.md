@@ -26,7 +26,7 @@ Graphics      Display mode (windowed / fullscreen / fullscreen exclusive),
               fit: fills the screen, keeps the shape / stretch: fills, distorts),
               aspect ratio (square pixels 8:7 / 4:3 CRT / 16:9 or 16:10 widescreen:
               more of the map beside the picture, below),
-              textures (Original, or Remastered: below),
+              textures (Original, or Pixel Remaster: below),
               title screen (Dragon Quest IV or Dragon Warrior IV: below),
               filter (nearest / linear / sharp),
               shader (off / scanlines / CRT / CRT curved / glow) and its strength,
@@ -156,15 +156,15 @@ of a CRT), CRT (scanlines, an aperture-grille mask and a soft glow), CRT curved
 Strength scales all of them. They are drawn by the graphics card on top of the
 normal scaling and cost nothing noticeable; input lag does not change.
 
-Remastered textures
--------------------
-Textures: Remastered colors and shades every tile of the game as it is drawn: more
+Pixel Remaster textures
+-----------------------
+Textures: Pixel Remaster colors and shades every tile of the game as it is drawn: more
 colors per tile, light from the upper left, shadows that lean toward blue and lights
 toward yellow, deeper water and warm grey stone, while text stays crisp. It is worked
 out from your ROM's own tiles while you play.
 A hand-made tile pack (remaster.pak) can replace that tile by tile: put it in the
 program's folder (Android: Android/data/<package>/files) and it is used whenever
-Textures is set to Remastered. Packs are
+Textures is set to Pixel Remaster. Packs are
 drawn over the cartridge's tiles, so none comes with the program; tools/remaster in
 the source shows how to make one.
 
@@ -203,7 +203,7 @@ screenshots/               F12 screenshots
 patches/                   ROM hacks as .ips files (the Patches tab)
 dw4.ini                    settings and the remembered ROM path
 retroachievements.txt      RetroAchievements session (user name + token), if logged in
-remaster.pak               your own hand-made tiles for Textures: Remastered (optional)
+remaster.pak               your own hand-made tiles for Textures: Pixel Remaster (optional)
 dw4.old                    the previous version, after an update (dw4.exe.old)
 
 These live next to the program when that folder is writable. If it is not (Program
