@@ -483,6 +483,8 @@ int main(int argc, char **argv) {
         printf("ws-check: %ld of %ld frames show the map; %ld of %ld squares on them differ from the screen (%ld frames with a difference)\n",
                ws_map_frames, ws_frames, ws_bad, ws_cells, ws_bad_frames);
     if (ws_check) printf("ws-check: %ld frames at rest with a difference in the first column or row\n", widescreen_still_edge_bad);
+    if (ws_check) printf("ws-check: %ld frames in which the map around the picture jumped while the picture did not\n", widescreen_jumps);
+    if (ws_check) printf("ws-check: %ld frames in which a neighbouring camera square fits the screen clearly better\n", widescreen_better);
     if (ws_check) printf("ws-check: %ld pixels of the canvas's middle differ from the PPU's picture\n", ws_middle);
     if (ppu_dump) {  /* "DWPP" 1, ctrl, mask, scroll t (2), fine x, 3 bytes padding, palette[32], the four name tables as
                         the PPU addresses them (4 x 1024), CHR RAM (8192), OAM (256), the frame buffer (256 x 240) */

@@ -38,6 +38,8 @@ int widescreen_check(int *cells);
    the eight pixels the PPU blanks at the left. Those come from the map like the bands. */
 int widescreen_inner(int sx, int line);
 extern long widescreen_still_edge_bad; /* checks with the screen at rest and a difference in its first column or row */
+extern long widescreen_better;        /* checks in which a neighbouring camera square fits the screen clearly better */
+extern long widescreen_jumps;         /* frames in which the decoded map jumped while the PPU's scroll did not */
 extern int widescreen_bad_box[4];     /* of that check: the first and last column, the first and last row that differ */
 /* and how many people the last picture has in its bands */
 int widescreen_people(void);

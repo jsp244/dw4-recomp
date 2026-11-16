@@ -52,7 +52,7 @@
 #define GET_BLOCK_BANK 22
 #define GET_BLOCK 0x8DD4          /* in: $0D column, $03E1 row; out: $00-$03 the tiles, $04 the palette */
 #define OBJECTS 30
-#define PROBED 60
+#define PROBED 80                 /* squares compared to find the camera's square: see probe() */
 
 typedef struct { uint8_t tile[4], pal, ok; } square_t;
 typedef struct { square_t sq; uint8_t mx, my; uint32_t frame; } known_t;
@@ -147,6 +147,7 @@ static int square_empty(const square_t *s) {
    and how many of those have something drawn in them */
 static int probe(int *drawn) {
     static const int col[4] = { 1, 2, 13, 14 };
+    static const int row[2] = { 1, 13 };
     int same = 0;
     *drawn = 0;
     for (int k = 0; k < 4; k++)
@@ -154,6 +155,12 @@ static int probe(int *drawn) {
             square_t s;
             if (!fetch(col[k], r, &s)) return -1;
             if (square_on_screen(col[k], r, &s)) { same++; *drawn += !square_empty(&s); }
+        }
+    for (int k = 0; k < 2; k++)             /* and two rows across, for a camera a row off */
+        for (int c = 3; c <= 12; c++) {
+            square_t s;
+            if (!fetch(c, row[k], &s)) return -1;
+            if (square_on_screen(c, row[k], &s)) { same++; *drawn += !square_empty(&s); }
         }
     return same;
 }
@@ -218,6 +225,32 @@ static void draw_people(int strip) {
 }
 
 /* once per frame shown: the scroll, the squares of the bands, and whether the screen is the map */
+/* Where the picture stood in the map on the last decoded frame, in pixels, and the PPU's scroll
+   then. From one frame to the next both move by a pixel or two, together: a frame in which the
+   map's position moves by more while the scroll does not has the bands a square off (the camera
+   square was taken wrong). widescreen_jumps counts them. */
+static int last_ok, last_wx, last_wy, last_sx, last_sy;
+static uint64_t last_frame;
+long widescreen_jumps;
+
+static int wrapped(int d, int size) { d %= size; if (d < -size / 2) d += size; if (d >= size / 2) d -= size; return d; }
+
+/* does this place continue the last frame's? (within three pixels each way) */
+static int continues(int wx, int wy) {
+    if (!last_ok || ppu.frame - last_frame > 2) return 0;
+    int dx = wrapped(wx - last_wx, 4096), dy = wrapped(wy - last_wy, 4096);
+    return dx >= -3 && dx <= 3 && dy >= -3 && dy <= 3;
+}
+
+static void note_position(void) {
+    int wx = ((ctx_cam_x + cam_dx) & 0xFF) * 16 + fine_x, wy = ((ctx_cam_y + cam_dy) & 0xFF) * 16 + fine_y;
+    if (decoded && last_ok && ppu.frame - last_frame <= 2 && ppu.frame != last_frame) {
+        int sx = wrapped(scroll_x - last_sx, 512), sy = wrapped(scroll_y - last_sy, 480);
+        if (sx >= -3 && sx <= 3 && sy >= -3 && sy <= 3 && !continues(wx, wy)) widescreen_jumps++;
+    }
+    last_ok = decoded; last_wx = wx; last_wy = wy; last_sx = scroll_x; last_sy = scroll_y; last_frame = ppu.frame;
+}
+
 static void decode(void) {
     if (stamped && stamp_frame == ppu.frame && stamp_cycles == cpu.cycles) return;
     stamped = 1; stamp_frame = ppu.frame; stamp_cycles = cpu.cycles;
@@ -232,15 +265,25 @@ static void decode(void) {
     ctx_cam_x = ram[0xEC]; ctx_cam_y = ram[0xED];
     ctx_px = player_x(); ctx_py = player_y();
 
+    /* The camera's square in memory and the scroll the PPU was given do not always change on the
+       same frame, so the picture's camera may be a square off in any direction. All five are
+       compared with the screen. A room is mostly floor: a camera one square off still matches
+       most of it, so the first good match is not good enough. The one that matches most wins,
+       except that the one continuing the last frame's scroll wins when it matches about as well
+       (on a plain of one tile all of them match). A third of the squares has to match: the rest
+       may be under windows. */
     static const int8_t tries[5][2] = { { 0, 0 }, { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
-    int best = -1, best_same = PROBED / 3 - 1;   /* a third of the squares: the rest may be under windows */
+    int same[5], drawn[5], best = -1;
     for (int k = 0; k < 5; k++) {
-        int drawn;
         cam_dx = tries[k][0]; cam_dy = tries[k][1];
-        int same = probe(&drawn);
-        if (same < 0) { best = -1; break; }
-        if (same > best_same && drawn >= 4) { best = k; best_same = same; }
-        if (k == 0 && same >= PROBED * 4 / 5) break;      /* as it stands: the usual frame */
+        same[k] = probe(&drawn[k]);
+        if (same[k] < 0) { best = -2; break; }
+    }
+    for (int k = 0; k < 5 && best != -2; k++)
+        if (same[k] >= PROBED / 3 && drawn[k] >= 4 && (best < 0 || same[k] > same[best])) best = k;
+    for (int k = 0; k < 5 && best >= 0; k++) {
+        int wx = ((ctx_cam_x + tries[k][0]) & 0xFF) * 16 + fine_x, wy = ((ctx_cam_y + tries[k][1]) & 0xFF) * 16 + fine_y;
+        if (same[k] >= PROBED / 3 && drawn[k] >= 4 && same[k] + PROBED / 16 >= same[best] && continues(wx, wy)) { best = k; break; }
     }
     if (best >= 0) {
         int failed = 0;
@@ -254,9 +297,11 @@ static void decode(void) {
     }
     if (in_sandbox) { nes_sandbox_end(); in_sandbox = 0; }
     if (decoded) draw_people(!(ppu.mask & 0x02));
+    note_position();
 }
 
 int widescreen_bad_box[4];        /* of the last check: the first and last column, the first and last row that differ */
+long widescreen_better;           /* checks in which a neighbouring camera square fits the screen clearly better */
 long widescreen_still_edge_bad;   /* checks with the screen at rest and a difference in its first column or row */
 
 int widescreen_check(int *cells) {
@@ -279,6 +324,25 @@ int widescreen_check(int *cells) {
                 if ((c == 0 || r == 0) && !fine_x && !fine_y) edge_still = 1;
             }
         }
+    /* a second opinion on the camera's square, from every square of the screen: does one of the
+       neighbouring squares fit clearly better (by more than eight squares)? */
+    if (!failed) {
+        int keep_dx = cam_dx, keep_dy = cam_dy, better = 0;
+        static const int8_t around[4][2] = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
+        for (int k = 0; k < 4 && !failed; k++) {
+            int same = 0;
+            cam_dx = keep_dx + around[k][0]; cam_dy = keep_dy + around[k][1];
+            for (int r = 1; r < 14 && !failed; r++)
+                for (int c = 1; c <= 14 && !failed; c++) {
+                    square_t s;
+                    if (!fetch(c, r, &s)) { failed = 1; break; }
+                    same += square_on_screen(c, r, &s);
+                }
+            if (!failed && same > (n - bad) + 8) better = 1;
+        }
+        cam_dx = keep_dx; cam_dy = keep_dy;
+        widescreen_better += better && !failed;
+    }
     if (in_sandbox) { nes_sandbox_end(); in_sandbox = 0; }
     if (cells) *cells = n;
     widescreen_still_edge_bad += edge_still && !failed;
