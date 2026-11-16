@@ -2,6 +2,7 @@
  * sys.c - system glue: power/reset, frame loop, controllers, save states.
  */
 #include "nes.h"
+#include "patch.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -13,6 +14,7 @@ int nes_load(const char *rom_path) {
 }
 
 void nes_power(void) {
+    memset(stk_kind, 0, sizeof stk_kind);
     memset(ram, 0, sizeof ram);
     memset(cart.chr_ram, 0, sizeof cart.chr_ram);   /* the tiles of the last session are gone with the power */
     sys.pad_shift[0] = sys.pad_shift[1] = 0;
@@ -42,6 +44,9 @@ void nes_run_frame(void) {
     sys.frames_run++;
     ppu.frame_done = false;
     while (!ppu.frame_done) {
+        /* a patch switch waiting for its moment (patch.h): tried after every call and return,
+           the same points whichever way the code runs */
+        if (sys.xfer) { int k = sys.xfer; sys.xfer = 0; if (patch_live_wait) patch_try(k); }
         if (cpu.int_pending) cpu_take_interrupt();
         if (sys.use_recomp) {
             if (!recomp_run()) { cpu_step(); sys.fallback_steps++; }
@@ -59,6 +64,8 @@ static struct {
     uint64_t instructions;
     void (*trace_hook)(void);
     uint8_t *cov;
+    uint8_t xfer, stk_kind[256], stk_bank[256];
+    uint64_t ret_kind[2][5];
 } sandbox;
 
 void nes_sandbox_begin(void) {
@@ -67,6 +74,9 @@ void nes_sandbox_begin(void) {
     memcpy(sandbox.wram, cart.wram, sizeof cart.wram);
     sandbox.mapper = mapper;
     sandbox.instructions = sys.instructions;
+    sandbox.xfer = sys.xfer;
+    memcpy(sandbox.stk_kind, stk_kind, sizeof stk_kind); memcpy(sandbox.stk_bank, stk_bank, sizeof stk_bank);
+    memcpy(sandbox.ret_kind, sys.ret_kind, sizeof sys.ret_kind);
     sandbox.trace_hook = sys.trace_hook; sandbox.cov = sys.cov;
     sys.trace_hook = NULL; sys.cov = NULL;
     sys.sandbox = true;
@@ -91,6 +101,9 @@ void nes_sandbox_end(void) {
     mapper = sandbox.mapper;
     mapper_update_pointers();
     sys.instructions = sandbox.instructions;
+    sys.xfer = sandbox.xfer;      /* (what the side run pushed and returned through is not the game's) */
+    memcpy(stk_kind, sandbox.stk_kind, sizeof stk_kind); memcpy(stk_bank, sandbox.stk_bank, sizeof stk_bank);
+    memcpy(sys.ret_kind, sandbox.ret_kind, sizeof sys.ret_kind);
     sys.trace_hook = sandbox.trace_hook; sys.cov = sandbox.cov;
     sys.sandbox = false;
 }
@@ -100,7 +113,7 @@ void nes_sandbox_end(void) {
    the frontend always runs a frame after a load) and the audio sample ring lives
    outside the APU state, so a state is about 24 KB; rewind keeps thousands. */
 #define STATE_MAGIC 0x53545331u  /* "STS1" */
-#define STATE_VERSION 2
+#define STATE_VERSION 3       /* 3: what pushed each stack slot, and the patched image the state belongs to */
 
 typedef struct {
     uint32_t magic;
@@ -115,7 +128,19 @@ typedef struct {
     uint8_t  pad[2];
     uint8_t  pad_shift[2];
     uint8_t  strobe;
+    /* since version 3 */
+    uint8_t  stk_kind[256];
+    uint8_t  stk_bank[256];
+    uint32_t image;         /* patch_signature() of the image it was saved from */
 } state_t;
+
+#define STATE_V2_SIZE offsetof(state_t, stk_kind)
+
+uint8_t stk_kind[256], stk_bank[256];
+#ifdef STK_AUDIT
+uint32_t stk_seq[256], stk_xfers;
+uint64_t stk_hand_returns, stk_hand_returns_late;
+#endif
 
 size_t nes_state_size(void) { return sizeof(state_t); }
 
@@ -131,13 +156,21 @@ int nes_state_save(void *buf, size_t size) {
     s->pad[0] = sys.pad[0]; s->pad[1] = sys.pad[1];
     s->pad_shift[0] = sys.pad_shift[0]; s->pad_shift[1] = sys.pad_shift[1];
     s->strobe = sys.strobe;
+    memcpy(s->stk_kind, stk_kind, sizeof stk_kind);
+    memcpy(s->stk_bank, stk_bank, sizeof stk_bank);
+    s->image = patch_signature();
     return 0;
 }
 
 int nes_state_load(const void *buf, size_t size) {
-    if (size < sizeof(state_t)) return -1;
+    if (size < STATE_V2_SIZE) return -1;
     const state_t *s = (const state_t *)buf;
-    if (s->magic != STATE_MAGIC || s->version != STATE_VERSION) return -1;
+    if (s->magic != STATE_MAGIC) return -1;
+    int old = s->version == 2;      /* saved before patches existed: from the unpatched game */
+    if (!old && (s->version != STATE_VERSION || size < sizeof(state_t))) return -1;
+    if ((old ? 0 : s->image) != patch_signature()) return -2;
+    if (old) memset(stk_kind, STK_UNKNOWN, sizeof stk_kind);
+    else { memcpy(stk_kind, s->stk_kind, sizeof stk_kind); memcpy(stk_bank, s->stk_bank, sizeof stk_bank); }
     cpu = s->cpu; memcpy(ram, s->ram, sizeof ram);
     memcpy(&ppu, s->ppu, sizeof s->ppu); apu = s->apu; mapper = s->mapper;
     memcpy(cart.wram, s->wram, sizeof cart.wram);

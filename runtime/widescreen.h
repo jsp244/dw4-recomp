@@ -11,9 +11,12 @@
 #define WIDESCREEN_H
 #include <stdint.h>
 
-#define WS_BAND 48                    /* three map squares */
+/* The canvas: the PPU's picture with bands of map around it. Canvas pixel (WS_BAND, WS_VBAND) is
+   the picture's first pixel. */
+#define WS_BAND 64                    /* at each side: four map squares */
+#define WS_VBAND 16                   /* above and below: one */
 #define WS_W (256 + 2 * WS_BAND)
-#define WS_H 240
+#define WS_H (240 + 2 * WS_VBAND)
 
 /* The part (x, y, w, h) of the canvas as 6-bit palette indices into out (w per line) and each
    line's $2001 bits into emph. Returns 1 when the bands hold the map, 0 when they are black. */
@@ -29,6 +32,13 @@ int widescreen_visible_width(int src_h, double pixel_aspect, double target_aspec
    was given to draw. Returns the number of squares that differ (-1 when no map is shown) and the
    number compared in *cells. */
 int widescreen_check(int *cells);
+/* Is this pixel of the PPU's picture shown as the PPU drew it? Not while the map is decoded and it
+   lies in the outer ring: the row and the column of map squares the game rewrites in its name
+   tables while the screen scrolls (they show half-written for a few frames of every step), and
+   the eight pixels the PPU blanks at the left. Those come from the map like the bands. */
+int widescreen_inner(int sx, int line);
+extern long widescreen_still_edge_bad; /* checks with the screen at rest and a difference in its first column or row */
+extern int widescreen_bad_box[4];     /* of that check: the first and last column, the first and last row that differ */
 /* and how many people the last picture has in its bands */
 int widescreen_people(void);
 /* and how many times the game's map routine has been run on the side so far */

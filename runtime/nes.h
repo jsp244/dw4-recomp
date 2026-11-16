@@ -227,7 +227,7 @@ typedef struct {
 } apu_t;
 
 /* ------------------------------------------------------------------ */
-/* Mapper (MMC1; NROM and MMC3 for the test ROMs)                      */
+/* Mapper (MMC1; MMC3 for ROM hacks that move to it; NROM for tests)   */
 /* ------------------------------------------------------------------ */
 typedef struct {
     /* MMC3 */
@@ -273,7 +273,22 @@ typedef struct {
     uint64_t irq_count;         /* IRQs serviced */
     uint64_t frames_run;        /* nes_run_frame calls, run-ahead's included */
     bool     sandbox;           /* a routine of the game is being run on the side (nes_sandbox_*): no PPU/APU time, no hardware access */
+    uint8_t  xfer;              /* just executed: 1 a JSR, 2 an RTS, 3 an RTI (interpreter and translated code alike) */
+    uint64_t ret_kind[2][5];    /* statistics (interpreter): RTS / RTI by what had pushed the address they took (STK_*, 4 = not known) */
 } sys_t;
+
+/* What pushed the address whose low byte a stack slot holds, and the 8 KiB PRG bank that address
+   was in at that moment. patch.c uses it to tell whether the game can return into code that a
+   patch switch would change. */
+enum { STK_DATA = 0, STK_JSR = 1, STK_BRK = 2, STK_IRQ = 3, STK_UNKNOWN = 0xFF };
+extern uint8_t stk_kind[256];
+extern uint8_t stk_bank[256];   /* 0xFF: not in ROM */
+#ifdef STK_AUDIT
+/* Audit build (interpreter): count the returns through an address pushed by hand (PHA) that had a
+   call or return between the push and the return - the one case patch.c's check takes for data. */
+extern uint32_t stk_seq[256], stk_xfers;
+extern uint64_t stk_hand_returns, stk_hand_returns_late;
+#endif
 
 /* Global hardware state */
 extern cpu_t    cpu;
@@ -307,6 +322,9 @@ void    mapper_ppu_addr(uint16_t addr);
 void    mapper_update_pointers(void);
 void    mapper_set_mirroring(int mode);    /* 0=H 1=V 2=single lo 3=single hi 4=four */
 uint8_t *mapper_chr_bank_ptr(uint32_t bank1k); /* data of a 1 KiB CHR bank (ROM or RAM) */
+void    mapper_select_bank16(int bank);        /* the 16 KiB bank at $8000, as the game's bank switch leaves it */
+int     mapper_convertible(int to, uint16_t after[4]);  /* MMC1 <-> MMC3 with the same memory map: possible now? */
+void    mapper_convert(int to);
 
 /* ppu.c */
 void    ppu_reset(void);
@@ -431,7 +449,20 @@ static inline void cpu_set_p(uint8_t p) {
     cpu.i = (p >> 2) & 1; cpu.z = (p >> 1) & 1; cpu.c = p & 1;
 }
 
-static inline void push8(uint8_t v) { ram[0x100 | cpu.sp] = v; cpu.sp--; }
+static inline void push8(uint8_t v) {
+    ram[0x100 | cpu.sp] = v; stk_kind[cpu.sp] = STK_DATA;
+#ifdef STK_AUDIT
+    stk_seq[cpu.sp] = stk_xfers;
+#endif
+    cpu.sp--;
+}
+/* a return address, by a JSR, a BRK or an interrupt */
+static inline void push_ret(uint16_t v, uint8_t kind) {
+    push8((uint8_t)(v >> 8)); push8((uint8_t)v);
+    uint8_t i = (uint8_t)(cpu.sp + 1);
+    stk_kind[i] = kind;
+    stk_bank[i] = v >= 0x8000 ? (uint8_t)mapper.prg_bank[(v >> 13) & 3] : 0xFF;
+}
 static inline uint8_t pop8(void) { cpu.sp++; return ram[0x100 | cpu.sp]; }
 static inline void push16(uint16_t v) { push8((uint8_t)(v >> 8)); push8((uint8_t)v); }
 static inline uint16_t pop16(void) { uint8_t lo = pop8(); uint8_t hi = pop8(); return (uint16_t)(lo | (hi << 8)); }
@@ -483,7 +514,7 @@ static inline void op_las(uint8_t m) { cpu.a = cpu.x = cpu.sp = (uint8_t)(m & cp
 
 /* Interrupt entry sequence shared by interpreter and dispatcher */
 static inline void cpu_do_interrupt(uint16_t vector, int brk) {
-    push16(cpu.pc);
+    push_ret(cpu.pc, brk ? STK_BRK : STK_IRQ);
     push8(cpu_get_p(brk));
     cpu.i = 1;
     cpu.pc = mem_read16(vector);

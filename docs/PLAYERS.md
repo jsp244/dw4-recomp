@@ -27,6 +27,7 @@ Graphics      Display mode (windowed / fullscreen / fullscreen exclusive),
               aspect ratio (square pixels 8:7 / 4:3 CRT / 16:9 or 16:10 widescreen:
               more of the map beside the picture, below),
               textures (Original, or Remastered: below),
+              title screen (Dragon Quest IV or Dragon Warrior IV: below),
               filter (nearest / linear / sharp),
               shader (off / scanlines / CRT / CRT curved / glow) and its strength,
               overscan crop,
@@ -60,7 +61,8 @@ Enter, then press the new key or pad button. "Reset to defaults" restores them.
 
 Other keys: P pause, F5 save state, F8 load state,
 F6 / F7 previous / next save state slot, F11 or Alt+Enter fullscreen,
-F12 screenshot (screenshots folder), Ctrl+R reset.
+F12 screenshot (screenshots folder), Ctrl+R reset, F9 the game without its patches and
+back (Patches, below).
 
 Saving
 ------
@@ -95,6 +97,56 @@ the people standing there, wherever you are walking about: towns, castles, caves
 overworld. Nothing is stretched. Battles, the title and other screens that are not the
 map keep the normal picture between black bars. The extra map comes from your ROM's
 own map code as you play.
+
+With Scaling: Integer in fullscreen or on a handheld, the picture is drawn at the largest
+whole multiple that fits and the map fills the rest of the screen, above and below as
+well (on a 1920x1080 screen: exactly four times, edge to edge).
+
+A widescreen mode also steadies the picture's edges: on the console a row or column at
+the edge flickers with wrong tiles or colours while you walk (the game rewrites it as
+the screen scrolls); here it is drawn from the map.
+
+Title screen
+------------
+Outside North America this game is Dragon Quest IV. Graphics > Title screen picks which
+name the title shows: the Dragon Quest IV logo (the default) or the stone plaque
+engraved with DRAGON WARRIOR IV. Nothing else changes.
+
+Patches (ROM hacks)
+-------------------
+The Patches tab applies ROM hacks to the game: IPS patch files, the usual way hacks are
+shared. Your ROM file is never changed; the patches are applied in memory, and each can
+be switched On or Off at any time, also in the middle of a game.
+
+Getting them: the tab has a "Get" row for each of four well-known hacks, which opens its
+page on romhacking.net. Download the hack there, unpack the .zip, and give the .ips file
+to the program: drop it on the window, choose "Add a patch file", or copy it into the
+patches folder (shown at the top of the tab) and choose "Look for new files".
+
+  Delocalized             a new English translation made from the Japanese text, with
+                          the original names, a Dragon Quest title sequence and several
+                          fixes. It already contains the three hacks below.
+  Uncensored graphics     the graphics changed for the North American release, put back
+  Manual tactics          command every party member yourself in chapter 5
+  Sea monster fix         the sea monsters that a bug kept from appearing
+
+The three small ones can be used together in any combination. With Delocalized on they
+are left out, because it brings its own versions of them; the extra files that come with
+Delocalized (its "nonstandard options") can be switched on with it. Other IPS patches
+for Dragon Warrior IV (USA) can be tried the same way; one that makes the ROM bigger is
+refused.
+
+Comparing: F9 (or "Compare with the original" on the tab) switches all patches off and
+on again while you play, so you can see what a hack changed. Text appears changed the
+next time it is printed (talk to the person again), graphics the next time the scene
+loads. The switch itself takes a moment of the game's choosing, usually none you can
+notice; a message says when it has happened.
+
+While a patch is on, RetroAchievements are off (they belong to the original game), and a
+save state can only be loaded under the patches it was saved with. The adventure logs
+are shared: you can continue a game with or without patches. One caution from the hack
+itself: do not switch Manual tactics off while a party is set to the Manual tactic;
+choose another tactic first.
 
 Shaders
 -------
@@ -148,6 +200,7 @@ Files
 saves/<rom name>.sav       battery save (the game's adventure logs)
 saves/<rom name>.state1-9  save state slots (F5 / F8, F6 / F7 to pick one)
 screenshots/               F12 screenshots
+patches/                   ROM hacks as .ips files (the Patches tab)
 dw4.ini                    settings and the remembered ROM path
 retroachievements.txt      RetroAchievements session (user name + token), if logged in
 remaster.pak               your own hand-made tiles for Textures: Remastered (optional)
@@ -167,4 +220,4 @@ Legal
 -----
 Dragon Warrior and Dragon Quest belong to Square Enix. This port is an unofficial
 fan project; it only runs with a cartridge dump you provide. Do not share your
-.nes file.
+.nes file. ROM hacks belong to their authors and are not part of this program.

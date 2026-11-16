@@ -15,7 +15,7 @@ case "$(uname -s)" in
 esac
 # the test defines its own main(): drop SDL's -Dmain=SDL_main
 SDL_CFLAGS="$(sdl2-config --cflags | sed 's/-Dmain=SDL_main//')"
-for f in cpu mem cart mapper ppu apu sys png palette recomp_stub; do
+for f in cpu mem cart mapper ppu apu sys png palette recomp_stub patch; do
     $CC -O2 -std=gnu11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Iruntime -c runtime/$f.c -o $B/rt/$f.o
 done
 for f in third_party/rcheevos/src/api/*.c third_party/rcheevos/src/client/*.c third_party/rcheevos/src/hash/*.c \

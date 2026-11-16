@@ -28,7 +28,7 @@ int file_dialog_open(SDL_Window *parent, char *out, size_t out_len) {
     memset(&ofn, 0, sizeof ofn);
     ofn.lStructSize = sizeof ofn;
     ofn.hwndOwner = owner;
-    ofn.lpstrFilter = L"NES cartridge dump (*.nes)\0*.nes\0All files (*.*)\0*.*\0";
+    ofn.lpstrFilter = L"NES cartridge dump or IPS patch (*.nes, *.ips)\0*.nes;*.ips\0All files (*.*)\0*.*\0";
     ofn.lpstrFile = buf;
     ofn.nMaxFile = (DWORD)(sizeof buf / sizeof buf[0]);
     ofn.lpstrTitle = L"Select your own Dragon Warrior IV (USA) cartridge dump";
@@ -97,9 +97,9 @@ int file_dialog_open(SDL_Window *parent, char *out, size_t out_len) {
 #else
     if (have_cmd("zenity"))
         return run_capture("zenity --file-selection --title='Select your Dragon Warrior IV (USA) cartridge dump' "
-                           "--file-filter='NES cartridge dump (*.nes) | *.nes' --file-filter='All files | *' 2>/dev/null", out, out_len);
+                           "--file-filter='NES cartridge dump or IPS patch | *.nes *.ips' --file-filter='All files | *' 2>/dev/null", out, out_len);
     if (have_cmd("kdialog"))
-        return run_capture("kdialog --getopenfilename . 'NES cartridge dump (*.nes)' 2>/dev/null", out, out_len);
+        return run_capture("kdialog --getopenfilename . 'NES cartridge dump or IPS patch (*.nes *.ips)' 2>/dev/null", out, out_len);
     return 0;
 #endif
 }

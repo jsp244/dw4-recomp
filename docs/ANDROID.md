@@ -71,3 +71,8 @@ Notes
   and every frame is shown for exactly two refreshes, locked to the compositor's
   deadlines (Android 13 and newer report them).
 - Building the APK yourself: see the README (android/build_apk.py).
+
+ROM hacks (.ips files): the Patches tab has "Add a patch file", which opens the system's
+file picker; the file is copied into the app's own patches folder
+(Android/data/<the app's package>/files/patches on the shared storage, which you can also
+fill over USB). Each patch is then switched On or Off on that tab.

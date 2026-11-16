@@ -39,6 +39,8 @@
 #include "gpu_sync.h"
 #include "remaster.h"
 #include "widescreen.h"
+#include "patch.h"
+#include "title.h"
 #include "update.h"
 #include "rewind.h"
 #include "achievements.h"
@@ -77,6 +79,7 @@ typedef struct {
     int res_w, res_h;    /* chosen size, 0 = auto: the window size, the exclusive display mode, or the render size in fullscreen */
     int scaling;         /* 0 integer, 1 fit, 2 stretch */
     int aspect;          /* 0 square pixels, 1 4:3 CRT, 2 16:9 widescreen (the map shown beside the picture, black bars on other screens), 3 16:10 */
+    int title_quest;     /* the title screen: 1 the Dragon Quest IV logo, 0 the Dragon Warrior IV plaque (runtime/title.h) */
     int textures;        /* 0 original, 1 remastered (runtime/remaster.c: recolored and shaded in the Pixel Remaster's manner) */
     int filter;          /* 0 nearest, 1 linear, 2 sharp */
     int shader;          /* 0 off, 1 scanlines, 2 CRT, 3 CRT curved, 4 glow */
@@ -91,6 +94,7 @@ typedef struct {
     int state_slot;      /* save state slot 1..9 */
     int ra_hardcore;     /* RetroAchievements hardcore mode: no state loads, no rewind */
     char rom[2048];
+    char patches[1024];  /* the patch files that are on: names from the patches folder, separated by | */
 } config_t;
 
 static config_t cfg = {
@@ -98,7 +102,7 @@ static config_t cfg = {
     .pad = { -1, -1, -1, -1, -1, -1, -1, -1, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, INPUT_PAD_RT },
     .window_size = 3, .display_mode = 0, .resolution = 0, .res_w = 0, .res_h = 0, .scaling = 1, .aspect = 1, .filter = 2,
     .shader = 0, .shader_strength = 1, .overscan = 1, .no_sprite_limit = 0, .volume = 100,
-    .lowlat = 1, .runahead = 1, .audio_latency = 1, .rewind = 1, .state_slot = 1, .ra_hardcore = 0, .rom = ""
+    .title_quest = 1, .lowlat = 1, .runahead = 1, .audio_latency = 1, .rewind = 1, .state_slot = 1, .ra_hardcore = 0, .rom = ""
 };
 
 static const char *const display_modes[] = { "Windowed", "Fullscreen", "Fullscreen (exclusive)" };
@@ -108,6 +112,7 @@ static const char *const window_sizes[]  = { "1x", "2x", "3x", "4x", "5x", "6x" 
 static const char *const scalings[]      = { "Integer (exact pixels)", "Fit (fills the screen)", "Stretch (distorts)" };
 static const char *const aspects[]       = { "Square pixels 8:7", "4:3 (CRT)", "16:9 (widescreen)", "16:10 (widescreen)" };
 static const char *const texture_names[] = { "Original", "Remastered" };
+static const char *const title_names[] = { "Dragon Warrior IV", "Dragon Quest IV" };
 static const char *const filters[]       = { "Nearest", "Linear", "Sharp" };
 static const char *const onoff[]         = { "Off", "On" };
 static const char *const shader_names[]  = { "Off", "Scanlines", "CRT", "CRT curved", "Glow" };
@@ -187,13 +192,17 @@ static double refresh_hz;             /* reported display refresh rate, 0 if unk
 
 /* menu */
 enum { ACT_PLAY = 1, ACT_RESET, ACT_SAVE, ACT_LOAD, ACT_STOP, ACT_QUIT, ACT_CHOOSE, ACT_KEYS_DEFAULT, ACT_RA_LOGIN, ACT_UPDATE,
-       GFX_CHANGED, AUD_CHANGED, LAT_CHANGED, KEY_CHANGED, SLOT_CHANGED, RA_CHANGED, RA_TEXT };
-enum { TAB_PLAY, TAB_GFX, TAB_AUDIO, TAB_CONTROLS, TAB_RA, TAB_ROM, TAB_UPDATES, N_TABS };
-#define GFX_ROWS 14
+       GFX_CHANGED, AUD_CHANGED, LAT_CHANGED, KEY_CHANGED, SLOT_CHANGED, RA_CHANGED, RA_TEXT,
+       ACT_PATCH_LINK, ACT_PATCH_LINK_LAST = ACT_PATCH_LINK + 3, ACT_PATCH_COMPARE, ACT_PATCH_RESCAN, ACT_PATCH_ADD, PATCH_CHANGED };
+enum { TAB_PLAY, TAB_GFX, TAB_AUDIO, TAB_CONTROLS, TAB_RA, TAB_ROM, TAB_PATCHES, TAB_UPDATES, N_TABS };
+#define MAX_PATCH_FILES 16
+#define PATCH_ROWS (1 + 4 + MAX_PATCH_FILES + 4)
+#define GFX_ROWS 15
 #define GFX_WINDOW_SIZE_ROW 2
-#define GFX_INFO_ROW 13
+#define GFX_TITLE_ROW 13
+#define GFX_INFO_ROW 14
 static ui_item play_items[8], gfx_all[GFX_ROWS], gfx_items[GFX_ROWS], aud_items[3], ctl_items[K_TOTAL + 3], ra_items[7], rom_items[3],
-               upd_items[3];
+               upd_items[3], patch_items[PATCH_ROWS];
 static ui_tab tabs[N_TABS];
 static ui_menu menu;
 
@@ -374,6 +383,7 @@ static void write_config(void) {
     if (!f) return;
     fputs("; Dragon Warrior IV native port - settings (also editable from the in-game menu, Esc)\n", f);
     fprintf(f, "rom=%s\n", cfg.rom);
+    fprintf(f, "patches=%s\n", cfg.patches);
     fputs("; keyboard: SDL key names (single letters/digits, or return, space, right shift, left ctrl, up, keypad 5 ...)\n", f);
     for (int i = 0; i < K_TOTAL; i++) fprintf(f, "%s=%s\n", key_names[i], SDL_GetKeyName((SDL_Keycode)cfg.key[i]));
     fputs("; gamepad buttons: A B X Y Back Start LB RB LS RS D-pad Up/Down/Left/Right, or none (left stick is always the d-pad)\n", f);
@@ -391,6 +401,7 @@ static void write_config(void) {
     fprintf(f, "overscan=%d            ; crop 8 lines at the top and bottom\n", cfg.overscan);
     fprintf(f, "no_sprite_limit=%d     ; 1: draw every sprite on a line instead of 8 (no flicker)\n", cfg.no_sprite_limit);
     fprintf(f, "textures=%d            ; 0 original, 1 remastered (recolored and shaded; remaster.pak next to the game adds hand-made tiles)\n", cfg.textures);
+    fprintf(f, "title_quest=%d         ; the title screen: 1 the Dragon Quest IV logo, 0 the Dragon Warrior IV plaque\n", cfg.title_quest);
     fprintf(f, "low_latency=%d         ; 1: frame delay, locked to the display (Windows, Android) or timer pacing without vsync (Linux); 0: plain timer (Linux: vsync)\n", cfg.lowlat);
     fprintf(f, "runahead=%d            ; frames of run-ahead (0-3)\n", cfg.runahead);
     fprintf(f, "audio_latency=%d       ; 0 low (~25 ms), 1 normal (~45 ms), 2 safe (~90 ms)\n", cfg.audio_latency);
@@ -417,7 +428,7 @@ static void load_config(void) {
         *eq = 0;
         char *key = trim(line), *val = eq + 1;
         /* a ';' starts a comment except inside the rom path */
-        if (strcmp(key, "rom") != 0) { char *c = strpbrk(val, ";#"); if (c) *c = 0; }
+        if (strcmp(key, "rom") != 0 && strcmp(key, "patches") != 0) { char *c = strpbrk(val, ";#"); if (c) *c = 0; }
         val = trim(val);
         for (char *p = key; *p; p++) *p = (char)tolower((unsigned char)*p);
         int handled = 0;
@@ -435,6 +446,7 @@ static void load_config(void) {
         }
         if (handled) continue;
         if (!strcmp(key, "rom")) snprintf(cfg.rom, sizeof cfg.rom, "%s", val);
+        else if (!strcmp(key, "patches")) snprintf(cfg.patches, sizeof cfg.patches, "%s", val);
         else if (!strcmp(key, "window_size")) { int v = atoi(val); if (v >= 1 && v <= 6) cfg.window_size = v; }
         else if (!strcmp(key, "display_mode")) { int v = atoi(val); if (v >= 0 && v <= 2) cfg.display_mode = v; }
         else if (!strcmp(key, "resolution")) {
@@ -451,6 +463,7 @@ static void load_config(void) {
         else if (!strcmp(key, "overscan")) cfg.overscan = atoi(val) ? 1 : 0;
         else if (!strcmp(key, "no_sprite_limit")) cfg.no_sprite_limit = atoi(val) ? 1 : 0;
         else if (!strcmp(key, "textures")) cfg.textures = atoi(val) ? 1 : 0;
+        else if (!strcmp(key, "title_quest")) cfg.title_quest = atoi(val) ? 1 : 0;
         else if (!strcmp(key, "rewind_enabled")) cfg.rewind = atoi(val) ? 1 : 0;
         else if (!strcmp(key, "state_slot")) { int v = atoi(val); if (v >= 1 && v <= 9) cfg.state_slot = v; }
         else if (!strcmp(key, "ra_hardcore")) cfg.ra_hardcore = atoi(val) ? 1 : 0;
@@ -494,15 +507,45 @@ static double pixel_aspect(void) { return cfg.aspect == 0 ? 1.0 : 1.25; }
 /* the output the picture is composed for, set by its users before source_rect */
 static int pic_out_w, pic_out_h;
 
+/* Integer scaling with a widescreen aspect on a fixed screen (fullscreen, a handheld) fills the
+   whole screen: the picture at the largest whole multiple that fits it, and the map beyond its
+   edges on every side wherever the game is on a map (other scenes keep the normal picture between
+   black bars). Returns the multiple, 0 when the picture is not filled. */
+static int integer_fill(void) {
+    if (cfg.scaling != 0 || !widescreen_on() || (cfg.display_mode == 0 && !handheld) || pic_out_w <= 0) return 0;
+    int k = pic_out_h / (cfg.overscan ? FB_H - 2 * OVERSCAN : FB_H);
+    while (k > 1 && FB_W * k * pixel_aspect() > pic_out_w + 0.5) k--;
+    return k < 1 ? 1 : k;
+}
+
+/* the lines and columns added on each side of the normal picture to cover the output at k */
+static void fill_extent(int k, int *ext_y, int *ext_x) {
+    int base = cfg.overscan ? FB_H - 2 * OVERSCAN : FB_H, ov = cfg.overscan ? OVERSCAN : 0;
+    int bars = pic_out_h - base * k, bar = bars - bars / 2;   /* the larger of the two bars */
+    *ext_y = bar > 0 ? (bar + k - 1) / k : 0;
+    if (*ext_y > WS_VBAND + ov) *ext_y = WS_VBAND + ov;
+    double px = k * pixel_aspect(), bar_x = (pic_out_w - FB_W * px) / 2;
+    *ext_x = bar_x > 0 ? (int)ceil(bar_x / px - 1e-6) : 0;
+    if (*ext_x > WS_BAND) *ext_x = WS_BAND;
+}
+
 /* The part of the frame shown: of the PPU's picture, or in a widescreen mode of the canvas around
-   it (widescreen.h), the part that makes a 16:9 or 16:10 picture at the pixel aspect; without the
-   lines the overscan crop hides. */
+   it (widescreen.h): the part that makes a 16:9 or 16:10 picture at the pixel aspect, or with
+   Integer filling the screen every line and column the output holds at the multiple. Without the
+   lines the overscan crop hides. In a widescreen mode the rectangle is in canvas coordinates. */
 static void source_rect(SDL_Rect *src) {
+    int k = integer_fill();
     src->y = cfg.overscan ? OVERSCAN : 0;
     src->h = cfg.overscan ? FB_H - 2 * OVERSCAN : FB_H;
-    if (widescreen_on()) {
+    if (k) {
+        int ey, ex;
+        fill_extent(k, &ey, &ex);
+        src->x = WS_BAND - ex; src->w = FB_W + 2 * ex;
+        src->y += WS_VBAND - ey; src->h += 2 * ey;
+    } else if (widescreen_on()) {
         src->w = widescreen_visible_width(src->h, pixel_aspect(), target_aspect(src->h));
         src->x = (WS_W - src->w) / 2;
+        src->y += WS_VBAND;
     } else {
         src->x = 0; src->w = FB_W;
     }
@@ -510,7 +553,17 @@ static void source_rect(SDL_Rect *src) {
 
 static void dest_rect(int ww, int wh, const SDL_Rect *src, SDL_Rect *dst) {
     double aspect = target_aspect(src->h);
-    int w, h, k;
+    int w, h, k = integer_fill();
+    if (k) {
+        /* the normal picture where Integer puts it, the added lines and columns around it; the
+           outermost pixels may lie partly beyond the edges */
+        int ey, ex, base = cfg.overscan ? FB_H - 2 * OVERSCAN : FB_H;
+        fill_extent(k, &ey, &ex);
+        double px = k * pixel_aspect();
+        dst->y = (wh - base * k) / 2 - ey * k; dst->h = src->h * k;
+        dst->x = (int)floor((ww - FB_W * px) / 2 - ex * px + 0.5); dst->w = (int)floor(src->w * px + 0.5);
+        return;
+    }
     if (cfg.scaling == 2) { dst->x = 0; dst->y = 0; dst->w = ww; dst->h = wh; return; }
     if (cfg.scaling == 0) {
         k = wh / src->h;
@@ -545,14 +598,30 @@ static void ensure_textures(int k) {
 /* the part src of the frame (see source_rect: of the PPU's picture, or in a widescreen mode of
    the canvas with the map beside it) as ARGB in frame_rgb, frame_w x frame_h */
 static void frame_to_rgb(const SDL_Rect *src) {
-    const uint8_t *fb = ppu.fb + src->y * FB_W + src->x, *emph = ppu.line_emph + src->y;
-    const uint32_t *hbg = ppu.hd_bg + src->y * FB_W + src->x, *hspr = ppu.hd_spr + src->y * FB_W + src->x;
+    if (cfg.title_quest && title_plaque()) title_draw();      /* the title under the game's other name */
+    const uint8_t *fb = NULL, *emph = NULL;
+    const uint32_t *hbg = NULL, *hspr = NULL;
     int stride = FB_W, remastered = cfg.textures && ppu_hd_capture && remaster_ready();
     frame_w = src->w; frame_h = src->h;
     if (widescreen_on()) {
-        if (remastered) widescreen_render_hd(wide_fb, wide_emph, wide_hbg, wide_hspr, src->x, src->y, src->w, src->h);
-        else widescreen_render(wide_fb, wide_emph, src->x, src->y, src->w, src->h);
+        int decoded = remastered ? widescreen_render_hd(wide_fb, wide_emph, wide_hbg, wide_hspr, src->x, src->y, src->w, src->h)
+                                 : widescreen_render(wide_fb, wide_emph, src->x, src->y, src->w, src->h);
+        if (!decoded && cfg.overscan && integer_fill())
+            for (int y = 0; y < frame_h; y++) {   /* the lines the crop hides stay black around the picture */
+                int line = src->y + y - WS_VBAND;
+                if ((line >= 0 && line < OVERSCAN) || (line >= FB_H - OVERSCAN && line < FB_H)) {
+                    memset(wide_fb + (size_t)y * frame_w, 0x0F, (size_t)frame_w);
+                    wide_emph[y] = 0;
+                    if (remastered) {
+                        memset(wide_hbg + (size_t)y * frame_w, 0, (size_t)frame_w * sizeof *wide_hbg);
+                        memset(wide_hspr + (size_t)y * frame_w, 0, (size_t)frame_w * sizeof *wide_hspr);
+                    }
+                }
+            }
         fb = wide_fb; emph = wide_emph; hbg = wide_hbg; hspr = wide_hspr; stride = frame_w;
+    } else {
+        fb = ppu.fb + src->y * FB_W + src->x; emph = ppu.line_emph + src->y;
+        hbg = ppu.hd_bg + src->y * FB_W + src->x; hspr = ppu.hd_spr + src->y * FB_W + src->x;
     }
     if (remastered) {
         remaster_frame(frame_rgb, frame_w, fb, hbg, hspr, stride, emph, frame_w, frame_h);
@@ -979,7 +1048,7 @@ static int write_png_rgb32(const char *path, const uint32_t *px, int w, int h) {
 static int write_frame_png(const char *path) {
     SDL_Rect src;
     source_rect(&src);
-    int top = 0;
+    int top = widescreen_on() ? WS_VBAND : 0;     /* (a widescreen rectangle is in canvas coordinates) */
     if (src.y > top) { src.h += 2 * (src.y - top); src.y = top; }
     frame_to_rgb(&src);
     return write_png_rgb32(path, frame_rgb, frame_w, frame_h);
@@ -1216,15 +1285,16 @@ static int state_load(void) {
     if (!f) { osd("Slot %d is empty", cfg.state_slot); free(buf); return 0; }
     size_t n = fread(buf, 1, len, f);
     fclose(f);
-    int ok = 0;
-    if (n == len && nes_state_load(buf, len) == 0) {
+    int ok = 0, rc = n > 0 ? nes_state_load(buf, n) : -1;
+    if (rc == 0) {
         apu_flush_samples();      /* the sound queued before the load belongs to the old timeline */
         audio_out_clear();
         rewind_clear(); chord_clear();
         game_started = 1;
         osd("State loaded from slot %d", cfg.state_slot);
         ok = 1;
-    } else osd("Slot %d: the save state is from another version of the program", cfg.state_slot);
+    } else if (rc == -2) osd("Slot %d was saved with other patches: set them as they were, then load", cfg.state_slot);
+    else osd("Slot %d: the save state is from another version of the program", cfg.state_slot);
     free(buf);
     return ok;
 }
@@ -1307,6 +1377,282 @@ static void setup_textures(void) {
 }
 
 /* loads and verifies a cartridge dump; returns 1 when it is a Dragon Warrior IV ROM */
+/* ------------------------------------------------------------------ */
+/* patches (ROM hacks as IPS files)                                    */
+/* ------------------------------------------------------------------ */
+/* The files in the patches folder, each On or Off. The ones that are on are applied to the ROM in
+   memory - a whole-game hack first, then the small well-known ones, then the rest by name - and
+   can be switched while the game runs (runtime/patch.h). */
+static const struct { const char *name, *url; int kind; } known_hacks[4] = {
+    { "Delocalized", "https://www.romhacking.net/hacks/9523/", PATCH_WHOLE },
+    { "Uncensored graphics", "https://www.romhacking.net/hacks/8426/", PATCH_UNCENSOR },
+    { "Manual tactics", "https://www.romhacking.net/hacks/9221/", PATCH_MANUAL },
+    { "Sea monster fix", "https://www.romhacking.net/hacks/3760/", PATCH_SEA },
+};
+static char patch_dir[1300];
+static char patch_files[MAX_PATCH_FILES][160];
+static char patch_labels[MAX_PATCH_FILES][200];
+static int patch_on[MAX_PATCH_FILES], n_patch_files;
+static int patch_kind[MAX_PATCH_FILES];
+static int patch_part_of[MAX_PATCH_FILES];   /* the whole-game hack (a row) that already holds this one, or -1 */
+static int patches_shown = 1;            /* the compare key: 0 = the original game for the moment */
+static char patch_errors[500];
+static int patch_announce;               /* say so on the screen when the pending switch has happened */
+static int patch_toggle;                 /* --patch-toggle N (a test) */
+static unsigned patch_gen0;
+
+static int ends_with_ips(const char *name) {
+    size_t n = strlen(name);
+    return n > 4 && name[n - 4] == '.' && (name[n - 3] | 32) == 'i' && (name[n - 2] | 32) == 'p' && (name[n - 1] | 32) == 's';
+}
+
+static int in_patch_list(const char *name) {
+    size_t n = strlen(name);
+    for (const char *c = cfg.patches; *c; ) {
+        const char *e = strchr(c, '|');
+        size_t len = e ? (size_t)(e - c) : strlen(c);
+        if (len == n && !memcmp(c, name, n)) return 1;
+        c += len + (e ? 1 : 0);
+    }
+    return 0;
+}
+
+static int cmp_names(const void *a, const void *b) { return SDL_strcasecmp((const char *)a, (const char *)b); }
+
+static int name_has(const char *name, const char *word) {
+    size_t n = strlen(word);
+    for (; *name; name++) if (!SDL_strncasecmp(name, word, n)) return 1;
+    return 0;
+}
+
+static void patch_path(int i, char *out, size_t n) { snprintf(out, n, "%.1299s/%.159s", patch_dir, patch_files[i]); }
+
+/* the .ips files in the patches folder, by name, and what each one is */
+static void scan_patches(void) {
+    const char *root = data_dir;
+#ifdef __ANDROID__
+    static char ext[1100];                /* the app's folder on the shared storage: a place files can be copied to */
+    const char *e = SDL_AndroidGetExternalStoragePath();
+    if (e) { snprintf(ext, sizeof ext, "%s/", e); root = ext; }
+#endif
+    snprintf(patch_dir, sizeof patch_dir, "%spatches", root);
+    make_dir(patch_dir);
+    n_patch_files = 0;
+#ifdef _WIN32
+    wchar_t wpat[1400];
+    char pat[1400];
+    snprintf(pat, sizeof pat, "%s\\*", patch_dir);
+    if (MultiByteToWideChar(CP_UTF8, 0, pat, -1, wpat, 1400)) {
+        WIN32_FIND_DATAW fd;
+        HANDLE h = FindFirstFileW(wpat, &fd);
+        if (h != INVALID_HANDLE_VALUE) {
+            do {
+                char name[160];
+                if ((fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) || n_patch_files >= MAX_PATCH_FILES) continue;
+                if (!WideCharToMultiByte(CP_UTF8, 0, fd.cFileName, -1, name, sizeof name, NULL, NULL)) continue;
+                if (ends_with_ips(name)) snprintf(patch_files[n_patch_files++], sizeof patch_files[0], "%s", name);
+            } while (FindNextFileW(h, &fd));
+            FindClose(h);
+        }
+    }
+#else
+    DIR *d = opendir(patch_dir);
+    if (d) {
+        struct dirent *de;
+        while ((de = readdir(d)) != NULL && n_patch_files < MAX_PATCH_FILES)
+            if (ends_with_ips(de->d_name) && strlen(de->d_name) < sizeof patch_files[0])
+                snprintf(patch_files[n_patch_files++], sizeof patch_files[0], "%s", de->d_name);
+        closedir(d);
+    }
+#endif
+    qsort(patch_files, (size_t)n_patch_files, sizeof patch_files[0], cmp_names);
+    int named[5] = { 0 };
+    for (int i = 0; i < n_patch_files; i++) {
+        char path[1500];
+        patch_info_t info;
+        patch_path(i, path, sizeof path);
+        patch_on[i] = in_patch_list(patch_files[i]);
+        patch_kind[i] = patch_inspect(path, &info) ? info.kind : PATCH_OTHER;
+        patch_part_of[i] = -1;
+        /* the hacks the menu knows go by their names (the first file of each); a whole-game hack is
+           only "Delocalized" when its file says so */
+        const char *known = NULL;
+        for (int k = 0; k < 4; k++)
+            if (known_hacks[k].kind == patch_kind[i] && !named[patch_kind[i]] &&
+                (patch_kind[i] != PATCH_WHOLE || name_has(patch_files[i], "deloc"))) known = known_hacks[k].name;
+        /* (a row has room for some 55 characters before the On/Off column) */
+        size_t len = strlen(patch_files[i]);
+        if (known) {
+            named[patch_kind[i]] = 1;
+            int room = 49 - (int)strlen(known);
+            snprintf(patch_labels[i], sizeof patch_labels[i], "%s  (%.*s%s)", known, room, patch_files[i], (int)len > room ? "..." : "");
+        } else snprintf(patch_labels[i], sizeof patch_labels[i], "%.52s%s", patch_files[i], len > 52 ? "..." : "");
+    }
+}
+
+static void refresh_patch_items(void);
+static void patches_and_achievements(void);
+
+/* Prepare the image for the rows as they stand. force: put it in place at once (the machine is
+   about to be powered on); otherwise it goes in at the first safe moment while the game runs. */
+static void apply_patches(int force) {
+    static char paths[MAX_PATCH_FILES][1500];
+    static const int rank[5] = { [PATCH_WHOLE] = 0, [PATCH_UNCENSOR] = 1, [PATCH_MANUAL] = 2, [PATCH_SEA] = 3, [PATCH_OTHER] = 4 };
+    const char *list[MAX_PATCH_FILES];
+    int n = 0;
+    cfg.patches[0] = 0;
+    for (int i = 0; i < n_patch_files; i++) {
+        patch_part_of[i] = -1;
+        if (!patch_on[i]) continue;
+        size_t used = strlen(cfg.patches);
+        snprintf(cfg.patches + used, sizeof cfg.patches - used, "%s%.159s", used ? "|" : "", patch_files[i]);
+        /* a small hack that a whole-game hack already holds (they write the same places) is not
+           applied on top of it: that would put the small hack's own version over the big one's */
+        if (patch_kind[i] == PATCH_OTHER || patch_kind[i] == PATCH_WHOLE) continue;
+        for (int k = 0; k < n_patch_files && patch_part_of[i] < 0; k++) {
+            char a[1500], b[1500];
+            if (!patch_on[k] || patch_kind[k] != PATCH_WHOLE) continue;
+            patch_path(i, a, sizeof a); patch_path(k, b, sizeof b);
+            if (patch_overlap(a, b) > 0) patch_part_of[i] = k;
+        }
+    }
+    for (int r = 0; r < 5 && patches_shown; r++)
+        for (int i = 0; i < n_patch_files; i++) {
+            if (!patch_on[i] || rank[patch_kind[i]] != r || patch_part_of[i] >= 0) continue;
+            patch_path(i, paths[n], sizeof paths[n]);
+            list[n] = paths[n]; n++;
+        }
+    if (!rom_ok) { refresh_patch_items(); return; }
+    patch_prepare(list, n, patch_errors, sizeof patch_errors);
+    if (force) patch_switch(1);
+    else if (!game_started && patch_pending()) { patch_switch(1); nes_power(); patches_and_achievements(); }   /* only the attract mode to restart */
+    refresh_patch_items();
+}
+
+/* RetroAchievements belong to the unpatched game: off while a patch is in the image */
+static void patches_and_achievements(void) {
+    static int was_patched = -1;
+    int patched = patch_count() > 0;
+    if (patched == was_patched) return;
+    was_patched = patched;
+    if (patched) ach_unload_game();
+    else if (rom_ok && cfg.rom[0]) ach_load_game(cfg.rom, "Dragon Warrior IV");
+}
+
+/* Once per frame of the game. A prepared set goes in by itself while the frame runs (patch_live),
+   at the first moment the game is not inside code that differs; here its arrival is noticed. */
+static void poll_patch_switch(void) {
+    static unsigned seen;
+    static int waited;
+    if (patch_generation() != seen) {
+        seen = patch_generation();
+        waited = 0;
+        rewind_clear(); chord_clear();          /* the history was made by the other image */
+        patches_and_achievements();
+        if (patch_announce) {
+            if (patch_count()) osd("Patches on (%d)", patch_count());
+            else osd("Patches off: the original game");
+            patch_announce = 0;
+        }
+        refresh_patch_items();
+    } else if (patch_pending() && ++waited == 120) {
+        osd("The patches switch as soon as the game leaves the code they change");
+    }
+}
+
+/* the compare key: the original game for a moment, and the patches back again */
+static void compare_patches(void) {
+    int any = 0;
+    for (int i = 0; i < n_patch_files; i++) any |= patch_on[i];
+    if (!any) { osd("No patch is on (menu > Patches)"); return; }
+    patches_shown = !patches_shown;
+    patch_announce = 1;
+    apply_patches(0);
+}
+
+/* an .ips file dropped on the window (or picked on Android): into the patches folder, and on */
+static int add_patch_file(const char *path) {
+    const char *name = path;
+    for (const char *c = path; *c; c++) if (*c == '/' || *c == '\\') name = c + 1;
+    if (!ends_with_ips(name) || strlen(name) >= sizeof patch_files[0]) return 0;
+    char dst[1500];
+    snprintf(dst, sizeof dst, "%s/%s", patch_dir, name);
+    FILE *in = nes_fopen(path, "rb");
+    if (!in) return 0;
+    FILE *out = nes_fopen(dst, "wb");
+    if (out) {
+        char buf[4096];
+        size_t n;
+        while ((n = fread(buf, 1, sizeof buf, in)) > 0) fwrite(buf, 1, n, out);
+        fclose(out);
+    }
+    fclose(in);
+    if (!out) return 0;
+    if (!in_patch_list(name)) {
+        size_t used = strlen(cfg.patches);
+        snprintf(cfg.patches + used, sizeof cfg.patches - used, "%s%s", used ? "|" : "", name);
+    }
+    scan_patches();
+    patches_shown = 1;
+    patch_announce = 1;
+    apply_patches(0);
+    write_config();
+    return 1;
+}
+
+static void refresh_patch_items(void) {
+    int n = 0, on = 0, have[5] = { 0 }, held = 0;
+    ui_item *t = patch_items;
+    t[n] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    snprintf(t[n].info, sizeof t[n].info, "ROM hacks as IPS files, applied to your ROM in memory and switched On and Off while you play. "
+             "Get them from their pages, then put the .ips files in this folder or drop them on the window:\n%.180s", patch_dir);
+    n++;
+    for (int i = 0; i < n_patch_files; i++) have[patch_kind[i]] = 1;
+    for (int i = 0; i < 4; i++) {
+        static char labels[4][64];
+        if (have[known_hacks[i].kind]) continue;        /* already in the folder */
+        snprintf(labels[i], sizeof labels[i], "Get: %s", known_hacks[i].name);
+        t[n] = (ui_item){ labels[i], UI_ACTION, ACT_PATCH_LINK + i, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+        n++;
+    }
+    for (int i = 0; i < n_patch_files; i++) {
+        t[n] = (ui_item){ patch_labels[i], UI_CHOICE, PATCH_CHANGED, &patch_on[i], onoff, 2, 0, 0, 0, NULL, "", NULL };
+        on += patch_on[i];
+        held += patch_on[i] && patch_part_of[i] >= 0;
+        n++;
+    }
+    t[n++] = (ui_item){ handheld ? "Compare with the original" : "Compare with the original  (F9)", UI_ACTION, ACT_PATCH_COMPARE, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    if (file_dialog_available())
+        t[n++] = (ui_item){ "Add a patch file...", UI_ACTION, ACT_PATCH_ADD, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    t[n++] = (ui_item){ "Look for new files", UI_ACTION, ACT_PATCH_RESCAN, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    t[n] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    char *o = t[n].info;
+    size_t room = sizeof t[n].info;
+    if (!n_patch_files)
+        snprintf(o, room, "No .ips files in the folder yet.");
+    else if (patch_pending())
+        snprintf(o, room, "The switch happens as soon as the game runs and is not inside the code that changes.");
+    else if (!patches_shown && on)
+        snprintf(o, room, "Showing the original game (Compare). %d patch%s set to On.", on % 100, on == 1 ? " is" : "es are");
+    else if (patch_count())
+        snprintf(o, room, "%d patch%s on: %ld bytes changed. Changed text shows the next time it is printed, graphics at the next "
+                 "scene. RetroAchievements are off while a patch is on.", patch_count() % 100, patch_count() == 1 ? "" : "es", patch_bytes() % 10000000);
+    else
+        snprintf(o, room, "No patch is on: this is the original game.");
+    if (held) {
+        size_t used = strlen(o);
+        int whole = 0;
+        for (int i = 0; i < n_patch_files; i++) if (patch_on[i] && patch_part_of[i] >= 0) whole = patch_part_of[i];
+        snprintf(o + used, room - used, "\n%d of the small hacks %s already part of %.40s: not applied a second time.",
+                 held % 100, held == 1 ? "is" : "are", patch_files[whole]);
+    }
+    if (patch_errors[0]) { size_t used = strlen(o); snprintf(o + used, room - used, "\n%.150s", patch_errors); }
+    n++;
+    tabs[TAB_PATCHES].items = patch_items;
+    tabs[TAB_PATCHES].nitems = n;
+    if (tabs[TAB_PATCHES].sel >= n) tabs[TAB_PATCHES].sel = n - 1;
+}
+
 static int load_rom_file(const char *path) {
     rom_ok = 0; game_started = 0;
     if (!path || !*path) { snprintf(rom_status, sizeof rom_status, "No ROM selected"); refresh_rom_items(); return 0; }
@@ -1337,6 +1683,11 @@ static int load_rom_file(const char *path) {
         slot_path(1, slot1, sizeof slot1);
         if (file_exists(old) && !file_exists(slot1) && move_file(old, slot1) == 0) printf("moved %s to slot 1\n", old);
     }
+    patch_reset();
+    scan_patches();
+    patches_shown = 1;
+    apply_patches(1);
+    if (patch_count()) nes_power();      /* from the patched image */
     if (cart.battery && cart_load_battery(sav_path) == 0) printf("battery RAM loaded from %s\n", sav_path);
     memcpy(wram_snapshot, cart.wram, cart_battery_size());
     if (native) snprintf(rom_status, sizeof rom_status, "%s: hash check passed, running native code", known ? known : "Dragon Warrior IV");
@@ -1345,7 +1696,8 @@ static int load_rom_file(const char *path) {
         char full[2048];
         absolute_path(path, full, sizeof full);
         if (strcmp(cfg.rom, full) != 0) { snprintf(cfg.rom, sizeof cfg.rom, "%s", full); write_config(); }
-        ach_load_game(full, known ? known : "Dragon Warrior IV");
+        if (!patch_count()) ach_load_game(full, known ? known : "Dragon Warrior IV");
+        else ach_unload_game();
     }
     rewind_clear(); chord_clear();
     ach_reset();
@@ -1412,6 +1764,7 @@ static void layout_gfx(void) {
     for (int i = 0; i < GFX_ROWS; i++) {
         if (i == GFX_WINDOW_SIZE_ROW && cfg.res_w > 0) continue;
         if (handheld && i <= GFX_WINDOW_SIZE_ROW) continue;   /* display mode, resolution, window size: the screen is fixed */
+        if (i == GFX_TITLE_ROW && !title_available()) continue;          /* this build has no logo to show */
         gfx_items[n++] = gfx_all[i];
     }
     tabs[TAB_GFX].nitems = n;
@@ -1464,6 +1817,8 @@ static void refresh_gfx_info(void) {
             snprintf(hz, sizeof hz, "\nThe screen runs at %.0f Hz. For even motion set 60 Hz for this game: "
                      "quick access menu > Performance > per-game profile.", refresh_hz);
     }
+    if (!why[0] && integer_fill())
+        snprintf(why, sizeof why, "\nThe map fills the screen wherever you walk about; other scenes keep their bars.");
     /* the part on the screen (Integer filling it lets the outermost pixels overhang the edges) */
     int vis_w = (dst.x + dst.w < out_w ? dst.x + dst.w : out_w) - (dst.x > 0 ? dst.x : 0);
     int vis_h = (dst.y + dst.h < out_h ? dst.y + dst.h : out_h) - (dst.y > 0 ? dst.y : 0);
@@ -1570,7 +1925,8 @@ static void build_menu(void) {
     g[10] = (ui_item){ "Sprite limit", UI_CHOICE, GFX_CHANGED, &cfg.no_sprite_limit, sprite_limits, 2, 0, 0, 0, NULL, "", NULL };
     g[11] = (ui_item){ "Low-latency sync", UI_CHOICE, GFX_CHANGED, &cfg.lowlat, onoff, 2, 0, 0, 0, NULL, "", NULL };
     g[12] = (ui_item){ "Run-ahead", UI_CHOICE, GFX_CHANGED, &cfg.runahead, runahead_names, 4, 0, 0, 0, NULL, "", NULL };
-    g[13] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    g[GFX_TITLE_ROW] = (ui_item){ "Title screen", UI_CHOICE, GFX_CHANGED, &cfg.title_quest, title_names, 2, 0, 0, 0, NULL, "", NULL };
+    g[GFX_INFO_ROW] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
 
     ui_item *a = aud_items;
     a[0] = (ui_item){ "Volume", UI_INT, AUD_CHANGED, &cfg.volume, NULL, 0, 0, 100, 5, "%", "", NULL };
@@ -1628,6 +1984,8 @@ static void build_menu(void) {
     tabs[TAB_CONTROLS] = (ui_tab){ "Controls", ctl_items, K_TOTAL + 3, 0 };
     tabs[TAB_RA] = (ui_tab){ "Achievements", ra_items, ach_available() ? 7 : 1, 0 };
     tabs[TAB_ROM] = (ui_tab){ "ROM", rom_items, 3, 1 };
+    tabs[TAB_PATCHES] = (ui_tab){ "Patches", patch_items, 1, 1 };
+    refresh_patch_items();
     tabs[TAB_UPDATES] = (ui_tab){ "Updates", upd_items, 3, 1 };
     memset(&menu, 0, sizeof menu);
     menu.tabs = tabs; menu.ntabs = N_TABS;
@@ -1654,7 +2012,10 @@ static void open_menu(void) {
 
 static void start_game(void) {
     if (!rom_ok) { menu.tab = TAB_ROM; menu.focus = 1; ui_select_first(&menu); return; }
-    if (!game_started) { nes_power(); ach_reset(); rewind_clear(); chord_clear(); }   /* the launcher's attract mode was running: begin fresh */
+    if (!game_started) {      /* the launcher's attract mode was running: begin fresh */
+        if (patch_pending()) { patch_switch(1); patches_and_achievements(); refresh_patch_items(); }
+        nes_power(); ach_reset(); rewind_clear(); chord_clear();
+    }
     game_started = 1;
     state = ST_GAME;
     resume_suppress();
@@ -1668,7 +2029,10 @@ static void choose_rom(void) {
         refresh_rom_items();
         return;
     }
-    if (file_dialog_open(window, path, sizeof path)) load_rom_file(path);
+    if (!file_dialog_open(window, path, sizeof path)) return;
+    if (ends_with_ips(path)) {      /* a patch, from either tab */
+        if (add_patch_file(path)) { menu.tab = TAB_PATCHES; menu.focus = 1; ui_select_first(&menu); }
+    } else load_rom_file(path);
 }
 
 static void menu_action(ui_event e) {
@@ -1682,11 +2046,16 @@ static void menu_action(ui_event e) {
         else if (e.id == SLOT_CHANGED) select_slot(cfg.state_slot);
         else if (e.id == RA_CHANGED) { ach_set_hardcore(cfg.ra_hardcore); if (cfg.ra_hardcore) rewind_clear(); chord_clear(); write_config(); }
         else if (e.id == RA_TEXT) { /* typed into a text row: nothing to store */ }
+        else if (e.id == PATCH_CHANGED) { patches_shown = 1; apply_patches(0); write_config(); }
         else write_config();
         return;
     }
     if (e.type != UI_EV_ACTIVATE) return;
+    if (e.id >= ACT_PATCH_LINK && e.id <= ACT_PATCH_LINK_LAST) { SDL_OpenURL(known_hacks[e.id - ACT_PATCH_LINK].url); return; }
     switch (e.id) {
+    case ACT_PATCH_COMPARE: compare_patches(); break;
+    case ACT_PATCH_RESCAN: scan_patches(); apply_patches(0); write_config(); break;
+    case ACT_PATCH_ADD: choose_rom(); break;
     case ACT_PLAY: start_game(); break;
     case ACT_RESET: if (rom_ok) { nes_reset(); ach_reset(); chord_clear(); game_started = 1; start_game(); } break;
     case ACT_SAVE: state_save(); break;
@@ -2097,6 +2466,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--audio-dump") && i + 1 < argc) audio_dump_path = argv[++i];
         else if (!strcmp(argv[i], "--play")) autoplay = 1;
         else if (!strcmp(argv[i], "--quit-after") && i + 1 < argc) quit_after = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "--patch-toggle") && i + 1 < argc) patch_toggle = atoi(argv[++i]);   /* test: the compare key every N frames */
         else if (!strcmp(argv[i], "--update-check")) update_test = 1;
         else if (!strcmp(argv[i], "--update-test") && i + 1 < argc) {
             /* the rest of the line is the installed version's command line (argv itself stays as it
@@ -2319,22 +2689,24 @@ int main(int argc, char **argv) {
         uint8_t wram0[8192];
         memcpy(wram0, cart.wram, sizeof wram0);
         for (int i = 0; i < selftest_frames; i++) { nes_run_frame(); audio_out_pump(1, cfg.volume); }
-        uint64_t h1 = 0xcbf29ce484222325ULL;
-        for (size_t i = 0; i < sizeof ppu.fb; i++) { h1 ^= ppu.fb[i]; h1 *= 0x100000001b3ULL; }
-        /* run-ahead determinism: the same frames with a save / two-frame lookahead / restore cycle after each */
-        memcpy(cart.wram, wram0, sizeof wram0);
-        nes_power();
         size_t sz = nes_state_size();
         void *st = malloc(sz);
+        uint64_t h1 = machine_hash(st, sz);
+        /* run-ahead determinism: the same frames with a save / two-frame lookahead / restore cycle
+           after each must leave the machine exactly as the plain run did. (The picture is not
+           compared: after a lookahead the frame buffer holds a later frame.) */
+        memcpy(cart.wram, wram0, sizeof wram0);
+        nes_power();
+        void *look = malloc(sz);
         for (int i = 0; i < selftest_frames; i++) {
             nes_run_frame(); audio_out_pump(1, cfg.volume);
-            nes_state_save(st, sz);
+            nes_state_save(look, sz);
             nes_run_frame(); nes_run_frame();
-            nes_state_load(st, sz);
+            nes_state_load(look, sz);
         }
+        free(look);
+        uint64_t h2 = machine_hash(st, sz);
         free(st);
-        uint64_t h2 = 0xcbf29ce484222325ULL;
-        for (size_t i = 0; i < sizeof ppu.fb; i++) { h2 ^= ppu.fb[i]; h2 *= 0x100000001b3ULL; }
         int same = (h1 == h2);
         draw_game();
         SDL_RenderPresent(renderer);
@@ -2352,6 +2724,7 @@ int main(int argc, char **argv) {
         if (!audio_ok) fprintf(stderr, "could not open audio: %s\n", SDL_GetError());
     }
     if (autoplay && rom_ok) start_game();   /* --play: skip the launcher */
+    patch_gen0 = patch_generation();
 
     /* ---- main loop ----
        Each iteration: (1) wait for the display's vertical blank (phase), then sleep until just
@@ -2424,6 +2797,12 @@ int main(int argc, char **argv) {
                 continue;
             }
             if (ev.type == SDL_APP_DIDENTERFOREGROUND) { audio_out_clear(); continue; }
+            if (ev.type == SDL_DROPFILE && ends_with_ips(ev.drop.file)) {
+                int ok = add_patch_file(ev.drop.file);
+                SDL_free(ev.drop.file);
+                if (ok) { open_menu(); menu.tab = TAB_PATCHES; menu.focus = 1; ui_select_first(&menu); }
+                continue;
+            }
             if (ev.type == SDL_DROPFILE) {
                 load_rom_file(ev.drop.file);
                 SDL_free(ev.drop.file);
@@ -2461,6 +2840,7 @@ int main(int argc, char **argv) {
                 case SDLK_F6: select_slot(cfg.state_slot - 1); break;
                 case SDLK_F7: select_slot(cfg.state_slot + 1); break;
                 case SDLK_F8: state_load(); break;
+                case SDLK_F9: compare_patches(); break;
                 case SDLK_F12: save_screenshot(); break;
                 case SDLK_p: paused = !paused; audio_out_clear(); break;
                 case SDLK_r: if (ev.key.keysym.mod & KMOD_CTRL) { nes_reset(); ach_reset(); chord_clear(); osd("Reset"); } break;
@@ -2535,11 +2915,18 @@ int main(int argc, char **argv) {
                 if (chord_pressed(pad)) { chord = 1; break; }
                 chord_record(pad);
                 nes_set_pad(0, pad);
+                patch_live(1);
                 nes_run_frame();
+                patch_live(0);
                 ach_frame();
                 audio_out_pump(fast, cfg.volume);
+                poll_patch_switch();
                 if (++frames % 60 == 0) battery_check(0);
-                if (quit_after && frames >= quit_after) running = 0;   /* --quit-after: a timed run that ends as Quit does */
+                if (patch_toggle && frames % patch_toggle == 0) compare_patches();
+                if (quit_after && frames >= quit_after) {              /* --quit-after: a timed run that ends as Quit does */
+                    running = 0;
+                    if (patch_toggle) printf("patch-toggle: %u switches in %d frames, %s\n", patch_generation() - patch_gen0, frames, cpu.jammed ? "CPU JAMMED" : "running");
+                }
                 if (cfg.rewind && !ach_hardcore() && history_step(frames, rw_state, rw_size)) chord_mark_pushed();
             }
             if (chord) {

@@ -29,7 +29,7 @@ BUILD   ?= build
 GEN     := generated
 
 RUNTIME_SRC := runtime/cpu.c runtime/mem.c runtime/cart.c runtime/mapper.c runtime/ppu.c \
-               runtime/apu.c runtime/sys.c runtime/png.c runtime/palette.c runtime/remaster.c runtime/widescreen.c runtime/patch.c
+               runtime/apu.c runtime/sys.c runtime/png.c runtime/palette.c runtime/remaster.c runtime/widescreen.c runtime/patch.c runtime/title.c
 RUNTIME_OBJ := $(patsubst runtime/%.c,$(BUILD)/%.o,$(RUNTIME_SRC))
 
 GEN_SRC := $(wildcard $(GEN)/*.c)
@@ -135,6 +135,13 @@ headless-recomp: $(BUILD)/nes-headless-recomp$(EXE)
 $(BUILD)/nes-headless-recomp$(EXE): $(RUNTIME_OBJ) $(BUILD)/headless.o $(GEN_OBJ)
 	@test -n "$(GEN_SRC)" || (echo "no generated code: run 'make recomp' first" && exit 1)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -lm
+
+# ---- the Dragon Quest IV title logo, from a dump of the Japanese cartridge (optional) ----
+# make title TITLE_ROM="path/Dragon Quest IV (Japan).nes"   ->  generated/title_dq.h
+$(BUILD)/title.o: $(wildcard $(GEN)/title_dq.h)
+title: headless
+	@test -n "$(TITLE_ROM)" || (echo "pass TITLE_ROM=<your dump of the Japanese Dragon Quest IV>" && exit 1)
+	$(PYTHON) tools/title/extract_title.py "$(TITLE_ROM)"
 
 # ---- recompiler ----
 recomp:

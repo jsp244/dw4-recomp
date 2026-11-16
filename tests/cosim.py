@@ -2,10 +2,16 @@
 the recompiled code and compare per-frame state hashes.
 
 usage: python tests/cosim.py [--frames N] [--keys SPEC] [--fuzz SEED] [--fuzz-start N] [--rom FILE]
+                             [--ips FILE]... [--ips-toggle N]
 
 The default session is scripted up to the start of chapter 1 (title, a new
 adventure log, a name, the message speed, the King's speech), then played at
 random from frame 5000 on: walking, talking, menus (nes-headless --fuzz).
+
+With --ips the same check runs on a patched game (ROM hacks as IPS files, applied in the order
+given): the translated routines a patch touches are left to the interpreter, and the rest must
+still behave exactly like it. --ips-toggle N also switches the patches off and on again every N
+frames while the game runs.
 
 Exit code 0 means every frame matched (CPU registers and cycle count, RAM,
 save RAM, framebuffer, OAM, palettes, nametables, bank registers).
@@ -49,6 +55,8 @@ def main():
     ap.add_argument("--fuzz", type=int, default=1, help="seed of the random play (0 = none)")
     ap.add_argument("--fuzz-start", type=int, default=5000)
     ap.add_argument("--rom", default=None)
+    ap.add_argument("--ips", action="append", default=[], help="an IPS patch to apply (repeatable, in order)")
+    ap.add_argument("--ips-toggle", type=int, default=0, help="switch the patches off/on every N frames")
     args = ap.parse_args()
     rom = args.rom or (glob.glob(os.path.join(ROOT, "rom", "*.nes")) or [None])[0]
     if not rom:
@@ -59,6 +67,10 @@ def main():
         if not os.path.exists(exe):
             raise SystemExit(f"missing {exe}: run 'make headless headless-recomp' first")
     extra = ["--fuzz", str(args.fuzz), "--fuzz-start", str(args.fuzz_start)] if args.fuzz else []
+    for f in args.ips:
+        extra += ["--ips", f]
+    if args.ips_toggle:
+        extra += ["--ips-toggle", str(args.ips_toggle)]
     h1 = os.path.join(ROOT, "build", "cosim_interp.txt")
     h2 = os.path.join(ROOT, "build", "cosim_native.txt")
     run(interp, rom, args.frames, args.keys, h1, extra)

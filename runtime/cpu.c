@@ -388,14 +388,26 @@ void cpu_step(void) {
         break; }
     case 0x20: {
         uint16_t t = fetch16();
-        push16((uint16_t)(cpu.pc - 1));
+        push_ret((uint16_t)(cpu.pc - 1), STK_JSR);
+#ifdef STK_AUDIT
+        stk_xfers++;
+#endif
         cpu.pc = t;
+        sys.xfer = 1;
         break; }
-    case 0x60: cpu.pc = (uint16_t)(pop16() + 1); break;
-    case 0x40: cpu_set_p(pop8()); cpu.pc = pop16(); break;
+    case 0x60: { uint8_t k = stk_kind[(uint8_t)(cpu.sp + 1)]; sys.ret_kind[0][k > 3 ? 4 : k]++;
+#ifdef STK_AUDIT
+        if (k == STK_DATA) { stk_hand_returns++; if (stk_seq[(uint8_t)(cpu.sp + 1)] != stk_xfers) stk_hand_returns_late++; }
+        stk_xfers++;
+#endif
+        }
+        cpu.pc = (uint16_t)(pop16() + 1); sys.xfer = 2; break;
+    case 0x40: cpu_set_p(pop8());
+        { uint8_t k = stk_kind[(uint8_t)(cpu.sp + 1)]; sys.ret_kind[1][k > 3 ? 4 : k]++; }
+        cpu.pc = pop16(); sys.xfer = 3; break;
     case 0x00: {
         cpu.pc++;
-        push16(cpu.pc);
+        push_ret(cpu.pc, STK_BRK);
         push8(cpu_get_p(1));
         cpu.i = 1;
         /* NMI hijack: if an NMI is pending it takes over the vector */

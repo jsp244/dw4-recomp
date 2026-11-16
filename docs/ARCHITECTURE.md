@@ -181,6 +181,74 @@ of them, 16:10 shows 16).
 - **The left strip.** The game has the PPU blank the first eight pixels of every line;
   the canvas fills them from the map as well.
 
+### The canvas, Integer fill and the ring
+
+The canvas is the PPU's picture with 64 pixels of map at each side and 16 lines above and
+below (`WS_BAND`, `WS_VBAND`); the frontend shows the part of it that the chosen shape and
+scaling call for. With Integer scaling on a fixed screen that is every line and column the
+output holds at the whole multiple, so the map reaches the screen's edges.
+
+Inside the PPU's own area the outer ring of map squares is taken from the map as well
+(`widescreen_inner`). The game keeps no spare row or column in its name tables: while the
+screen scrolls it rewrites the row and the column that wrap around, and they appear
+half-written at an edge for several frames of each step. The squares in question are
+column 0 and 16 and row 0 and 15 of the camera's grid; menus and message windows stay
+clear of them (`nes-headless --ws-check` counts the frames at rest in which the first
+column or row differs from the map: about one in a thousand, scene changes).
+
+## Patches
+
+`runtime/patch.c` applies IPS files to the PRG image in memory. The dump is kept; the image
+running is always "the dump plus the files that are on, in order", so the set can change
+freely. Of the 16 header bytes only the mapper number is taken: a hack may move the game to
+another board, and MMC1 to MMC3 (512 KiB of PRG, CHR RAM) is the move the runtime can follow.
+
+Translated code and patches. `recomp_patch` gets a map of the PRG bytes that differ from
+the dump and switches off every translated routine with one of them in it (an instruction
+is at most four bytes long, so the routines whose instructions start at a changed byte or
+up to three before it). Those run in the interpreter from the patched image; so does code
+a patch adds, since no translated routine exists for it. Translated routines never call
+each other directly (every JSR, RTS and jump out of a routine goes back to the dispatcher)
+and read ROM data through the memory map, so an untouched routine behaves the same in a
+patched game. The dispatcher also checks that both halves of a routine's 16 KiB bank are
+mapped where they were translated; an MMC3 can map them apart.
+
+Switching while the game runs. The new image is built on the side (`patch_prepare`) and
+put in place by `patch_try` at a moment when:
+
+- every return address on the stack leads back behind a call that is the same bytes in
+  both images. The runtime notes, per stack slot, what pushed the address in it (JSR, BRK,
+  interrupt, or a plain push) and the 8 KiB bank it pointed into (`stk_kind`, `stk_bank`,
+  kept in save states). For a JSR or a BRK (the game's calls into other banks) the call
+  instruction itself must be unchanged: then the new image makes the same call from the
+  same place and has its own continuation behind it. For an interrupt the instruction to
+  be resumed must be unchanged;
+- the program counter stands at the start of a routine just called, behind such a call, or
+  on unchanged bytes;
+- when the board changes, the PRG map in force is one both boards can show (an MMC1 has a
+  fixed bank per 256 KiB half, an MMC3 only the last 16 KiB), and the mapper is turned into
+  the other kind with the same map, mirroring and RAM enable.
+
+The frame loop tries after every JSR, RTS and RTI, the same points for interpreter and
+translated code, so both make the switch at the same instruction and stay comparable
+(`tests/cosim.py --ips-toggle`). Addresses the game pushes by hand (its jump tables) count
+as data; a build with `-DSTK_AUDIT` counts returns through such an address that had a call
+or return between the push and the return, and finds none.
+
+The frontend orders the files: a whole-game hack first, then the small hacks it knows,
+then the rest by name; a small hack that writes bytes a whole-game hack also writes is
+taken to be part of it and left out. `patch_inspect` recognises the hacks by the places
+they change, not by file hashes, so other versions are recognised too.
+
+## Title screen
+
+`runtime/title.c` recognises the North American title scene by the stone plaque's frame
+(its tiles in the name table and a hash of their patterns) and, with the option on, draws
+the sky and the Japanese release's logo over it in the finished picture. The logo is a
+run-length picture of colour numbers in `generated/title_dq.h`, made by
+`tools/title/extract_title.py` from a dump of that cartridge, which the interpreter runs
+as it is (same board).
+
 ## Frontend
 
 The SDL2 program loads the ROM, checks its hash (the translated code is used only with

@@ -18,7 +18,7 @@ runs. Do not share your `.nes` file or anything built from it.
   sprites, palettes and bank registers over scripted and random play (title, name entry,
   chapter 1's castle and town, the overworld, battles, menus).
 - Battery saves (the three adventure logs) in `saves/<rom name>.sav`.
-- Launcher with tabs for Play, Graphics, Audio, Controls, Achievements, ROM and Updates;
+- Launcher with tabs for Play, Graphics, Audio, Controls, Achievements, ROM, Patches and Updates;
   the game's own title sequence plays behind it.
 - Nine save-state slots, rewind, fast-forward, run-ahead, vblank-locked pacing, shaders
   (scanlines, CRT, glow), integer / fit / stretch scaling, keyboard and controller
@@ -27,6 +27,9 @@ runs. Do not share your `.nes` file or anything built from it.
   tool for hand-made tile packs (below).
 - Widescreen: 16:9 and 16:10 pictures with more of the map, and the people on it, at both
   sides wherever the game is on a map (below).
+- ROM hacks as IPS patches, switched on and off while the game runs (below).
+- The title screen under either name: the Dragon Quest IV logo or the Dragon Warrior IV
+  plaque (below).
 
 Not there yet: a hand-made tile pack.
 
@@ -103,9 +106,17 @@ A pack is drawn over the cartridge's tiles: keep it with your own copy of the ga
 ## Widescreen
 
 Graphics > Aspect ratio > 16:9 or 16:10 keeps the pixels' shape and adds picture at the
-sides: 32 or 16 more pixels of the map on each side, with the townspeople standing there.
-Battles, the title and other screens that are not the map keep the normal picture between
-black bars.
+sides: more of the map, with the townspeople standing there. With Scaling: Integer on a
+fixed screen (fullscreen, a handheld) the picture is shown at the largest whole multiple
+and the map fills the rest of the screen on all four sides (1920x1080: four times, with 64
+more pixels of map at each side and 23 more lines above and below). Battles, the title and
+other screens that are not the map keep the normal picture between black bars.
+
+The same data repairs the picture's edges. A four-way scrolling game on this hardware has
+to rewrite a row and a column of its name tables while the screen moves, and for a few
+frames of every step they show half-written at an edge of the picture (a TV's overscan
+hid most of it). In a widescreen mode that outer ring of map squares is drawn from the
+map instead of from the PPU, along with the eight pixels the PPU blanks at the left.
 
 Nothing about the maps is stored or decoded by the port. The game has a routine that names
 the tiles of any map square around the player (it repaints the map with it when a window
@@ -144,6 +155,8 @@ Code the recompiler misses still runs correctly, through the interpreter.
 make headless headless-recomp
 python tests/cosim.py                 # 12,000 frames, scripted then random play
 python tests/cosim.py --frames 120000 --fuzz 7
+python tests/cosim.py --ips hack.ips                  # the same check on a patched game
+python tests/cosim.py --ips hack.ips --ips-toggle 7   # and with the patch switched off/on as it runs
 sh tests/get_test_roms.sh && make test   # public CPU/PPU/APU test ROMs
 build/dw4 rom/your.nes --play --audio-dump capture.wav --quit-after 2400
 python tests/audio_check.py capture.wav   # every sound channel in what the program plays
@@ -160,14 +173,68 @@ build/nes-headless --rom rom/your.nes --frames 200000 --keys "..." --fuzz 3 --co
 python recomp/recomp.py --rom rom/your.nes --out generated --coverage cov.bin --write-entries recomp/entries.txt
 ```
 
+## Patches (ROM hacks)
+
+The Patches tab lists the `.ips` files in the `patches` folder next to the program (drop a
+file on the window, or use "Add a patch file", to put one there). Each is On or Off. The ROM
+on disk is never changed: the image the machine runs is the dump plus the patches that are
+on, rebuilt from the dump whenever the set changes, so any of them can be taken out again.
+
+The tab knows four hacks by what they change, and links to their pages:
+
+| Hack | Page |
+|---|---|
+| Delocalized (Translation Quest): a new translation from the Japanese, with fixes | romhacking.net/hacks/9523 |
+| Graphical Uncensoring (MetHy) | romhacking.net/hacks/8426 |
+| Manual Tactics (karmic): command every party member yourself in chapter 5 | romhacking.net/hacks/9221 |
+| Seamonsters fix (Jegriva) | romhacking.net/hacks/3760 |
+
+The three small ones touch different bytes and combine freely, in any order. Delocalized
+already contains all three (in its own adapted form), so with it on they are not applied a
+second time; its own option patches go on after it. Delocalized also moves the game from
+its MMC1 board to an MMC3, which the runtime follows.
+
+How a patched game runs: the translated code was made from the dump, so every routine of
+it with a patched byte is switched off and the interpreter runs that routine from the
+patched image, along with any code a patch adds. `tests/cosim.py --ips FILE` checks a
+patched game the same way as the plain one (interpreter against translated code, frame by
+frame).
+
+Switching while the game runs (the tab, or F9: the original game and back) puts the new
+image in place at a moment when the CPU cannot be caught in code that is no longer there.
+The runtime notes what pushed each return address on the stack and from which bank; a
+switch waits until the instruction the CPU stands on, and every call it still has to
+return from, are the same bytes in both images, and, when the board changes, until the
+memory map in force is one both boards can show. It looks for that moment after every call
+and return inside the frame, so it usually takes a fraction of a frame.
+`tests/cosim.py --ips FILE --ips-toggle 7` switches every 7 frames and still requires
+interpreter and translated code to agree on every frame. What a patch changes is seen the
+next time the game reads it: text when it is printed again, graphics when a scene loads.
+
+RetroAchievements are off while a patch is on. A saved state belongs to the image it was
+saved from and is refused under another set of patches.
+
+## Title screen
+
+Graphics > Title screen chooses the name the game goes by: the Dragon Quest IV logo, as on
+the Japanese cartridge, or the stone plaque being engraved with DRAGON WARRIOR IV. The
+scene around it is the same in both releases, and the game runs the same either way: the
+picture is changed after the PPU has drawn it (`runtime/title.c`).
+
+The logo is not in this repository. `make title TITLE_ROM="<your dump of the Japanese
+release>"` takes it from that cartridge into `generated/title_dq.h` (a picture of 197 x 65
+pixels); a build without that file has no such option. The packages on the releases page
+are built with it.
+
 ## Layout
 
 ```
 recomp/      the recompiler, symbols.txt, entries.txt
-runtime/     CPU helpers and interpreter, PPU, APU, MMC1, save states, remaster, widescreen, test harness
+runtime/     CPU helpers and interpreter, PPU, APU, MMC1 and MMC3, save states, remaster, widescreen,
+             patches, the title logo, test harness
 frontend/    SDL2 program: launcher, video, audio, input, touch controls, rewind, achievements, updater
 android/     the Android app: manifest, activity, CMake file, build_apk.py
-tools/       icon generator, remaster pack tool, the Linux/Deck build, Deck and Android helpers
+tools/       icon generator, remaster pack tool, title logo tool, the Linux/Deck build, Deck and Android helpers
 tests/       cosimulation, test-ROM runner, frontend tests
 docs/        ARCHITECTURE.md, PLAYERS.md, STEAMDECK.md, ANDROID.md
 rom/         your cartridge dump (ignored by git)
@@ -178,4 +245,5 @@ generated/   the translated game (ignored by git)
 
 Dragon Warrior and Dragon Quest belong to Square Enix. This is an unofficial fan
 project; it runs only with a cartridge dump you provide. The MIT licence in `LICENSE`
-covers the tooling and runtime in this repository only.
+covers the tooling and runtime in this repository only. ROM hacks belong to their
+authors; the port links to their pages and does not include them.

@@ -9,6 +9,7 @@
 #include "remaster.h"
 #include "widescreen.h"
 #include "patch.h"
+#include "title.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -173,15 +174,14 @@ static int write_widescreen(const char *path, int remastered) {
 }
 
 /* the canvas's middle against the PPU's own picture: the number of pixels that differ, not counting
-   the first eight of each line where the PPU blanks them and the canvas shows the map instead */
+   the ones the canvas takes from the map instead (widescreen_inner) */
 static long widescreen_middle_diff(void) {
     static uint8_t idx[WS_W * WS_H], emph[WS_H];
     long bad = 0;
-    int on = widescreen_render(idx, emph, 0, 0, WS_W, WS_H);
-    for (int y = 0; y < WS_H; y++) {
-        int strip = on && (ppu.line_emph[y] & 0x08) && !(ppu.line_emph[y] & 0x02);
-        for (int x = strip ? 8 : 0; x < 256; x++) bad += idx[y * WS_W + WS_BAND + x] != ppu.fb[y * 256 + x];
-    }
+    widescreen_render(idx, emph, 0, 0, WS_W, WS_H);
+    for (int y = 0; y < 240; y++)
+        for (int x = 0; x < 256; x++)
+            if (widescreen_inner(x, y)) bad += idx[(y + WS_VBAND) * WS_W + WS_BAND + x] != ppu.fb[y * 256 + x];
     return bad;
 }
 
@@ -208,6 +208,8 @@ static uint64_t frame_hash(void) {
     h = fnv1a(h, &cpu.cycles, sizeof cpu.cycles);
     h = fnv1a(h, ram, sizeof ram);
     h = fnv1a(h, cart.wram, sizeof cart.wram);
+    h = fnv1a(h, stk_kind, sizeof stk_kind);      /* what pushed each stack slot: both ways of running must agree */
+    h = fnv1a(h, stk_bank, sizeof stk_bank);
     h = fnv1a(h, ppu.fb, sizeof ppu.fb);
     h = fnv1a(h, ppu.oam, sizeof ppu.oam);
     h = fnv1a(h, ppu.palette, sizeof ppu.palette);
@@ -239,6 +241,11 @@ static void usage(void) {
         "  --keys SPEC         input events: 'frame:BTN+BTN;frame:-' (BTN = A B SELECT START UP DOWN LEFT RIGHT, '-' = none)\n"
         "  --ips FILE          apply an IPS patch (a ROM hack) to the loaded ROM; may be given several times,\n"
         "                      applied in that order. With --recomp the routines it touches are interpreted\n"
+        "  --ips-toggle N      every N frames switch the patches off, or on again, while the game runs\n"
+        "                      (each switch waits for a frame at which no running code is affected)\n"
+        "  --title-quest       the Dragon Quest IV logo in place of the Dragon Warrior IV plaque (runtime/title.h)\n"
+        "  --ppu-dump FILE     write the PPU's memory after the last frame (name tables, palette, CHR RAM,\n"
+        "                      sprites, picture: tools/title reads it)\n"
         "  --input FILE        input script: lines of 'frame BTN+BTN'\n"
         "  --fuzz SEED         random controller input (the same for the same seed), from --fuzz-start N (default 0)\n"
         "  --png FILE          write the last frame as PNG\n"
@@ -267,8 +274,11 @@ static void usage(void) {
 
 int main(int argc, char **argv) {
     const char *rom = NULL, *png = NULL, *wav = NULL, *trace = NULL, *cov = NULL, *hash = NULL, *sav = NULL, *input = NULL, *debug_log = NULL, *ram_dump = NULL;
-    const char *state_save = NULL, *state_load = NULL, *remaster = NULL, *remaster_pack = NULL, *hd_dump = NULL;
-    int fuzz_start = 0, ws_check = 0, n_ips = 0;
+    const char *state_save = NULL, *state_load = NULL, *remaster = NULL, *remaster_pack = NULL, *hd_dump = NULL, *ppu_dump = NULL;
+    int fuzz_start = 0, ws_check = 0, n_ips = 0, ips_toggle = 0, ips_on = 1;
+    long ips_switches = 0, ips_waits = 0, title_frames = 0;
+    int title_quest = 0;
+    unsigned ips_gen0 = 0;
     const char *ips[16];
     const char *wide = NULL;
     int frames = 600, png_every = 0, ram_dump_every = 0, nestest = 0, blargg = 0, recomp = 0, quiet = 0, trace_start = 0;
@@ -278,6 +288,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--keys") && i + 1 < argc) parse_keys(argv[++i]);
         else if (!strcmp(argv[i], "--input") && i + 1 < argc) input = argv[++i];
         else if (!strcmp(argv[i], "--ips") && i + 1 < argc && n_ips < 16) ips[n_ips++] = argv[++i];
+        else if (!strcmp(argv[i], "--ips-toggle") && i + 1 < argc) ips_toggle = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--fuzz") && i + 1 < argc) fuzz_state = (uint32_t)strtoul(argv[++i], NULL, 0) * 2654435761u + 1;
         else if (!strcmp(argv[i], "--fuzz-start") && i + 1 < argc) fuzz_start = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--png") && i + 1 < argc) png = argv[++i];
@@ -287,6 +298,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--ws-check")) ws_check = 1;
         else if (!strcmp(argv[i], "--remaster-pack") && i + 1 < argc) remaster_pack = argv[++i];
         else if (!strcmp(argv[i], "--hd-dump") && i + 1 < argc) hd_dump = argv[++i];
+        else if (!strcmp(argv[i], "--ppu-dump") && i + 1 < argc) ppu_dump = argv[++i];
+        else if (!strcmp(argv[i], "--title-quest")) title_quest = 1;
         else if (!strcmp(argv[i], "--wav") && i + 1 < argc) wav = argv[++i];
         else if (!strcmp(argv[i], "--apu-log")) { apu_log_on = 1; apu_write_hook = apu_log_hook; }
         else if (!strcmp(argv[i], "--mute") && i + 1 < argc) { apu_mute_mask = (uint8_t)strtol(argv[++i], NULL, 16); apu_mute_output = true; }
@@ -313,19 +326,18 @@ int main(int argc, char **argv) {
     apu_set_sample_rate(48000);
     if (nes_load(rom) != 0) return 1;
     if (sav) cart_load_battery(sav);
-    for (int k = 0; k < n_ips; k++) {
-        const char *err;
-        long n = patch_apply_file(ips[k], &err);
-        if (n < 0) { fprintf(stderr, "%s: %s\n", ips[k], err); return 1; }
-        if (!quiet) printf("patch %s: %ld bytes changed\n", ips[k], n);
-    }
+    patch_reset();
     if (n_ips) {
-        int off = patch_commit();
+        char errs[800];
+        if (patch_prepare(ips, n_ips, errs, sizeof errs) != n_ips) { fprintf(stderr, "%s\n", errs); return 1; }
+        patch_switch(1);
         nes_power();      /* the reset vector and everything else, from the patched image */
         if (sav) cart_load_battery(sav);
         if (!quiet) printf("patches: %d applied, %ld bytes differ from the dump, %d translated routines left to the interpreter\n",
-                           patch_count(), patch_bytes(), off);
+                           patch_count(), patch_bytes(), patch_routines_off());
     }
+    patch_live(1);
+    ips_gen0 = patch_generation();
     if (state_load) {
         size_t len = nes_state_size();
         void *buf = malloc(len);
@@ -391,7 +403,19 @@ int main(int argc, char **argv) {
         if (trace_file && trace_start && frame == trace_start) sys.trace_hook = trace_hook;
         while (ev < n_events && events[ev].frame <= frame) { nes_set_pad(0, events[ev].buttons); ev++; }
         if (fuzz_state && frame >= fuzz_start) nes_set_pad(0, fuzz_pad());
+        if (ips_toggle > 0 && n_ips && frame > 0 && frame % ips_toggle == 0) {
+            ips_on = !ips_on;
+            patch_prepare(ips, ips_on ? n_ips : 0, NULL, 0);
+        }
         nes_run_frame();
+        if (patch_pending()) {                 /* a whole frame without a safe moment */
+            ips_waits++;
+            if (!quiet && ips_waits % 500 == 1)
+                printf("frame %d: switch waiting (map %ld, pc %ld, stack %ld; last at $%04X, pc $%04X, sp $%02X, banks %d/%d)\n", frame,
+                       patch_refused[0], patch_refused[1], patch_refused[2], patch_refused_at, cpu.pc, cpu.sp,
+                       mapper.prg_bank[0] >> 1, mapper.prg_bank[2] >> 1);
+            if (!quiet && ips_waits % 500 == 1) { for (int i = cpu.sp + 1; i <= 0xFF; i++) printf("%02X ", ram[0x100 + i]); printf("\n"); }
+        }
         if (apu_log_on) apu_log_frame();
         if (hash_file) fprintf(hash_file, "%d %016llx\n", frame, (unsigned long long)frame_hash());
         if (audio) {
@@ -407,6 +431,7 @@ int main(int argc, char **argv) {
             FILE *f = fopen(name, "wb");
             if (f) { fwrite(ram, 1, sizeof ram, f); fwrite(cart.wram, 1, sizeof cart.wram, f); fclose(f); }
         }
+        if (title_quest && title_plaque()) { title_draw(); title_frames++; }      /* (after the hash: the picture only) */
         if (png && png_every && (frame % png_every) == 0) {
             char name[1100];
             snprintf(name, sizeof name, "%s.%05d.png", png, frame);
@@ -418,7 +443,8 @@ int main(int argc, char **argv) {
             ws_frames++;
             ws_middle += widescreen_middle_diff();
             if (bad >= 0) { ws_map_frames++; ws_cells += cells; ws_bad += bad; ws_bad_frames += bad > 0; }
-            if (bad > 0 && !quiet) printf("frame %d: %d of %d squares differ from the screen\n", frame, bad, cells);
+            if (bad > 0 && !quiet) printf("frame %d: %d of %d squares differ from the screen (columns %d-%d, rows %d-%d)\n", frame, bad, cells,
+                                          widescreen_bad_box[0], widescreen_bad_box[1], widescreen_bad_box[2], widescreen_bad_box[3]);
         }
         if (wide && png_every && (frame % png_every) == 0) {
             char name[1100];
@@ -456,7 +482,23 @@ int main(int argc, char **argv) {
     if (ws_check)
         printf("ws-check: %ld of %ld frames show the map; %ld of %ld squares on them differ from the screen (%ld frames with a difference)\n",
                ws_map_frames, ws_frames, ws_bad, ws_cells, ws_bad_frames);
+    if (ws_check) printf("ws-check: %ld frames at rest with a difference in the first column or row\n", widescreen_still_edge_bad);
     if (ws_check) printf("ws-check: %ld pixels of the canvas's middle differ from the PPU's picture\n", ws_middle);
+    if (ppu_dump) {  /* "DWPP" 1, ctrl, mask, scroll t (2), fine x, 3 bytes padding, palette[32], the four name tables as
+                        the PPU addresses them (4 x 1024), CHR RAM (8192), OAM (256), the frame buffer (256 x 240) */
+        FILE *f = fopen(ppu_dump, "wb");
+        if (f) {
+            uint8_t head[8] = { ppu.frame_ctrl, ppu.mask, (uint8_t)ppu.frame_t, (uint8_t)(ppu.frame_t >> 8), ppu.frame_x, 0, 0, 0 };
+            fwrite("DWPP\1\0\0\0", 1, 8, f);
+            fwrite(head, 1, 8, f);
+            fwrite(ppu.palette, 1, 32, f);
+            for (int t = 0; t < 4; t++) fwrite(ppu.vram + ppu.nt_offset[t], 1, 1024, f);
+            fwrite(cart.chr_ram, 1, sizeof cart.chr_ram, f);
+            fwrite(ppu.oam, 1, 256, f);
+            fwrite(ppu.fb, 1, sizeof ppu.fb, f);
+            fclose(f);
+        }
+    }
     if (hd_dump) {   /* "DWHD" 1, scroll t, fine x, ctrl, palette[32], line masks[240], fb, hd_bg, hd_spr (little-endian),
                         the number of palette snapshots, 3 bytes padding, the four snapshots (ppu.hd_palettes)
                         and the 8 KiB of CHR RAM the sources' tile numbers are slots of */
@@ -479,6 +521,20 @@ int main(int argc, char **argv) {
     }
     if (wav) { write_wav(wav, audio, audio_n, 48000, channels); free(audio); }
     if (apu_log_on) apu_log_print();
+    if (title_quest) printf("title: the logo %s; the plaque was on the screen in %ld frames\n", title_available() ? "is built in" : "is NOT built in", title_frames);
+#ifdef STK_AUDIT
+    printf("stack audit: %llu returns through an address pushed by hand, %llu of them with a call or return in between\n",
+           (unsigned long long)stk_hand_returns, (unsigned long long)stk_hand_returns_late);
+#endif
+    if (ips_toggle > 0 && n_ips) {
+        ips_switches = (long)(patch_generation() - ips_gen0);
+        printf("patches: switched %ld times while running; %ld frames ended with a switch still waiting for its moment\n", ips_switches, ips_waits);
+        printf("returns by what pushed the address (data/JSR/BRK/interrupt/unknown): RTS %llu/%llu/%llu/%llu/%llu, RTI %llu/%llu/%llu/%llu/%llu\n",
+               (unsigned long long)sys.ret_kind[0][0], (unsigned long long)sys.ret_kind[0][1], (unsigned long long)sys.ret_kind[0][2],
+               (unsigned long long)sys.ret_kind[0][3], (unsigned long long)sys.ret_kind[0][4],
+               (unsigned long long)sys.ret_kind[1][0], (unsigned long long)sys.ret_kind[1][1], (unsigned long long)sys.ret_kind[1][2],
+               (unsigned long long)sys.ret_kind[1][3], (unsigned long long)sys.ret_kind[1][4]);
+    }
     if (hash_file) fclose(hash_file);
     if (trace_file && trace_file != stdout) fclose(trace_file);
     if (cov) {

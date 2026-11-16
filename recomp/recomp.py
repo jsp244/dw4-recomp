@@ -551,13 +551,13 @@ class Recompiler:
             else:
                 body.append(f"{cyc} {{ uint16_t t_ = jmp_ind(0x{ins.operand:04X}); EXIT(t_); }}")
         elif mn == "JSR":
-            body.append(f"{cyc} push16(0x{(nxt - 1) & 0xFFFF:04X}); EXIT(0x{ins.target:04X});")
+            body.append(f"{cyc} push_ret(0x{(nxt - 1) & 0xFFFF:04X}, STK_JSR); sys.xfer = 1; EXIT(0x{ins.target:04X});")
         elif mn == "RTS":
-            body.append(f"{cyc} {{ uint16_t t_ = (uint16_t)(pop16() + 1); EXIT(t_); }}")
+            body.append(f"{cyc} {{ uint16_t t_ = (uint16_t)(pop16() + 1); sys.xfer = 2; EXIT(t_); }}")
         elif mn == "RTI":
-            body.append(f"{cyc} cpu_set_p(pop8()); {{ uint16_t t_ = pop16(); EXIT(t_); }}")
+            body.append(f"{cyc} cpu_set_p(pop8()); {{ uint16_t t_ = pop16(); sys.xfer = 3; EXIT(t_); }}")
         elif mn == "BRK":
-            body.append(f"{cyc} push16(0x{(a + 2) & 0xFFFF:04X}); push8(cpu_get_p(1)); cpu.i = 1; "
+            body.append(f"{cyc} push_ret(0x{(a + 2) & 0xFFFF:04X}, STK_BRK); push8(cpu_get_p(1)); cpu.i = 1; "
                         f"{{ uint16_t t_ = mem_read16(cpu.nmi_pending ? 0xFFFA : 0xFFFE); cpu.nmi_pending = 0; EXIT(t_); }}")
         elif mn == "KIL":
             body.append(f"{cyc} cpu.jammed = 1; EXIT(0x{a:04X});")
@@ -674,8 +674,9 @@ class Recompiler:
         lines.append("    uint16_t pc = cpu.pc;")
         lines.append("    if (pc < 0x8000 || cpu.jammed) return 0;")
         lines.append("    int slot = (pc >> 14) & 1;")
-        lines.append(f"    unsigned bank = mapper.prg_bank[slot << 1] >> 1;   /* 8 KiB bank numbers: two to a bank */")
-        lines.append(f"    if (bank >= {self.nbanks}) return 0;")
+        lines.append(f"    unsigned b8 = mapper.prg_bank[slot << 1], bank = b8 >> 1;   /* 8 KiB bank numbers: two to a bank */")
+        lines.append("    /* a patched game on another board can map the halves of a bank apart: not the code that was translated */")
+        lines.append(f"    if ((b8 & 1) || mapper.prg_bank[(slot << 1) | 1] != b8 + 1 || bank >= {self.nbanks}) return 0;")
         lines.append("    const recomp_unit_t *u = recomp_units[bank][slot];")
         lines.append("    if (!u) return 0;")
         lines.append(f"    uint16_t idx = u->entry[pc & 0x{UNIT_SIZE - 1:X}];")

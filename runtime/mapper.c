@@ -1,5 +1,6 @@
 /*
- * mapper.c - MMC1 (1), the game's own mapper, plus NROM (0) and MMC3 (4) for the test ROMs.
+ * mapper.c - MMC1 (1), the game's own mapper; MMC3 (4), which some ROM hacks move the game to
+ * (and the test ROMs use); NROM (0) for the test ROMs.
  *
  * Dragon Warrior IV is an SUROM board: an MMC1 with 512 KiB of PRG ROM, 8 KiB of CHR RAM and
  * 8 KiB of battery RAM. The MMC1 itself addresses 256 KiB of PRG, so the board takes the top
@@ -237,6 +238,65 @@ void mapper_write_rom(uint16_t a, uint8_t v) {
     case 4: mmc3_write(a, v); break;
     default: break;
     }
+}
+
+/* ---- for code that calls into the game, and for patches that change the board ---- */
+
+/* The 16 KiB bank at $8000, as the game's own bank switch leaves the mapper. */
+void mapper_select_bank16(int bank) {
+    if (cart.mapper == 4) {
+        mapper.bank_select &= (uint8_t)~0x40;
+        mapper.regs[6] = (uint8_t)(bank * 2);
+        mapper.regs[7] = (uint8_t)(bank * 2 + 1);
+    } else {
+        mapper.mmc1_prg = (uint8_t)((mapper.mmc1_prg & 0x10) | (bank & 0x0F));
+        mapper.mmc1_chr0 = (uint8_t)((mapper.mmc1_chr0 & ~0x10) | (bank & 0x10));
+        mapper.mmc1_last_chr = 0;
+        mapper.mmc1_ctrl |= 0x0C;
+        mapper.mmc1_shift = mapper.mmc1_count = 0;
+    }
+    mapper_update_pointers();
+}
+
+/* Can the other board show the PRG mapping in force right now? An MMC1 has 16 KiB banks and a
+   fixed one per 256 KiB half; an MMC3 has 8 KiB banks and fixes the last two. after[] gets the
+   8 KiB bank per slot the other board would then have (the same ones). */
+int mapper_convertible(int to, uint16_t after[4]) {
+    uint32_t n8 = cart.prg_size / 8192;
+    uint16_t b[4];
+    for (int i = 0; i < 4; i++) b[i] = after[i] = (uint16_t)(mapper.prg_bank[i] % n8);
+    if (to == cart.mapper) return 1;
+    if (cart.mapper == 1 && to == 4)
+        return b[2] == n8 - 2 && b[3] == n8 - 1 && (mapper.mmc1_ctrl & 2);       /* no single-screen mirroring on an MMC3 */
+    if (cart.mapper == 4 && to == 1)
+        return !(b[0] & 1) && b[1] == b[0] + 1 && b[2] == n8 - 2 && b[3] == n8 - 1 &&
+               (b[0] >> 5) == ((n8 - 2) >> 5);                                    /* same 256 KiB half as the fixed bank */
+    return 0;
+}
+
+/* Become the other board with the same memory map: PRG banks, mirroring, RAM enable. (CHR is
+   8 KiB of RAM on both, mapped straight.) Only when mapper_convertible says so. */
+void mapper_convert(int to) {
+    if (to == cart.mapper) return;
+    uint16_t lo = mapper.prg_bank[0], hi = mapper.prg_bank[1];
+    if (cart.mapper == 1 && to == 4) {
+        int horizontal = (mapper.mmc1_ctrl & 3) == 3, ram_on = !(mapper.mmc1_prg & 0x10);
+        cart.mapper = 4;
+        mapper_reset();
+        mapper.regs[6] = (uint8_t)lo; mapper.regs[7] = (uint8_t)hi;
+        mapper.mirroring = (uint8_t)horizontal;
+        mapper.wram_ctrl = ram_on ? 0x80 : 0x00;
+    } else if (cart.mapper == 4 && to == 1) {
+        int horizontal = mapper.mirroring & 1, ram_on = (mapper.wram_ctrl & 0x80) != 0;
+        int bank = lo >> 1;
+        cart.mapper = 1;
+        mapper_reset();
+        mapper.mmc1_ctrl = (uint8_t)(0x0C | (horizontal ? 3 : 2));
+        mapper.mmc1_chr0 = (uint8_t)(bank & 0x10);                 /* bit 4: the half of the ROM */
+        mapper.mmc1_chr1 = (uint8_t)((bank & 0x10) | 1);
+        mapper.mmc1_prg = (uint8_t)((bank & 0x0F) | (ram_on ? 0 : 0x10));
+    } else return;
+    mapper_update_pointers();
 }
 
 /* ---- MMC3 scanline counter: PPU A12 rising edge detection ---- */
