@@ -73,6 +73,34 @@ NES_KINDS = [("castle_up", ["burland2"]), ("rooms", ["burland3", "izmit1", "izmi
              ("tower", ["tower0", "tower1", "tower2", "tower3"]), ("tower_top", ["tower4", "tower5"])]
 
 
+# Chapter 2's people. The game starts a chapter by itself when the chapter's number (at $615A, counted from 0) is
+# held while a new quest's adventure log is continued: it shows the chapter's title, tells its opening and builds
+# its party (Alena, before her father's throne). The steps from there, each (keys, pokes, frames) from the state the
+# step before left:
+#  1. power-on with the new quest's battery file: CONTINUE A QUEST, log 1, the chapter's number held, the opening;
+#  2. Alena takes the throne room's stairs while Burland castle's upper floor is held as the place she leaves (the
+#     game looks the stairs up there and puts her at the foot of that castle's stairs), is set before its door and
+#     stops on it as Ragnar does at frame 6585 of chapter 1's script: from there any place can be loaded;
+#  3. Santeem's gate is loaded, she is set past its guards and walks out: on the overworld Cristo and Brey join her
+#     (the game's own scene);
+#  4. back in through the gate, up to the throne room, and by the same stairs to Burland castle's door, the three.
+A_EVERY = lambda first, last: ";".join("%d:A;%d:-" % (t, t + 6) for t in range(first, last + 1, 60))
+CH2_STEPS = [
+    ("1600:START;1606:-;1910:A;1916:-;2120:A;2126:-;2330:A;2336:-;2600:A;2606:-;2800:A;2806:-;3000:A;3006:-;"
+     "3200:A;3206:-;3400:A;3406:-;3600:A;3606:-;3800:A;3806:-", ["2130-3990:615A:01"], 3990),
+    ("60:DOWN;110:-;215:DOWN;330:-",
+     ["40-44:44:0B", "40-44:45:10", "90-95:63:02", "90-95:64:02", "200-204:44:10", "200-204:45:23"], 231),
+    ("0:DOWN;55:-;150:A;156:-;210:A;216:-;270:A;276:-;330:A;336:-;400:DOWN;600:-;" + A_EVERY(640, 1700),
+     ["5-21:63:01", "9-21:64:00", "12-21:44:0F", "12-21:45:1A"], 1760),
+    ("12:UP;44:-;150:A;156:-;210:A;216:-;270:A;276:-;330:A;336:-;390:A;396:-;470:UP;520:-;640:UP;670:-;700:DOWN;760:-;"
+     "815:DOWN;940:-",
+     ["0-3:42:27", "0-3:43:4A", "450-454:44:0F", "450-454:45:0F", "726-731:63:02", "726-731:64:02",
+      "800-804:44:10", "800-804:45:23"], 834),
+]
+# chapter 2's places and how many levels each has (the game's numbers, as in scenes/dw4_places.txt): Santeem castle,
+# Surene, Tempe, Frenor, the desert Bazaar, the shrines of the travel doors, the Birdsong Tower, Endor
+CH2_PLACES = [(0x01, 3), (0x13, 5), (0x0E, 1), (0x19, 3), (0x0C, 1), (0x1D, 1), (0x1E, 1), (0x1F, 1), (0x3F, 6), (0x04, 15)]
+
 # A map is dumped at several moments: the game moves water by redrawing tiles, so a fountain is another square at
 # another moment (eight steps of 16 frames). The dumps whose tiles differ are kept.
 MOMENTS, APART = 17, 8
@@ -208,6 +236,25 @@ def main():
         kinds.setdefault(open(dumps[0], "rb").read()[KIND_AT], []).extend(dumps)
     for kind in sorted(kinds):
         py("nesmap.py", "squares", os.path.join(gen, "nes_k%02X" % kind), *kinds[kind])
+    # chapter 2's people (CH2_STEPS): the maps of its places with its own party and townsfolk
+    sav = os.path.join(gen, "newquest.sav")
+    if os.path.exists(sav):
+        os.remove(sav)
+    run(game + ["--frames", "6600", "--input", script, "--sav", sav, "--quiet"])
+    for n, (keys, pokes, frames) in enumerate(CH2_STEPS):
+        cmd = game + (["--state-load", state] if n else ["--sav", sav]) + ["--keys", keys, "--frames", str(frames),
+                                                                         "--state-save", state, "--quiet"]
+        for p in pokes:
+            cmd += ["--poke", p]
+        run(cmd)
+    dumps = []
+    for place, levels in CH2_PLACES:
+        for level in range(levels):
+            dumps.append(os.path.join(gen, "c2_%02X_%02X.map" % (place, level)))
+            run(game + ["--state-load", state, "--keys", "0:DOWN;55:-", "--poke", "5-21:63:%02X" % place,
+                        "--poke", "9-21:64:%02X" % level, "--frames", "115", "--map-dump", dumps[-1], "--quiet"])
+    py("nesmap.py", "figures", os.path.join(gen, "nes_people_ch2"), *dumps)
+    os.remove(sav)
     os.remove(state)
 
     print("4. the pack")

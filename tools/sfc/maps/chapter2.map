@@ -26,6 +26,8 @@ nes k0D ../../../generated/sfc/nes_k0D.json
 nes k0E ../../../generated/sfc/nes_k0E.json
 nes k25 ../../../generated/sfc/nes_k25.json
 nes k27 ../../../generated/sfc/nes_k27.json
+figs dq3 ../../../generated/sfc/dq3.figs
+people ch2 ../../../generated/sfc/nes_people_ch2.json
 
 # ---- Santeem's castle ($0D), its upper floors ($09) ----
 sq k0D:8395EB7502B3D289 =town:3E51A0A88427F85B over dq3c:76136076.hi # the long table, its left half
@@ -111,3 +113,36 @@ sq k04:60FD374414777C34 ~dq3t:316d8b20
 sq k04:8D14CA960CADDD44 ~dq3t:316d8b20
 sq k04:80844C155B6122AF ~dq3t:316d8b20
 sq k04:BA174DCAABA80171 ~dq3t:316d8b20
+
+# ---- chapter 2's people ----
+# Its townspeople are Dragon Quest III's, as in chapter 1. Alena, Cristo and Brey (kinds 0 to 2 of every map) are not
+# cast yet: Dragon Quest III has their like among its classes (the fighter, the priest, the mage), which the
+# captures do not hold so far; they keep the Pixel Remaster's look until then, and so do the cat, the dog, the
+# horse, the elves and the tournament's monsters.
+cast ch2:c2_04_00:7 dq3:g9 poses 4,5,2,3,6,7,0,1 # Endor's guard: the soldier
+cast ch2:c2_04_01:5 dq3:g9 poses 4,5,2,3,6,7,0,1
+cast ch2:c2_04_05:5 dq3:g9 poses 4,5,2,3,6,7,0,1
+cast ch2:c2_04_09:4 dq3:g9 poses 4,5,2,3,6,7,0,1
+cast ch2:c2_13_03:6 dq3:g9 poses 4,5,2,3,6,7,0,1
+cast ch2:c2_04_07:7 dq3:g9 poses 4,5,2,3,6,7,0,1 # the colosseum's guard
+cast ch2:c2_04_06:4 dq3:g3 poses 4,5,6,7,0,1,2,3 # the bald old man
+cast ch2:c2_04_0A:4 dq3:g3 poses 4,5,6,7,0,1,2,3
+cast ch2:c2_13_04:4 dq3:g3 poses 4,5,6,7,0,1,2,3
+cast ch2:c2_04_01:4 dq3:g3 poses 4,5,6,7,0,1,2,3 hue 200-260>280 # the wizard in the pointed hat: the old man in violet
+cast ch2:c2_01_00:6 dq3:g6 poses 0,1,m2,m2,0,1,2,2 # the woman with long hair
+cast ch2:c2_01_02:4 dq3:g6 poses 0,1,m2,m2,0,1,2,2
+cast ch2:c2_04_00:8 dq3:g6 poses 0,1,m2,m2,0,1,2,2
+cast ch2:c2_04_01:11 dq3:g6 poses 0,1,m2,m2,0,1,2,2
+cast ch2:c2_04_02:8 dq3:g6 poses 0,1,m2,m2,0,1,2,2
+cast ch2:c2_04_04:4 dq3:g6 poses 0,1,m2,m2,0,1,2,2
+cast ch2:c2_04_05:8 dq3:g6 poses 0,1,m2,m2,0,1,2,2
+cast ch2:c2_04_0C:4 dq3:g6 poses 0,1,m2,m2,0,1,2,2
+cast ch2:c2_0C_00:9 dq3:g6 poses 0,1,m2,m2,0,1,2,2
+cast ch2:c2_0E_00:10 dq3:g6 poses 0,1,m2,m2,0,1,2,2
+cast ch2:c2_13_01:6 dq3:g6 poses 0,1,m2,m2,0,1,2,2
+cast ch2:c2_19_00:9 dq3:g6 poses 0,1,m2,m2,0,1,2,2
+cast ch2:c2_04_06:8 dq3:g15 poses 0,1,m3,m4,3,4,3,4 # the veiled woman in blue
+cast ch2:c2_04_07:9 dq3:g15 poses 0,1,m3,m4,3,4,3,4
+cast ch2:c2_04_0B:5 dq3:g0 poses 0,1,0,1,0,1,0,1 # the traveler
+cast ch2:c2_13_00:8 dq3:g0 poses 0,1,0,1,0,1,0,1
+cast ch2:c2_1F_00:5 dq3:g0 poses 0,1,0,1,0,1,0,1
