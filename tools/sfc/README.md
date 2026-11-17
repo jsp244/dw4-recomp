@@ -1,9 +1,10 @@
 # The SNES Remaster's art
 
 Graphics > Textures > **SNES Remaster** draws the game's map squares and people with the art of the
-Super Famicom Dragon Quest games. None of that art is in this repository or in the packages: it is
-taken from your own cartridge dumps into a pack, `sfc.pak`, that the game loads from its folder.
-Without the pack the choice is not offered.
+Super Famicom Dragon Quest games. That art is not in the packages: it is taken from your own
+cartridge dump into a pack, `sfc.pak`, that the game loads from its folder. Without the pack the
+choice is not offered. (This repository holds nine squares of it, locked to the ROM you supply: the
+supplement, below.)
 
 You need one Super Famicom game, the Japanese **Dragon Quest III**, and your Dragon Warrior IV ROM
 in `rom/`.
@@ -16,9 +17,8 @@ python tools/sfc/extract.py --dq3 "Dragon Quest III - Soshite Densetsu e... (Jap
 Nearly all the art is Dragon Quest III's. Nine squares are Dragon Quest I & II's (its castle brick,
 its single tree, its barrier floor, its throne room's tiles). They come from the supplement,
 `tools/sfc/supplement.bin`: just those squares, combined with a stream made from the Dragon Quest
-III ROM's contents, so that the file opens only with that very ROM (`supplement.py`). If your copy
-of the source has no supplement, or you would rather take those squares from your own cartridge,
-give that game too: `--dq12 "Dragon Quest I & II (Japan).sfc"`. Whoever changes the map files
+III ROM's contents, so that the file opens only with that very ROM (`supplement.py`). If you would
+rather take those squares from your own cartridge, give that game too: `--dq12 "Dragon Quest I & II (Japan).sfc"`. Whoever changes the map files
 writes the supplement again with `--dq12 ... --write-supplement`: it holds what the map files use
 of the other games' libraries and nothing else.
 

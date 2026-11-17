@@ -31,7 +31,3 @@ Thumbs.db
 # Hand-made tile packs and frame dumps are drawn over the cartridge's tiles: they stay local.
 *.pak
 *.hd
-
-# The SNES Remaster's supplement holds a few pictures of other games (locked to the Dragon Quest III ROM).
-# It is committed only on the owner's word.
-tools/sfc/supplement.bin

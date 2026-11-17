@@ -110,10 +110,11 @@ A pack is drawn over the cartridge's tiles: keep it with your own copy of the ga
 Graphics > Textures > SNES Remaster draws the map's squares and the people on it with the
 art of the Super Famicom Dragon Quest games: each 16x16 square of the NES map is replaced
 whole by a square of that art, chosen to fit the material and the colors the NES game gave
-the place. None of the art is in this repository or in the packages. `tools/sfc` takes it
-from your own dump of Dragon Quest III (Japan, Super Famicom) into a pack, `sfc.pak`; the
-choice is offered when that file lies beside the program (`tools/sfc/README.md` has the two
-commands, and says where the few pictures of Dragon Quest I & II come from). The pack covers the places of chapters 1 to 3
+the place. The art is not in the packages. `tools/sfc` takes it from your own dump of
+Dragon Quest III (Japan, Super Famicom) into a pack, `sfc.pak`; the choice is offered when
+that file lies beside the program (`tools/sfc/README.md` has the two commands). Nine squares
+are Dragon Quest I & II's: this repository holds them in a supplement that opens only with
+the Dragon Quest III ROM, and nothing else of the games' art. The pack covers the places of chapters 1 to 3
 so far, and grows place by place: a square or a person it has no art for is drawn as
 Pixel Remaster draws it, and so are the windows, the text and the battles.
 
