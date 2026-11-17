@@ -301,6 +301,7 @@ def row_list(text, where):
 class Maps:
     def __init__(self, paths):
         self.libs, self.nes, self.figs, self.people = {}, {}, {}, {}
+        self.files, self.used = {}, set()       # library file -> its entries; the entries a line has taken (supplement.py)
         self.sq, self.fig, self.cast = [], [], []
         self.lines = []
         for path in paths:
@@ -314,13 +315,11 @@ class Maps:
                         continue
                     where = "%s:%d" % (path, n)
                     if t[0] == "lib":
-                        self.libs[t[1]] = pickle.load(open(os.path.join(base, t[2]), "rb"))
-                        self.by_hash(self.libs[t[1]])
+                        self.libs[t[1]] = self.library(os.path.join(base, t[2]))
                     elif t[0] == "nes":
                         self.nes[t[1]] = self.inventory(os.path.join(base, t[2]))
                     elif t[0] == "figs":
-                        self.figs[t[1]] = pickle.load(open(os.path.join(base, t[2]), "rb"))
-                        self.by_hash(self.figs[t[1]])
+                        self.figs[t[1]] = self.library(os.path.join(base, t[2]))
                     elif t[0] == "people":
                         self.people[t[1]] = self.inventory(os.path.join(base, t[2]))
                     elif t[0] == "sq":
@@ -355,6 +354,14 @@ class Maps:
     def inventory(path):
         """a NES inventory; none where the file is missing (the lines that name it are left out)"""
         return json.load(open(path)) if os.path.exists(path) else []
+
+    def library(self, path):
+        """a library file's entries (read once, whichever map files name it)"""
+        path = os.path.abspath(path)
+        if path not in self.files:
+            self.files[path] = pickle.load(open(path, "rb"))
+            self.by_hash(self.files[path])
+        return self.files[path]
 
     @staticmethod
     def by_hash(lib):
@@ -404,6 +411,7 @@ class Maps:
                     break
         if found is None:
             raise SystemExit("%s: library %s has no art %s" % (where, name, what))
+        self.used.add(id(found))
         if layer:
             if layer not in found:
                 raise SystemExit("%s: %s has no layer %r" % (where, ref, layer))
@@ -411,7 +419,7 @@ class Maps:
         return found
 
 
-def build(out, paths):
+def build(out, paths, quiet=False):
     m = Maps(paths)
     squares, figures = {}, []
     skipped = 0
@@ -436,6 +444,7 @@ def build(out, paths):
                 found = [x for x in m.figs.get(lib, []) if x["group"] == int(group) and x["pose"] == int(pose.lstrip("m"))]
                 if not found:
                     raise SystemExit("%s: no figure %s" % (where, extra["over"]))
+                m.used.add(id(found[0]))
                 w, h, fp = found[0]["w"], found[0]["h"], found[0]["px"]
                 over = [None] * 256
                 for y in range(int(lower or 0), 16):
@@ -522,6 +531,7 @@ def build(out, paths):
         if inv not in m.people or lib not in m.figs:
             raise SystemExit("%s: no inventory %r or no library %r" % (where, inv, lib))
         poses = {e["pose"]: e for e in m.figs[lib] if e["group"] == int(group)}
+        m.used.update(id(e) for e in poses.values())
         who = [e for e in m.people[inv] if e["dump"] == dump and e["kind"] == int(kind)]
         if not poses:
             raise SystemExit("%s: the library has no set %s" % (where, group))
@@ -567,8 +577,10 @@ def build(out, paths):
         for key, ref, dx, dy, w, h, px in figures:
             f.write(struct.pack("<Q12sbbBB", key, ref, dx, dy, w, h))
             f.write(struct.pack("<%dI" % (w * h), *px))
-    print("%s: %d map squares, %d figures%s" % (out, len(squares), len(figures),
-          "; %d lines left out (their NES squares or people are in no inventory given)" % skipped if skipped else ""))
+    if not quiet:
+        print("%s: %d map squares, %d figures%s" % (out, len(squares), len(figures),
+              "; %d lines left out (their NES squares or people are in no inventory given)" % skipped if skipped else ""))
+    return m
 
 
 def freeze(path):

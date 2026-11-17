@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
-"""tools/sfc/extract.py - make the SNES Remaster's art pack (sfc.pak) from your own cartridges.
+"""tools/sfc/extract.py - make the SNES Remaster's art pack (sfc.pak) from your own cartridge.
 
-    python tools/sfc/extract.py --dq12 "Dragon Quest I & II (Japan).sfc" --dq3 "Dragon Quest III (Japan).sfc"
+    python tools/sfc/extract.py --dq3 "Dragon Quest III (Japan).sfc"
                                 [--nes "Dragon Warrior IV (USA).nes"] [--uncensor HACK.ips] [--out sfc.pak]
-                                [--keep-captures]
+                                [--keep-captures] [--dq12 "Dragon Quest I & II (Japan).sfc" [--write-supplement]]
+
+One Super Famicom game is needed: Dragon Quest III, where nearly all the art comes from. The few pictures of other
+games of the series (Dragon Quest I.II's castle brick and a handful more) are read from the supplement
+(tools/sfc/supplement.bin, locked to the Dragon Quest III ROM: supplement.py). With --dq12 that game is run as well
+and its pictures are cut from it instead; --write-supplement then writes the supplement again from what the map
+files use: that is for whoever changes the map files.
 
 What it does, step by step (everything it writes is under generated/sfc, which git ignores, and the pack):
  1. runs both Super Famicom games without a window (build/sfc-capture: `make sfc-capture`), pressing the
@@ -30,6 +36,8 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 EXE = ".exe" if os.name == "nt" else ""
 KNOWN = {"dq12": "1c0c6d78bf2bc29160adf48b17ebf5a5bc46230e", "dq3": "b711341e4b1022d7645c5313840874aebc01b7b7"}
 
+# the libraries cut from games other than Dragon Quest III: what the map files use of them goes into the supplement
+SUPPLEMENT_LIBRARIES = ("dq1_castle.sfclib", "dq1_ow.sfclib", "dq1.figs")
 # the captures each library is cut from (names from scenes/dq12.captures)
 DQ1_CASTLE = ["dq1_throne1", "dq1_throne2", "dq1_castle0", "dq1_castle1", "dq1_castle2", "dq1_castle3", "dq1_castle4", "dq1_x5"] + \
              ["w1_%03d" % i for i in list(range(0, 33)) + [38]]
@@ -186,7 +194,11 @@ def sha1(path):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dq12", required=True, help="Dragon Quest I & II (Japan), Super Famicom")
+    ap.add_argument("--dq12", default=None, help="Dragon Quest I & II (Japan), Super Famicom: cut its pictures from the "
+                    "game itself instead of reading them from the supplement")
+    ap.add_argument("--supplement", default=os.path.join(HERE, "supplement.bin"),
+                    help="the pictures of the games other than Dragon Quest III (default: tools/sfc/supplement.bin)")
+    ap.add_argument("--write-supplement", action="store_true", help="with --dq12: write the supplement from what the map files use")
     ap.add_argument("--dq3", required=True, help="Dragon Quest III (Japan), Super Famicom")
     ap.add_argument("--nes", default=None, help="Dragon Warrior IV (USA); default: the one in rom/")
     ap.add_argument("--uncensor", default=None, help="the Graphical Uncensoring hack's .ips, to cover what it changes")
@@ -202,8 +214,12 @@ def main():
             raise SystemExit("%s is not built: %s" % (need, how))
     if not nes:
         raise SystemExit("no Dragon Warrior IV ROM: put it in rom/ or pass --nes")
+    if a.write_supplement and not a.dq12:
+        raise SystemExit("--write-supplement needs the other games too: --dq12")
+    if not a.dq12 and not os.path.exists(a.supplement):
+        raise SystemExit("%s is not there: the pictures of Dragon Quest I.II come from it, or from that game with --dq12" % a.supplement)
     for name, path in (("dq12", a.dq12), ("dq3", a.dq3)):
-        if sha1(path) != KNOWN[name]:
+        if path and sha1(path) != KNOWN[name]:
             print("note: %s is not the dump these scripts were made with (SHA-1 %s); the result may differ" % (path, sha1(path)))
     gen = os.path.join(ROOT, "generated", "sfc")
     cap = os.path.join(gen, "cap")
@@ -212,9 +228,10 @@ def main():
 
     print("1. the Super Famicom games' scenes" + (" (kept)" if a.keep_captures else ""))
     if not a.keep_captures:
-        frames = max(int(ln.split()[0]) for ln in open(os.path.join(scenes, "dq12.captures")) if ln.strip()) + 1
-        run([capture, a.dq12, "--frames", str(frames), "--keys", os.path.join(scenes, "dq12.keys"),
-             "--captures", os.path.join(scenes, "dq12.captures"), cap])
+        if a.dq12:
+            frames = max(int(ln.split()[0]) for ln in open(os.path.join(scenes, "dq12.captures")) if ln.strip()) + 1
+            run([capture, a.dq12, "--frames", str(frames), "--keys", os.path.join(scenes, "dq12.keys"),
+                 "--captures", os.path.join(scenes, "dq12.captures"), cap])
         run([capture, a.dq3, "--frames", "1001", "--capture", "1000", os.path.join(cap, "dq3_overworld")])   # its opening shows the overworld
     names = []
     upstairs = os.path.join(cap, "dq3_upstairs.state")
@@ -258,9 +275,12 @@ def main():
                     os.remove(copy)
 
     print("2. the libraries")
-    py("sfclib.py", "build", os.path.join(gen, "dq1_castle.sfclib"), *["%s=%s" % (n, os.path.join(cap, n)) for n in DQ1_CASTLE])
-    py("sfclib.py", "build", os.path.join(gen, "dq1_ow.sfclib"), *["%s=%s" % (n, os.path.join(cap, n)) for n in DQ1_OVERWORLD])
-    py("sfcfig.py", "build", os.path.join(gen, "dq1.figs"), *["%s=%s" % (n, os.path.join(cap, n)) for n in DQ1_CASTLE])
+    if a.dq12:
+        py("sfclib.py", "build", os.path.join(gen, "dq1_castle.sfclib"), *["%s=%s" % (n, os.path.join(cap, n)) for n in DQ1_CASTLE])
+        py("sfclib.py", "build", os.path.join(gen, "dq1_ow.sfclib"), *["%s=%s" % (n, os.path.join(cap, n)) for n in DQ1_OVERWORLD])
+        py("sfcfig.py", "build", os.path.join(gen, "dq1.figs"), *["%s=%s" % (n, os.path.join(cap, n)) for n in DQ1_CASTLE])
+    else:           # (the same libraries with only the pictures the map files use)
+        py("supplement.py", "unpack", a.supplement, a.dq3, gen)
     py("sfclib.py", "dq3-overworld", os.path.join(gen, "dq3_ow.sfclib"), a.dq3, os.path.join(cap, "dq3_overworld"))
     town, castle, front, house, figures = dq3_sets(names)
     cave, cellar, tower = (sorted(n for n in names if n.startswith(p)) for p in ("v_", "w_", "x_"))
@@ -356,7 +376,10 @@ def main():
     os.remove(state)
 
     print("4. the pack")
-    py("pack.py", "build", a.out, *sorted(glob.glob(os.path.join(HERE, "maps", "*.map"))))
+    maps = sorted(glob.glob(os.path.join(HERE, "maps", "*.map")))
+    py("pack.py", "build", a.out, *maps)
+    if a.write_supplement:
+        py("supplement.py", "pack", a.supplement, a.dq3, *[os.path.join(gen, n) for n in SUPPLEMENT_LIBRARIES], "--", *maps)
 
 
 if __name__ == "__main__":

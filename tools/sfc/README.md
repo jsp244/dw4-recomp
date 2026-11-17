@@ -5,13 +5,22 @@ Super Famicom Dragon Quest games. None of that art is in this repository or in t
 taken from your own cartridge dumps into a pack, `sfc.pak`, that the game loads from its folder.
 Without the pack the choice is not offered.
 
-You need the Japanese Super Famicom dumps of **Dragon Quest I & II** and **Dragon Quest III**, and
-your Dragon Warrior IV ROM in `rom/`.
+You need one Super Famicom game, the Japanese **Dragon Quest III**, and your Dragon Warrior IV ROM
+in `rom/`.
 
 ```
 make headless-recomp sfc-capture
-python tools/sfc/extract.py --dq12 "Dragon Quest I & II (Japan).sfc" --dq3 "Dragon Quest III - Soshite Densetsu e... (Japan).sfc"
+python tools/sfc/extract.py --dq3 "Dragon Quest III - Soshite Densetsu e... (Japan).sfc"
 ```
+
+Nearly all the art is Dragon Quest III's. Nine squares are Dragon Quest I & II's (its castle brick,
+its single tree, its barrier floor, its throne room's tiles). They come from the supplement,
+`tools/sfc/supplement.bin`: just those squares, combined with a stream made from the Dragon Quest
+III ROM's contents, so that the file opens only with that very ROM (`supplement.py`). If your copy
+of the source has no supplement, or you would rather take those squares from your own cartridge,
+give that game too: `--dq12 "Dragon Quest I & II (Japan).sfc"`. Whoever changes the map files
+writes the supplement again with `--dq12 ... --write-supplement`: it holds what the map files use
+of the other games' libraries and nothing else.
 
 That writes `sfc.pak` next to the Makefile; copy it beside the game. It takes twenty minutes or
 more: most of it is Dragon Quest III being played, without a window, from power-on through its
@@ -29,6 +38,7 @@ and people, which then get their art too.
 |---|---|---|
 | 1 | `capture.c` (`sfc-capture`) | runs a Super Famicom game without a window (LakeSnes, `third_party/lakesnes`), pressing the buttons a script names, and saves the machine's memory at the frames a list names (`scenes/*.keys`, `scenes/*.captures`). The cave's script also keeps its hero's hit points up, and later the game's count of steps to the next battle (`scenes/dq3_cave.holds`): he is alone at the start of the game, and the battles on the way are fought by pressing A or do not come |
 | 2 | `sfclib.py`, `sfcfig.py` | cut the captures into libraries of 16x16 map squares (Dragon Quest III's two layers kept apart as well, for things that stand on other ground or reach into the square above) and of people (16x16 in Dragon Quest I.II, 16x24 in III); Dragon Quest III's overworld squares are read straight from its ROM |
+| 2 | `supplement.py` | reads the pictures of the games other than Dragon Quest III from the supplement into the same libraries (only the entries the map files use), or writes the supplement from them |
 | 3 | `nesmap.py` | lists the squares and people of Dragon Warrior IV's maps, from `nes-headless --map-dump` (the game's own map code, asked for every square) |
 | 4 | `pack.py` | builds the pack from the map files in `maps/`: which Super Famicom art takes the place of which NES square or person |
 
