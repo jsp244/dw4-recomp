@@ -1,11 +1,13 @@
-# Chapter 4: Monbaraba, Kievs, Haville, Keeleon's castle and what lies between them.
+# Chapter 4: Monbaraba, Kievs, Haville with its ship, Keeleon's castle, and the cave west of Kievs.
 # Nearly all their squares are the earlier chapters'; this file pairs the towns' few new ones and casts the sisters.
-# (Still to come: the cave west of Kievs and the ship in the harbour.)
 
 lib dq3t ../../../generated/sfc/dq3_town.sfclib
 lib dq3c ../../../generated/sfc/dq3_castle.sfclib
 lib dq3h ../../../generated/sfc/dq3_house.sfclib
 lib dq1 ../../../generated/sfc/dq1_castle.sfclib
+lib dq3w ../../../generated/sfc/dq3_tower.sfclib
+lib dq3ow ../../../generated/sfc/dq3_ow.sfclib
+lib dq3v ../../../generated/sfc/dq3_cave.sfclib
 nes town ../../../generated/sfc/nes_town.json
 nes k01 ../../../generated/sfc/nes_k01.json
 nes k04 ../../../generated/sfc/nes_k04.json
@@ -13,6 +15,9 @@ nes k08 ../../../generated/sfc/nes_k08.json
 nes k09 ../../../generated/sfc/nes_k09.json
 nes k0B ../../../generated/sfc/nes_k0B.json
 nes k2C ../../../generated/sfc/nes_k2C.json
+nes k16 ../../../generated/sfc/nes_k16.json
+nes k2F ../../../generated/sfc/nes_k2F.json
+nes rooms ../../../generated/sfc/nes_rooms.json
 figs dq3n ../../../generated/sfc/dq3_people.figs
 people ch4 ../../../generated/sfc/nes_people_ch4.json
 
@@ -36,6 +41,50 @@ sq k08:405A7DD97AA9F178 =town:173A98CBC7910EFD over ~dq3t:316d8b20 clear 1,3 her
 sq k09:7F1961190BFDA867 =town:3E51A0A88427F85B over ~dq3t:316d8b20 clear 3 here # the gilded seats of the throne room
 sq k0B:F76E84E63EC896DC ~dq1:b68350b8 # the dark archway in the castle's wall (two squares)
 sq k0B:180E6AA2DF4F54C8 ~dq1:b68350b8
+
+# ---- the cave west of Kievs (kind $16: the tower's stonework, with a floor and fittings of its own) ----
+sq k16:8C66B3DFC61DD01C dq3w:8ad4ae05 tint 335:45 dark 28 here # the floor: the tower's patterned floor in this place's dark red
+sq k16:FA8C23275540D346 =k16:#1 over dq3w:1154c159.hi here # the dragon in its frame (four squares): Dragon Quest III's dragon statue
+sq k16:E2FCF50BB9B6553D =k16:#1 over dq3w:bae87c5b.hi here
+sq k16:5B54E41B75934585 =k16:#1 over dq3w:c8e82613.hi here
+sq k16:D0F6E8E80AB7C7D4 =k16:#1 over dq3w:6e105f36.hi here
+sq k16:9F31F31FD6151660 =k16:#1 over dq3w:90858dec.hi here # pillar, its head
+sq k16:A4EE3D3C5D73E160 =k16:#1 over dq3w:e7991b51.hi here # pillar, its foot
+sq k16:7A3A9B1FBF43271B =k16:A3C180DA80659B9A over ~dq3t:316d8b20 clear 1,0e here # the torch on the wall (two squares): its shape, in gold
+sq k16:53FC650DBCE19F92 =k16:A3C180DA80659B9A over ~dq3t:316d8b20 clear 1,0e here
+sq k16:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 56:52 dark 34 here # the islands' earth, olive as the NES has it (the game's own tint turns it green)
+sq k16:B5B4419A63FD7B01 =k16:DE5FEDC9DD4DEAE6 over dq3v:ecf9c237.hi here # treasure chest
+sq k16:A7539FEF8615D765 ~dq3w:efc08409 gray 85 here # the stone bridge: its deck and rail
+sq k16:D41B16899989449B ~dq3w:efc08409 gray 85 here # its arches
+
+# ---- the ship in Haville's harbour (kind $2F) ----
+# Dragon Quest III has no ship's deck. The deck is its plank floor (the rooms' wooden floor, as the NES has it too),
+# the rim a lighter wood; sails, mast, cabin roof, rail, barrels and the wheel keep their NES shapes in its wood's
+# and cloth's colors until a ship's own art is found (Dragon Quest V opens on one).
+sq k2F:7289C731FF7B58F2 dq3t:c1be8db5 here # the ship's rim, of lighter wood
+sq k2F:F31955FBBFE4CE6B ~dq3ow:3ac67643 gray 55 dark -55 here # the sails
+sq k2F:0EDB9B58F95F3852 =rooms:D758A26F452DEB92 over ~dq3t:316d8b20 clear 1e here # the mast
+sq k2F:A236C8BB35C46DBC =rooms:D758A26F452DEB92 over ~dq3t:316d8b20 clear 1e here
+sq k2F:47E4142B9C4D2DFC ~dq3t:316d8b20 here
+sq k2F:0B0CC85923999440 =rooms:D758A26F452DEB92 over ~dq3t:316d8b20 clear 1e here
+sq k2F:58793A4B94DCDA7A ~dq3t:316d8b20 here # barrels
+sq k2F:D50DB52C5269C612 ~dq3t:316d8b20 here # the cabin's roof of planks and its edges
+sq k2F:408BF39C0AF012BA ~dq3t:316d8b20 here
+sq k2F:08B0188B4B01A43E ~dq3t:316d8b20 here
+sq k2F:13EA47B918F59CE2 ~dq3t:316d8b20 here
+sq k2F:731E65DA57B73A92 ~dq3t:316d8b20 here
+sq k2F:EEEFB8F6FCC9ADAB ~dq3t:316d8b20 here
+sq k2F:F05046DBA3489B43 ~dq3t:316d8b20 here
+sq k2F:68564A07A6340E68 ~dq3t:316d8b20 here
+sq k2F:6AEB952EB6FF995C ~dq3t:316d8b20 here
+sq k2F:7AA8216F2ED26310 ~dq3t:316d8b20 here
+sq k2F:2F7DEC4DCA8E1899 ~dq3t:316d8b20 here
+sq k2F:B91C98B78FC96770 ~dq3t:316d8b20 here # the wheel
+sq k2F:8927C68571A90A7A ~dq3t:316d8b20 here # the cabin's front and its door
+sq k2F:84302EE8A8B1AF03 ~dq3t:316d8b20 here
+sq k2F:804F8C82A522E047 ~dq3t:316d8b20 here
+sq k2F:804F15DEE62D0C9A ~dq3t:316d8b20 here # the gangway's stakes
+sq k2F:0D8AE314DFB12455 ~dq3t:f3543fd3 here # the gratings of the hold, in iron
 
 # ---- chapter 4's people ----
 # Nara is Dragon Quest III's sage, with her violet hair and her circlet, her dress purple; Mara its dancer, her pink hair turned to
