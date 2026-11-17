@@ -14,7 +14,7 @@ typedef struct ui_item {
     const char *const *choices;   /* CHOICE names */
     int nchoices;
     int min, max, step;           /* INT */
-    const char *suffix;           /* INT: text after the number */
+    const char *suffix;           /* INT: text after the number; ACTION: text shown at the right of the row */
     char info[400];               /* INFO: free text, '\n' separates lines */
     int *pad;                     /* KEY: optional game-controller button bound alongside the key (-1 = none) */
     char *text;                   /* TEXT: the edited string (Enter on the row edits it, Enter again keeps it, Esc cancels) */
@@ -32,7 +32,7 @@ typedef struct {
     int sel;
 } ui_tab;
 
-#define UI_MAX_TABS 8
+#define UI_MAX_TABS 10
 #define UI_MAX_ITEMS 24
 
 typedef struct ui_menu {
@@ -51,6 +51,14 @@ typedef struct ui_menu {
     SDL_Rect item_rects[UI_MAX_ITEMS];
     SDL_Rect left_arrow[UI_MAX_ITEMS], right_arrow[UI_MAX_ITEMS];
     int hover_tab, hover_item;
+    /* a question on top of the menu (ui_dialog): text and up to three buttons */
+    struct {
+        int open, sel, n;
+        int id[3];
+        char label[3][24];
+        char text[400];
+        SDL_Rect rect[3];
+    } dialog;
 } ui_menu;
 
 enum { UI_EV_NONE = 0, UI_EV_ACTIVATE, UI_EV_CHANGED, UI_EV_BACK };
@@ -59,5 +67,9 @@ typedef struct { int type; int id; } ui_event;
 void     ui_draw(SDL_Renderer *r, ui_menu *m, int ww, int wh);
 ui_event ui_handle_event(ui_menu *m, const SDL_Event *e);
 void     ui_select_first(ui_menu *m);   /* move the item selection to the first selectable item of the tab */
+/* Asks a question on top of the menu, with n buttons (1 to 3); sel is the one selected at first.
+   Choosing a button closes the dialog and ui_handle_event returns UI_EV_ACTIVATE with its id;
+   Escape, B or Start closes it with no event. While it is open the menu behind takes no input. */
+void     ui_dialog(ui_menu *m, const char *text, int n, const char *const *labels, const int *ids, int sel);
 
 #endif

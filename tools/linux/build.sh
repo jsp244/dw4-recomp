@@ -25,6 +25,7 @@ if [ -n "$ROM" ]; then
         ./$b/dw4 --trigger-test | tail -n 1
         ./$b/dw4 --touch-test | tail -n 1
         ./$b/dw4 "$ROM" --chord-test | tail -n 1
+        ./$b/dw4 "$ROM" --state-list-test | tail -n 1
         ./$b/dw4 "$ROM" --rewind-test 1200 | grep rewind-test
         ./$b/dw4 "$ROM" --ui-shot "/tmp/ui-$b.png" 1 60 | grep ui-shot
         grep -E "^(display_mode|aspect|scaling|resolution)=" $b/dw4.ini | tr '\n' ' '; echo

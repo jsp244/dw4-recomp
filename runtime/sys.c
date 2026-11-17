@@ -170,6 +170,15 @@ int nes_state_save(void *buf, size_t size) {
     return 0;
 }
 
+int nes_state_peek(const void *buf, size_t size, const uint8_t **ram2k, const uint8_t **wram8k) {
+    const state_t *s = (const state_t *)buf;
+    if (size < STATE_V2_SIZE || s->magic != STATE_MAGIC) return 0;
+    if (s->version != 2 && s->version != 3 && s->version != STATE_VERSION) return 0;
+    if (ram2k) *ram2k = s->ram;
+    if (wram8k) *wram8k = s->wram;
+    return 1;
+}
+
 int nes_state_image(const void *buf, size_t size, uint32_t *image) {
     const state_t *s = (const state_t *)buf;
     if (size < STATE_V2_SIZE || s->magic != STATE_MAGIC) return 0;

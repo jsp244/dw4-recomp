@@ -62,6 +62,14 @@ of battery RAM.
   themselves.
 - **Graphics.** There is no CHR ROM. Tiles are copied from the program ROM into CHR RAM
   as scenes need them.
+- **What a saved state holds.** The Save states tab reads it from the game's memory inside
+  the state file (`nes_state_peek`, nothing is loaded): the chapter at `$615A` (0-4), and the
+  level in byte 6 of the main character's 30-byte record (`$6000` on, in the order Hero,
+  Cristo, Nara, Mara, Brey, Taloon, Ragnar, Alena; chapter 4 takes the sister who is first
+  in the line-up at `$616A`). Seven bytes in page 5 of the console's RAM are zero from
+  power-on until a game begins and never all zero after: until then the state is of the
+  title screen. `dw4 --state-list-test` checks this and that a state is only overwritten
+  after a yes.
 - **Battery RAM.** `$6000-$7FFF` holds the adventure logs and the party's state
   (`$6000-$6DFF`) and working memory (`$6E00-$7FFF`). All 8 KiB go to the `.sav` file;
   the frontend watches the first part to decide when to write it.

@@ -150,6 +150,39 @@ int main(int argc, char **argv) {
         CHECK(e.type == UI_EV_ACTIVATE && e.id == 31, "a fresh Enter press still activates");
     }
 
+    /* 11. a question on top of the menu takes every event until it is answered */
+    {
+        static const char *const labels[3] = { "Load", "Save here", "Cancel" };
+        static const int ids[3] = { 41, 42, 0 };
+        ui_item ditems[2];
+        memset(ditems, 0, sizeof ditems);
+        ditems[0] = (ui_item){ "Slot 1", UI_ACTION, 51, NULL, NULL, 0, 0, 0, 0, "Chapter 1, Lv 3", "", NULL };
+        ditems[1] = (ui_item){ "Slot 2", UI_ACTION, 52, NULL, NULL, 0, 0, 0, 0, "empty", "", NULL };
+        ui_tab dtab = { "Save states", ditems, 2, 0 };
+        ui_menu dm; memset(&dm, 0, sizeof dm);
+        dm.tabs = &dtab; dm.ntabs = 1; dm.focus = 1; dm.hover_tab = dm.hover_item = -1;
+        ui_dialog(&dm, "Slot 1: Chapter 1, Lv 3.", 3, labels, ids, 0);
+        e = key(&dm, SDLK_DOWN, 0);
+        CHECK(e.type == UI_EV_NONE && dm.dialog.open && dm.dialog.sel == 1 && dtab.sel == 0, "with a dialog open the arrows pick a button, not a row");
+        e = key(&dm, SDLK_RETURN, 1);
+        CHECK(e.type == UI_EV_NONE && dm.dialog.open, "a repeated Enter does not answer the dialog");
+        e = key(&dm, SDLK_RETURN, 0);
+        CHECK(e.type == UI_EV_ACTIVATE && e.id == 42 && !dm.dialog.open, "Enter chooses the selected button and closes the dialog");
+        ui_dialog(&dm, "Overwrite slot 1?", 2, labels, ids, 1);
+        CHECK(dm.dialog.sel == 1, "the dialog opens on the button asked for");
+        e = pad(&dm, SDL_CONTROLLER_BUTTON_B);
+        CHECK(e.type == UI_EV_NONE && !dm.dialog.open && dm.focus == 1, "B closes the dialog with no event and leaves the menu as it was");
+        ui_dialog(&dm, "Overwrite slot 1?", 2, labels, ids, 1);
+        e = pad(&dm, SDL_CONTROLLER_BUTTON_START);
+        CHECK(e.type == UI_EV_NONE && !dm.dialog.open, "Start closes the dialog instead of the menu");
+        ui_dialog(&dm, "Overwrite slot 1?", 2, labels, ids, 1);
+        pad(&dm, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+        e = pad(&dm, SDL_CONTROLLER_BUTTON_A);
+        CHECK(e.type == UI_EV_ACTIVATE && e.id == 41, "D-pad and A answer it from the pad");
+        e = key(&dm, SDLK_DOWN, 0);
+        CHECK(dtab.sel == 1, "once it is closed the arrows move through the rows again");
+    }
+
     printf("%s (%d failure%s)\n", failures ? "UI BINDING TEST FAILED" : "UI BINDING TEST PASSED", failures, failures == 1 ? "" : "s");
     return failures ? 1 : 0;
 }

@@ -194,8 +194,9 @@ static double refresh_hz;             /* reported display refresh rate, 0 if unk
 /* menu */
 enum { ACT_PLAY = 1, ACT_RESET, ACT_SAVE, ACT_LOAD, ACT_STOP, ACT_QUIT, ACT_CHOOSE, ACT_KEYS_DEFAULT, ACT_RA_LOGIN, ACT_UPDATE,
        GFX_CHANGED, AUD_CHANGED, LAT_CHANGED, KEY_CHANGED, SLOT_CHANGED, RA_CHANGED, RA_TEXT,
-       ACT_PATCH_LINK, ACT_PATCH_LINK_LAST = ACT_PATCH_LINK + 3, ACT_PATCH_COMPARE, ACT_PATCH_RESCAN, ACT_PATCH_ADD, PATCH_CHANGED };
-enum { TAB_PLAY, TAB_GFX, TAB_AUDIO, TAB_CONTROLS, TAB_RA, TAB_ROM, TAB_PATCHES, TAB_UPDATES, N_TABS };
+       ACT_PATCH_LINK, ACT_PATCH_LINK_LAST = ACT_PATCH_LINK + 3, ACT_PATCH_COMPARE, ACT_PATCH_RESCAN, ACT_PATCH_ADD, PATCH_CHANGED,
+       ACT_SLOT, ACT_SLOT_LAST = ACT_SLOT + 8, ACT_OVERWRITE };
+enum { TAB_PLAY, TAB_STATES, TAB_GFX, TAB_AUDIO, TAB_CONTROLS, TAB_RA, TAB_ROM, TAB_PATCHES, TAB_UPDATES, N_TABS };
 #define MAX_PATCH_FILES 16
 #define PATCH_ROWS (1 + 4 + HACKS_MAX + MAX_PATCH_FILES + 4)
 #define GFX_ROWS 15
@@ -203,7 +204,8 @@ enum { TAB_PLAY, TAB_GFX, TAB_AUDIO, TAB_CONTROLS, TAB_RA, TAB_ROM, TAB_PATCHES,
 #define GFX_TITLE_ROW 13
 #define GFX_INFO_ROW 14
 static ui_item play_items[8], gfx_all[GFX_ROWS], gfx_items[GFX_ROWS], aud_items[3], ctl_items[K_TOTAL + 3], ra_items[7], rom_items[3],
-               upd_items[3], patch_items[PATCH_ROWS];
+               upd_items[3], patch_items[PATCH_ROWS], state_items[11];
+static char slot_labels[9][16], slot_texts[9][64];
 static ui_tab tabs[N_TABS];
 static ui_menu menu;
 
@@ -1273,6 +1275,66 @@ static int slot_saved_at(int slot, char *when, size_t n) {
     return 1;
 }
 
+/* What a saved state holds, read from the game's own memory inside it. The game keeps its characters
+   in 30-byte records from $6000 (Hero, Cristo, Nara, Mara, Brey, Taloon, Ragnar, Alena; byte 6 is the
+   level), the chapter at $615A (0 to 4) and the party's line-up from $616A (bit 7: the place is taken).
+   Seven bytes in page 5 of the console's RAM are zero from power-on until a game begins (a new one or a
+   log continued) and never all zero after that: before it, the state is of the title screen or the log
+   menus, and the characters in memory are left over from an earlier game. */
+typedef struct { int saved, readable, in_game, chapter, level; char when[24], day[16]; } slot_info_t;
+
+static void game_info(const uint8_t *ram2k, const uint8_t *wram8k, int *in_game, int *chapter, int *level) {
+    static const int main_of[5] = { 6, 7, 5, 3, 0 };      /* Ragnar, Alena, Taloon, the sisters, the Hero */
+    *in_game = ram2k[0x52F] || ram2k[0x53B] || ram2k[0x53C] || ram2k[0x53D] || ram2k[0x58F] || ram2k[0x5AE] || ram2k[0x514];
+    int c = wram8k[0x15A];
+    if (c > 4) c = 4;
+    int who = main_of[c];
+    if (c == 3)                 /* chapter 4: whichever sister leads the party */
+        for (int i = 0; i < 4; i++) {
+            int v = wram8k[0x16A + i];
+            if ((v & 0x80) && ((v & 0x7F) == 2 || (v & 0x7F) == 3)) { who = v & 0x7F; break; }
+        }
+    *chapter = c + 1;
+    *level = wram8k[who * 30 + 6];
+}
+
+/* "Chapter 2, Lv 7" */
+static void game_text(int in_game, int chapter, int level, char *out, size_t n) {
+    if (!in_game) snprintf(out, n, "Title screen");
+    else if (level >= 1 && level <= 99) snprintf(out, n, "Chapter %d, Lv %d", chapter, level);
+    else snprintf(out, n, "Chapter %d", chapter);
+}
+
+static slot_info_t slot_info(int slot) {
+    slot_info_t in;
+    memset(&in, 0, sizeof in);
+    char path[2048];
+    time_t t;
+    slot_path(slot, path, sizeof path);
+    if (!file_mtime(path, &t)) return in;
+    in.saved = 1;
+    strftime(in.when, sizeof in.when, "%Y-%m-%d %H:%M", localtime(&t));
+    strftime(in.day, sizeof in.day, "%m-%d %H:%M", localtime(&t));
+    size_t len = nes_state_size();
+    uint8_t *buf = malloc(len);
+    FILE *f = nes_fopen(path, "rb");
+    size_t n = f ? fread(buf, 1, len, f) : 0;
+    if (f) fclose(f);
+    const uint8_t *r2k, *w8k;
+    if (n && nes_state_peek(buf, n, &r2k, &w8k)) { in.readable = 1; game_info(r2k, w8k, &in.in_game, &in.chapter, &in.level); }
+    free(buf);
+    return in;
+}
+
+static void slot_text(const slot_info_t *in, char *out, size_t n) {
+    if (!in->saved) snprintf(out, n, "empty");
+    else if (!in->readable) snprintf(out, n, "from another version");
+    else game_text(in->in_game, in->chapter, in->level, out, n);
+}
+
+static void refresh_state_items(void);
+static int state_saves_done;        /* for the test */
+
 static void state_save(void) {
     if (!rom_ok) return;
     char path[2048];
@@ -1281,11 +1343,53 @@ static void state_save(void) {
     void *buf = malloc(len);
     if (nes_state_save(buf, len) == 0) {
         FILE *f = nes_fopen(path, "wb");
-        if (f) { fwrite(buf, 1, len, f); fclose(f); osd("State saved to slot %d", cfg.state_slot); }
+        if (f) { fwrite(buf, 1, len, f); fclose(f); state_saves_done++; osd("State saved to slot %d", cfg.state_slot); }
         else osd("Could not write %s", path);
     }
     free(buf);
     refresh_play_items();
+    refresh_state_items();
+}
+
+/* The save key in the game: a slot that holds a state is overwritten only on a second press within
+   four seconds; the first one says what is in it. */
+static int overwrite_slot;
+static Uint64 overwrite_until;
+
+static void state_save_key(void) {
+    if (!rom_ok) return;
+    slot_info_t in = slot_info(cfg.state_slot);
+    if (in.saved && !(overwrite_slot == cfg.state_slot && SDL_GetTicks64() < overwrite_until)) {
+        char what[64];
+        slot_text(&in, what, sizeof what);
+        overwrite_slot = cfg.state_slot;
+        osd("Slot %d holds %s. F5 again to overwrite", cfg.state_slot, what);
+        overwrite_until = osd_until = SDL_GetTicks64() + 4000;
+        return;
+    }
+    overwrite_slot = 0;
+    state_save();
+}
+
+/* the same question in the menu: what the slot holds against the game as it is now */
+static void ask_overwrite(void) {
+    static const char *const labels[2] = { "Overwrite", "Cancel" };
+    static const int ids[2] = { ACT_OVERWRITE, 0 };
+    slot_info_t in = slot_info(cfg.state_slot);
+    char held[64], now[64], text[400];
+    int g, c, l;
+    slot_text(&in, held, sizeof held);
+    game_info(ram, cart.wram, &g, &c, &l);
+    game_text(g, c, l, now, sizeof now);
+    snprintf(text, sizeof text, "Overwrite slot %d?\nIt holds: %s, saved %s.\nThe game now: %s.\nThe state in the slot will be lost.",
+             cfg.state_slot, held, in.when, now);
+    ui_dialog(&menu, text, 2, labels, ids, 1);      /* Cancel is the button selected */
+}
+
+static void state_save_ask(void) {
+    if (!rom_ok) return;
+    if (slot_info(cfg.state_slot).saved) ask_overwrite();
+    else state_save();
 }
 
 static int state_load_across(const void *buf, size_t n);
@@ -1323,11 +1427,44 @@ static void select_slot(int slot) {
     if (slot < 1) slot = 9;
     if (slot > 9) slot = 1;
     cfg.state_slot = slot;
-    char when[40];
-    if (slot_saved_at(slot, when, sizeof when)) osd("Save state slot %d (saved %s)", slot, when);
+    overwrite_slot = 0;
+    slot_info_t in = slot_info(slot);
+    char what[64];
+    slot_text(&in, what, sizeof what);
+    if (in.saved) osd("Save state slot %d: %s, saved %s", slot, what, in.day);
     else osd("Save state slot %d (empty)", slot);
     refresh_play_items();
+    refresh_state_items();
     write_config();
+}
+
+/* a slot chosen in the Save states tab: it becomes the current one, and the dialog offers what can be done with it */
+static void slot_chosen(int slot) {
+    static const char *const both[3] = { "Load", "Save here", "Cancel" }, *const load_only[2] = { "Load", "Cancel" },
+                             *const save_only[2] = { "Save here", "Cancel" };
+    static const int both_ids[3] = { ACT_LOAD, ACT_SAVE, 0 }, load_ids[2] = { ACT_LOAD, 0 }, save_ids[2] = { ACT_SAVE, 0 };
+    if (!rom_ok) return;
+    cfg.state_slot = slot;
+    overwrite_slot = 0;
+    write_config();
+    refresh_play_items();
+    refresh_state_items();
+    slot_info_t in = slot_info(slot);
+    char what[64], text[400];
+    slot_text(&in, what, sizeof what);
+    if (in.saved) {
+        snprintf(text, sizeof text, "Slot %d: %s, saved %s.", slot, what, in.when);
+        if (game_started) ui_dialog(&menu, text, 3, both, both_ids, 0);
+        else ui_dialog(&menu, text, 2, load_only, load_ids, 0);
+    } else if (game_started) {
+        snprintf(text, sizeof text, "Slot %d is empty. Save the game into it?", slot);
+        ui_dialog(&menu, text, 2, save_only, save_ids, 0);
+    } else {
+        snprintf(text, sizeof text, "Slot %d is empty. Start the game to save into it.", slot);
+        static const char *const ok[1] = { "OK" };
+        static const int ok_id[1] = { 0 };
+        ui_dialog(&menu, text, 1, ok, ok_id, 0);
+    }
 }
 
 /* diagnostic: --list-modes [file]: the display modes exclusive fullscreen can use */
@@ -2061,13 +2198,42 @@ static void refresh_controls_info(void) {
 
 static void refresh_play_items(void) {
     play_items[0].label = game_started ? "Resume game" : "Start game";
-    char when[40];
-    if (!rom_ok) snprintf(play_items[5].info, sizeof play_items[5].info, "Save states need a loaded ROM.");
-    else if (slot_saved_at(cfg.state_slot, when, sizeof when))
-        snprintf(play_items[5].info, sizeof play_items[5].info, "Slot %d: saved %s.%s", cfg.state_slot, when,
-                 handheld ? "" : "   In game F6 / F7 change the slot.");
-    else snprintf(play_items[5].info, sizeof play_items[5].info, "Slot %d: empty.%s", cfg.state_slot,
-                  handheld ? "" : "   In game F6 / F7 change the slot.");
+    if (!rom_ok) { snprintf(play_items[5].info, sizeof play_items[5].info, "Save states need a loaded ROM."); refresh_state_items(); return; }
+    slot_info_t in = slot_info(cfg.state_slot);
+    char what[64];
+    slot_text(&in, what, sizeof what);
+    const char *more = handheld ? "   All nine slots: the Save states tab." : "   In game F6 / F7 change the slot. All nine: the Save states tab.";
+    if (in.saved) snprintf(play_items[5].info, sizeof play_items[5].info, "Slot %d: %s, saved %s.%s", cfg.state_slot, what, in.when, more);
+    else snprintf(play_items[5].info, sizeof play_items[5].info, "Slot %d: empty.%s", cfg.state_slot, more);
+    refresh_state_items();      /* the other view of the same slots */
+}
+
+/* the Save states tab: every slot with what it holds */
+static void refresh_state_items(void) {
+    ui_item *t = state_items;
+    int n = 0;
+    t[n] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    snprintf(t[n].info, sizeof t[n].info, "%s", rom_ok
+             ? "Choose a slot to load it or to save the game into it. Each shows the chapter, the level of the chapter's main character and when it was saved."
+             : "Save states need a loaded ROM.");
+    n++;
+    for (int i = 0; i < 9; i++) {
+        slot_info_t in;
+        memset(&in, 0, sizeof in);
+        if (rom_ok) in = slot_info(i + 1);
+        char what[64];
+        slot_text(&in, what, sizeof what);
+        snprintf(slot_labels[i], sizeof slot_labels[i], i + 1 == cfg.state_slot ? "Slot %d *" : "Slot %d", i + 1);
+        if (in.saved) snprintf(slot_texts[i], sizeof slot_texts[i], "%.40s  %s", what, in.day);
+        else snprintf(slot_texts[i], sizeof slot_texts[i], "%s", what);
+        t[n++] = (ui_item){ slot_labels[i], UI_ACTION, ACT_SLOT + i, NULL, NULL, 0, 0, 0, 0, slot_texts[i], "", NULL };
+    }
+    t[n] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    snprintf(t[n].info, sizeof t[n].info, handheld ? "* the slot that Save state and Load state on the Play tab use."
+                                                   : "* the slot that F5 and F8 use (F6 / F7 change it). Saving over a state always asks first.");
+    n++;
+    tabs[TAB_STATES].items = state_items;
+    tabs[TAB_STATES].nitems = n;
 }
 
 /* the Graphics rows shown: all of them, minus Window size while a resolution is set (it is unused then) */
@@ -2291,6 +2457,7 @@ static void build_menu(void) {
     upd_items[2] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
 
     tabs[TAB_PLAY] = (ui_tab){ "Play", play_items, 8, 0 };
+    tabs[TAB_STATES] = (ui_tab){ "Save states", state_items, 1, 1 };
     tabs[TAB_GFX] = (ui_tab){ "Graphics", gfx_items, GFX_ROWS, 0 };
     tabs[TAB_AUDIO] = (ui_tab){ "Audio", aud_items, 3, 0 };
     tabs[TAB_CONTROLS] = (ui_tab){ "Controls", ctl_items, K_TOTAL + 3, 0 };
@@ -2307,6 +2474,7 @@ static void build_menu(void) {
     else if (handheld) menu.hint = "D-pad, A to choose, B back.   In game: LT + RT opens this menu";
     else menu.hint = "Arrows / Enter / Esc to navigate   Drop a .nes file here to load it";
     menu.hover_tab = menu.hover_item = -1;
+    refresh_state_items();
     refresh_rom_items();
     refresh_ra_items();
     refresh_gfx_info();
@@ -2317,8 +2485,11 @@ static void open_menu(void) {
     state = ST_MENU;
     touchpad_release_all();
     menu.tab = 0; menu.focus = 1; menu.capture = 0;
+    menu.dialog.open = 0;
     ui_select_first(&menu);
     refresh_rom_items();
+    refresh_play_items();
+    refresh_state_items();
     audio_out_clear();
 }
 
@@ -2330,6 +2501,8 @@ static void start_game(void) {
     }
     game_started = 1;
     state = ST_GAME;
+    menu.dialog.open = 0;
+    overwrite_slot = 0;
     resume_suppress();
     audio_out_clear();
 }
@@ -2345,6 +2518,126 @@ static void choose_rom(void) {
     if (ends_with_ips(path)) {      /* a patch, from either tab */
         if (add_patch_file(path)) { menu.tab = TAB_PATCHES; menu.focus = 1; ui_select_first(&menu); }
     } else load_rom_file(path);
+}
+
+static void menu_action(ui_event e);
+
+/* --state-list-test [--state-load FILE]: what the slots say they hold, and that a state is only ever
+   overwritten after a yes. With a state of a game in play, its chapter and level are read back too. */
+static int state_list_selftest(const char *start_state) {
+    int failures = 0;
+#define CHECK(cond, msg) do { int c_ = (cond); printf("%s %s\n", c_ ? "ok:  " : "FAIL:", msg); if (!c_) failures++; } while (0)
+    char path[2048], what[64];
+    SDL_Event ke;
+    memset(&ke, 0, sizeof ke);
+    ke.type = SDL_KEYDOWN;
+    cfg.state_slot = 9;
+    slot_path(9, path, sizeof path);
+    remove(path);
+    slot_info_t in = slot_info(9);
+    slot_text(&in, what, sizeof what);
+    CHECK(!in.saved && !strcmp(what, "empty"), "a slot without a file is empty");
+
+    nes_power();
+    game_started = 1;
+    for (int i = 0; i < 900; i++) nes_run_frame();
+    state_save_key();
+    in = slot_info(9);
+    slot_text(&in, what, sizeof what);
+    CHECK(state_saves_done == 1 && in.saved && in.readable, "the save key saves into an empty slot at once");
+    CHECK(!in.in_game && !strcmp(what, "Title screen"), "a state from before a game says so");
+    printf("      slot 9: %s, saved %s\n", what, in.when);
+
+    state_save_key();
+    CHECK(state_saves_done == 1, "the save key on a slot that holds a state does not save");
+    CHECK(strstr(osd_text, "F5 again to overwrite") != NULL, "it says what the slot holds and asks for a second press");
+    state_save_key();
+    CHECK(state_saves_done == 2, "the second press overwrites");
+    state_save_key();
+    CHECK(state_saves_done == 2, "and the next press asks again");
+    select_slot(8); select_slot(9);
+    state_save_key();
+    CHECK(state_saves_done == 2, "changing the slot in between withdraws the first press");
+    overwrite_slot = 0;
+
+    /* the menu: Save state on the Play tab asks before it overwrites, Cancel is the button selected */
+    state = ST_MENU;
+    menu_action((ui_event){ UI_EV_ACTIVATE, ACT_SAVE });
+    CHECK(menu.dialog.open && menu.dialog.n == 2 && menu.dialog.sel == 1 && state_saves_done == 2, "Save state in the menu asks first, with Cancel selected");
+    ke.key.keysym.sym = SDLK_RETURN;
+    menu_action(ui_handle_event(&menu, &ke));
+    CHECK(!menu.dialog.open && state_saves_done == 2, "Cancel leaves the state as it was");
+    menu_action((ui_event){ UI_EV_ACTIVATE, ACT_SAVE });
+    ke.key.keysym.sym = SDLK_ESCAPE;
+    menu_action(ui_handle_event(&menu, &ke));
+    CHECK(!menu.dialog.open && state_saves_done == 2 && state == ST_MENU, "so does Escape, and the menu stays open");
+    menu_action((ui_event){ UI_EV_ACTIVATE, ACT_SAVE });
+    ke.key.keysym.sym = SDLK_LEFT;
+    menu_action(ui_handle_event(&menu, &ke));
+    ke.key.keysym.sym = SDLK_RETURN;
+    ke.key.repeat = 1;
+    menu_action(ui_handle_event(&menu, &ke));
+    CHECK(menu.dialog.open && state_saves_done == 2, "an Enter that is still held down does not answer");
+    ke.key.repeat = 0;
+    menu_action(ui_handle_event(&menu, &ke));
+    CHECK(!menu.dialog.open && state_saves_done == 3, "Overwrite saves");
+
+    /* the Save states tab: a slot that holds a state offers Load, Save here, Cancel; Save here asks again */
+    refresh_state_items();
+    CHECK(tabs[TAB_STATES].nitems == 11 && !strcmp(slot_labels[8], "Slot 9 *") && strstr(slot_texts[8], "Title screen") != NULL,
+          "the tab lists nine slots, marks the current one and says what it holds");
+    printf("      row: %s   %s\n", slot_labels[8], slot_texts[8]);
+    menu_action((ui_event){ UI_EV_ACTIVATE, ACT_SLOT + 8 });
+    CHECK(menu.dialog.open && menu.dialog.n == 3 && menu.dialog.sel == 0 && menu.dialog.id[0] == ACT_LOAD && menu.dialog.id[1] == ACT_SAVE,
+          "choosing a slot that holds a state offers Load, Save here and Cancel");
+    ke.key.keysym.sym = SDLK_RIGHT;
+    menu_action(ui_handle_event(&menu, &ke));
+    ke.key.keysym.sym = SDLK_RETURN;
+    menu_action(ui_handle_event(&menu, &ke));
+    CHECK(menu.dialog.open && menu.dialog.n == 2 && menu.dialog.id[0] == ACT_OVERWRITE && menu.dialog.sel == 1 && state_saves_done == 3,
+          "Save here on it asks before it overwrites");
+    ke.key.keysym.sym = SDLK_ESCAPE;
+    menu_action(ui_handle_event(&menu, &ke));
+    remove(path);
+    refresh_state_items();
+    menu_action((ui_event){ UI_EV_ACTIVATE, ACT_SLOT + 8 });
+    CHECK(menu.dialog.open && menu.dialog.n == 2 && menu.dialog.id[0] == ACT_SAVE, "an empty slot offers Save here and Cancel");
+    ke.key.keysym.sym = SDLK_RETURN;
+    menu_action(ui_handle_event(&menu, &ke));
+    CHECK(!menu.dialog.open && state_saves_done == 4, "and saves without a second question");
+    uint64_t frame_saved = ppu.frame;
+    for (int i = 0; i < 120; i++) nes_run_frame();
+    state = ST_MENU;
+    menu_action((ui_event){ UI_EV_ACTIVATE, ACT_SLOT + 8 });
+    ke.key.keysym.sym = SDLK_RETURN;
+    menu_action(ui_handle_event(&menu, &ke));
+    CHECK(ppu.frame == frame_saved && state == ST_GAME, "Load on a slot loads it and goes back to the game");
+
+    if (start_state) {      /* a game in play: the chapter and the level come from its memory */
+        size_t len = nes_state_size();
+        void *buf = malloc(len);
+        FILE *f = nes_fopen(start_state, "rb");
+        size_t n = f ? fread(buf, 1, len, f) : 0;
+        if (f) fclose(f);
+        int rc = n > 0 ? nes_state_load(buf, n) : -1;
+        if (rc == -2) rc = state_load_across(buf, n);
+        free(buf);
+        CHECK(rc == 0, "the starting state loads (a game in play)");
+        remove(path);
+        state_save_key();
+        in = slot_info(9);
+        slot_text(&in, what, sizeof what);
+        int g, c, l;
+        game_info(ram, cart.wram, &g, &c, &l);
+        CHECK(in.in_game && in.chapter >= 1 && in.chapter <= 5 && in.level >= 1 && in.level <= 99, "its slot shows a chapter and a level");
+        CHECK(g && c == in.chapter && l == in.level, "the same as the running game's");
+        printf("      slot 9: %s, saved %s\n", what, in.when);
+    }
+    remove(path);
+    refresh_state_items();
+#undef CHECK
+    printf("state-list-test: %s (%d failure%s)\n", failures ? "FAILED" : "all passed", failures, failures == 1 ? "" : "s");
+    return failures != 0;
 }
 
 static void menu_action(ui_event e) {
@@ -2364,13 +2657,15 @@ static void menu_action(ui_event e) {
     }
     if (e.type != UI_EV_ACTIVATE) return;
     if (e.id >= ACT_PATCH_LINK && e.id <= ACT_PATCH_LINK_LAST) { SDL_OpenURL(known_hacks[e.id - ACT_PATCH_LINK].url); return; }
+    if (e.id >= ACT_SLOT && e.id <= ACT_SLOT_LAST) { slot_chosen(e.id - ACT_SLOT + 1); return; }
     switch (e.id) {
+    case ACT_OVERWRITE: state_save(); break;
     case ACT_PATCH_COMPARE: compare_patches(); break;
     case ACT_PATCH_RESCAN: scan_patches(); apply_patches(0); write_config(); break;
     case ACT_PATCH_ADD: choose_rom(); break;
     case ACT_PLAY: start_game(); break;
     case ACT_RESET: if (rom_ok) { if (!restart_with_patches()) nes_reset(); ach_reset(); rewind_clear(); chord_clear(); game_started = 1; start_game(); } break;
-    case ACT_SAVE: state_save(); break;
+    case ACT_SAVE: state_save_ask(); break;
     case ACT_LOAD: if (state_load()) start_game(); break;
     case ACT_STOP: if (rom_ok) { battery_check(1); if (!restart_with_patches()) nes_power(); ach_reset(); rewind_clear(); chord_clear(); game_started = 0; refresh_rom_items(); ui_select_first(&menu); } break;
     case ACT_QUIT: running = 0; break;
@@ -2602,7 +2897,8 @@ static int trigger_selftest(void) {
 }
 
 static void usage(void) {
-    printf("usage: dw4 [rom.nes] [--play] [--selftest N out.png] [--ui-shot out.png [tab [frames]]]\n"
+    printf("usage: dw4 [rom.nes] [--play] [--selftest N out.png] [--ui-shot out.png [tab [frames]] [--ui-keys UDLREB]]\n"
+           "                   [--state-list-test [--state-load state]] [--state-patch-test [pairs] [--state-load state]]\n"
            "                   [--game-shot out.png [frames] [--state-load state]] [--rewind-test N] [--list-controllers [out.txt]]\n"
            "                   [--list-modes [out.txt]] [--chord-test] [--trigger-test] [--stats out.txt] [--quit-after N] [--audio-dump out.wav]\n"
            "                   [--touch] [--touch-test] [--update-check] [--update-test VERSION [args...]]\n"
@@ -2719,6 +3015,8 @@ int main(int argc, char **argv) {
     attach_parent_console();
 #endif
     const char *rom_arg = NULL, *selftest_png = NULL, *uishot_png = NULL, *gameshot_png = NULL, *list_pads_file = NULL, *stats_path = NULL;
+    const char *uishot_keys = NULL;
+    int state_list_test = 0;
     const char *shot_state = NULL;
     int selftest_frames = 0, uishot_tab = 0, uishot_frames = 0, gameshot_frames = 300, rewind_test = 0, list_pads = 0, autoplay = 0;
     const char *list_modes_file = NULL;
@@ -2773,6 +3071,8 @@ int main(int argc, char **argv) {
             if (i + 1 < argc && isdigit((unsigned char)argv[i + 1][0])) state_patch_pairs = atoi(argv[++i]);
         }
         else if (!strcmp(argv[i], "--trigger-test")) trigger_test_flag = 1;
+        else if (!strcmp(argv[i], "--ui-keys") && i + 1 < argc) uishot_keys = argv[++i];
+        else if (!strcmp(argv[i], "--state-list-test")) state_list_test = 1;
         else if (!strcmp(argv[i], "--touch")) touch_flag = 1;   /* the phone edition: on-screen controls */
         else if (!strcmp(argv[i], "--touch-test")) touch_test = 1;
         else if (!strcmp(argv[i], "--help") || !strcmp(argv[i], "-h")) { usage(); return 0; }
@@ -2949,6 +3249,12 @@ int main(int argc, char **argv) {
         font_quit(); SDL_DestroyRenderer(renderer); SDL_DestroyWindow(window); SDL_Quit();
         return rc;
     }
+    if (state_list_test) {
+        if (!rom_ok) { fprintf(stderr, "state-list-test: no valid ROM (%s)\n", rom_status); SDL_Quit(); return 1; }
+        int rc = state_list_selftest(shot_state);
+        font_quit(); SDL_DestroyRenderer(renderer); SDL_DestroyWindow(window); SDL_Quit();
+        return rc;
+    }
     if (chord_test) {
         if (!rom_ok) { fprintf(stderr, "chord-test: no valid ROM (%s)\n", rom_status); SDL_Quit(); return 1; }
         int rc = chord_selftest();
@@ -2998,6 +3304,21 @@ int main(int argc, char **argv) {
             refresh_update_items();
         }
         for (int i = 0; i < uishot_frames && rom_ok; i++) { nes_run_frame(); audio_out_pump(1, cfg.volume); }
+        if (uishot_keys) {      /* as if a game were in play: U D L R, E for Enter, B for back */
+            game_started = rom_ok;
+            menu.focus = 1;
+            refresh_play_items();
+            refresh_state_items();
+            for (const char *k = uishot_keys; *k; k++) {
+                SDL_Event ke;
+                memset(&ke, 0, sizeof ke);
+                ke.type = SDL_KEYDOWN;
+                ke.key.keysym.sym = *k == 'U' ? SDLK_UP : *k == 'D' ? SDLK_DOWN : *k == 'L' ? SDLK_LEFT : *k == 'R' ? SDLK_RIGHT : *k == 'B' ? SDLK_ESCAPE : SDLK_RETURN;
+                draw_menu();
+                menu_action(ui_handle_event(&menu, &ke));
+                state = ST_MENU;
+            }
+        }
         draw_menu();
         SDL_RenderPresent(renderer);
         draw_menu();
@@ -3158,7 +3479,7 @@ int main(int argc, char **argv) {
                 case SDLK_F11: toggle_fullscreen(); break;
                 case SDLK_RETURN: if (ev.key.keysym.mod & KMOD_ALT) toggle_fullscreen(); break;
                 case SDLK_F2: cfg.overscan = !cfg.overscan; apply_graphics(); break;
-                case SDLK_F5: state_save(); break;
+                case SDLK_F5: state_save_key(); break;
                 case SDLK_F6: select_slot(cfg.state_slot - 1); break;
                 case SDLK_F7: select_slot(cfg.state_slot + 1); break;
                 case SDLK_F8: state_load(); break;
