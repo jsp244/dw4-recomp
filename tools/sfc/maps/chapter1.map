@@ -302,33 +302,33 @@ cast people:castle:0 dq3p:g2 poses 0,1,2,3,4,5,6,7 colors DE52BD>F47CAC,9C216B>B
 cast people:town:0 dq3p:g2 poses 0,1,2,3,4,5,6,7 colors DE52BD>F47CAC,9C216B>BC3C70
 cast people:overworld:0 dq3p:g2 poses 0,1,2,3,4,5,6,7 colors DE52BD>F47CAC,9C216B>BC3C70
 # the castle
-cast people:castle:4 dq3:g6 poses 0,1,m2,m2,0,1,2,2 # woman
-cast people:castle:5 dq3:g9 poses 4,5,2,3,6,7,0,1 hue 200-260>355 # the king's guard: the soldier in red
-cast people:castle:6 dq3:g3 poses 4,5,6,7,0,1,2,3 # old man
-cast people:castle:7 dq3:g1 poses 2,2,m0,m1,2,2,0,1 # the man in green: the merchant (the town's shopkeeper is the same figure)
-cast people:castle:8 dq3:g0 poses 0,1,0,1,0,1,0,1 # young man
-cast people:castle:9 dq3:g9 poses 4,5,2,3,6,7,0,1 # soldier
-cast people:castle:10 dq3:g3 poses 4,5,6,7,0,1,2,3 hue 200-260>280 # the old wizard: the old man in violet
-cast people:castle:11 dq3:g20 poses 0,1,0,1,0,1,0,1 # the king
+cast people:castle:4 dq3n:g45 poses 0,1,2,3,4,5,6,7 # woman
+cast people:castle:5 dq3n:g64 poses 0,1,2,3,4,5,6,7 hue 200-260>355 # the king's guard: the soldier in red
+cast people:castle:6 dq3n:g52 poses 0,1,2,3,4,5,6,7 # old man
+cast people:castle:7 dq3n:g70 poses 0,1,2,3,4,5,6,7 # the man in green: the merchant (the town's shopkeeper is the same figure)
+cast people:castle:8 dq3n:g50 poses 0,1,2,3,4,5,6,7 # young man
+cast people:castle:9 dq3n:g64 poses 0,1,2,3,4,5,6,7 # soldier
+cast people:castle:10 dq3n:g52 poses 0,1,2,3,4,5,6,7 hue 200-260>280 # the old wizard: the old man in violet
+cast people:castle:11 dq3n:g55 poses 0,1,2,3,4,5,6,7 # the king
 # the town
-cast people:town:4 dq3:g3 poses 4,5,6,7,0,1,2,3 hue 200-260>170 # the priest: the old man in green
-cast uncensored:town_uncensored:4 dq3:g3 poses 4,5,6,7,0,1,2,3 hue 200-260>170
-cast people:town:5 dq3:g3 poses 4,5,6,7,0,1,2,3 # old man
-cast people:town:6 dq3:g1 poses 2,2,m0,m1,2,2,0,1 # shopkeeper
-cast people:town:7 dq3:g6 poses 0,1,m2,m2,0,1,2,2 # woman
-cast people:town:8 dq3:g9 poses 4,5,2,3,6,7,0,1 # soldier
-cast people:town:9 dq3:g18 poses 0,1,0,1,0,1,0,1 # boy
-cast people:town:10 dq3:g3 poses 4,5,6,7,0,1,2,3 hue 200-260>280 # the old wizard
-cast people:town:11 dq3:g19 poses 0,1,0,1,0,1,0,1 # the man in the turban
+cast people:town:4 dq3n:g149 poses 0,1,2,3,4,5,6,7 # the priest: Dragon Quest III's, in his mitre
+cast uncensored:town_uncensored:4 dq3n:g149 poses 0,1,2,3,4,5,6,7
+cast people:town:5 dq3n:g52 poses 0,1,2,3,4,5,6,7 # old man
+cast people:town:6 dq3n:g70 poses 0,1,2,3,4,5,6,7 # shopkeeper
+cast people:town:7 dq3n:g45 poses 0,1,2,3,4,5,6,7 # woman
+cast people:town:8 dq3n:g64 poses 0,1,2,3,4,5,6,7 # soldier
+cast people:town:9 dq3n:g63 poses 0,1,2,3,4,5,6,7 # boy
+cast people:town:10 dq3n:g52 poses 0,1,2,3,4,5,6,7 hue 200-260>280 # the old wizard
+cast people:town:11 dq3n:g59 poses 0,1,2,3,4,5,6,7 # the man in the turban
 # the other maps of chapter 1 (most of their people are Burland's, with the same pictures)
-cast ch1:burland2:7 dq3:g6 poses 0,1,m2,m2,0,1,2,2 hue 0-8>285 # the lady upstairs: the woman, her red dress violet
-cast ch1:burland3:4 dq3:g18 poses 0,1,0,1,0,1,0,1 # child
-cast ch1:izmit0:9 dq3:g15 poses 0,1,m3,m4,3,4,3,4 # the sister: the woman in blue stands in for her
+cast ch1:burland2:7 dq3n:g45 poses 0,1,2,3,4,5,6,7 hue 0-8>285 # the lady upstairs: the woman, her red dress violet
+cast ch1:burland3:4 dq3n:g63 poses 0,1,2,3,4,5,6,7 # child
+cast ch1:izmit0:9 dq3n:g78 poses 0,1,2,3,4,5,6,7 # the sister: the nun
 
 # Characters the scenes do not pass, drawn by Dragon Quest III itself by their numbers (dq3_people.figs; the set's
 # number is the game's own, in decimal: extract.py DQ3_PEOPLE).
 cast ch1:izmit1:4 dq3n:g89 poses 0,1,2,3,4,5,6,7 # the cat
 cast ch1:well6:4 dq3n:g122 poses 0,1,2,3,4,5,6,7 # the boulder in the old well
-cast ch1:tower0:4 dq3n:g84 poses 0,1,2,3,4,5,6,7 # the tower's wizard in his pointed hat
-cast ch1:tower4:8 dq3n:g84 poses 0,1,2,3,4,5,6,7
+cast ch1:tower0:4 dq3n:g84 poses 0,1,2,3,4,5,6,7 hue 200-290>318 # the tower's wizard in his pointed hat, pink as the NES has him
+cast ch1:tower4:8 dq3n:g84 poses 0,1,2,3,4,5,6,7 hue 200-290>318
 cast ch1:tower4:9 dq3n:g120 poses 0,1,2,3,4,5,6,7 # the flames

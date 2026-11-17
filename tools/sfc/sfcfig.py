@@ -28,8 +28,8 @@ usage:
     sfcfig.py build3 LIB.figs DQ3.sfc NAME=CAPTURE...   Dragon Quest III's
     sfcfig.py build3p LIB.figs DQ3.sfc NAME=CAPTURE...  Dragon Quest III's party: the hero and his companions
     sfcfig.py buildn LIB.figs NAME=CAPTURE...           Dragon Quest III's people by number (NAME: nXX_a, nXX_b,
-                                                        nXXL_a, nXXL_b: number XX in hex, the two steps, L =
-                                                        the run that turns the first of them left)
+                                                        nXXR_a, nXXR_b: number XX in hex, the two steps, R =
+                                                        the run that turns the one on the carpet right)
     sfcfig.py sheet LIB.figs OUT.png
 The library holds the games' art: it stays with your own copies (generated/ is git-ignored).
 """
@@ -195,9 +195,11 @@ def build3(lib_path, rom_path, named, party=False):
 
 
 # Where the people of Luisa's ground floor stand on the screen when the hero has come down the stairs (the corner of
-# a 16x24 picture), and the first picture of the facing each run turns them to: the one behind the counter, the one
-# in the middle of the room, the one on the carpet. The hero himself stands at HERO_AT.
-SPOTS = {"": (((24, 112), 0), ((80, 96), 2), ((24, 192), 4)), "L": (((24, 112), 6),)}
+# a 16x24 picture), and the first picture of the facing each run turns them to. The first run has the one behind
+# the counter look up, the one in the middle of the room left and the one on the carpet down; the second run ("R")
+# turns the one on the carpet right. (A character's left is not always its right mirrored: the soldier's spear.)
+# The hero himself stands at HERO_AT.
+SPOTS = {"": (((24, 112), 0), ((80, 96), 6), ((24, 192), 4)), "R": (((24, 192), 2),)}
 HERO_AT = (120, 96)
 OBJ_SIZES = {0: (8, 16), 1: (8, 32), 2: (8, 64), 3: (16, 32), 4: (16, 64), 5: (32, 64)}
 

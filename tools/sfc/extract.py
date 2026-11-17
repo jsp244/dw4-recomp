@@ -58,14 +58,20 @@ DQ3_SKIP = {"c_000", "c_047", "h_015"}          # (pictures between two maps: bl
 # first scene's state upstairs there is loaded (DQ3_UPSTAIRS: the frame of scenes/dq3.keys at which the hero stands
 # in the registry, the last companion entered) and he walks down the stairs (scenes/dq3_people.keys), which
 # loads the floor: the character stands there in its own colors, walking on the spot, and two captures sixteen
-# frames apart have both steps. A second run turns the one behind the counter left. The copy is deleted again.
+# frames apart have both steps. Three of the four are on the screen then: the first record's behind the counter,
+# the third's on the carpet, the fourth's in the middle of the room. So the first run shows the character from
+# behind, from the front and facing left, and a second run turns the one on the carpet right. The copy is deleted
+# again.
 DQ3_UPSTAIRS = 102762
 DQ3_RECORDS = (0x082AD0, 0x082ADC, 0x082AE8, 0x082B0C)
-DQ3_FACINGS = (("", (0, 1, 2, 3)), ("L", (3, 0, 1, 2)))
+DQ3_FACINGS = (("", (0, 1, 2, 3)), ("R", (3, 0, 1, 2)))
 # number: who (the map files name a set by the number in decimal: dq3n:g90 is the dog). The game has more; add a
 # number here and its captures are made on the next run, also with --keep-captures.
 DQ3_PEOPLE = {
-    0x1C: "the striped cat", 0x22: "a dwarf", 0x23: "a winged demon", 0x24: "a slime", 0x36: "an old woman in brown",
+    0x1C: "the striped cat", 0x22: "a dwarf", 0x23: "a winged demon", 0x24: "a slime", 0x2A: "a woman in blue",
+    0x2C: "a girl", 0x2D: "a woman in red", 0x2E: "a woman in green", 0x32: "a young man", 0x33: "a woman in lilac",
+    0x34: "a bald old man in blue", 0x36: "an old woman in brown", 0x37: "a king", 0x3B: "a man in a turban",
+    0x3F: "a boy", 0x40: "a soldier", 0x43: "a swordsman", 0x46: "a merchant in green",
     0x45: "a stout merchant", 0x47: "an old woman in blue", 0x48: "a townsman", 0x49: "a man in a striped shirt",
     0x4A: "a bandit in green", 0x4B: "a bearded ruffian", 0x4C: "a bald old man with a beard", 0x4D: "a king in red",
     0x4E: "a nun", 0x4F: "a woman in a white bonnet", 0x50: "a dancer", 0x52: "a bunny girl", 0x54: "a wizard with a staff",

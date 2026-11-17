@@ -114,8 +114,8 @@ cast ch3:c3_16_01:0 dq3p:g10 poses 0,1,2,3,4,5,6,7 colors D6DEDE>E84030@0-8+,524
 cast ch3:c3_16_02:0 dq3p:g10 poses 0,1,2,3,4,5,6,7 colors D6DEDE>E84030@0-8+,524A52>8C1818@0-8+,8C73DE>B82828@0-8+
 cast ch3:c3_18_00:0 dq3p:g10 poses 0,1,2,3,4,5,6,7 colors D6DEDE>E84030@0-8+,524A52>8C1818@0-8+,8C73DE>B82828@0-8+
 cast ch3:c3_18_01:0 dq3p:g10 poses 0,1,2,3,4,5,6,7 colors D6DEDE>E84030@0-8+,524A52>8C1818@0-8+,8C73DE>B82828@0-8+
-cast ch3:c3_06_00:9 dq3:g18 poses 0,1,0,1,0,1,0,1 # a boy
-cast ch3:c3_18_00:6 dq3:g18 poses 0,1,0,1,0,1,0,1
+cast ch3:c3_06_00:9 dq3n:g63 poses 0,1,2,3,4,5,6,7 # a boy
+cast ch3:c3_18_00:6 dq3n:g63 poses 0,1,2,3,4,5,6,7
 # Characters the scenes do not pass, drawn by Dragon Quest III itself by their numbers (dq3_people.figs; the set's
 # number is the game's own, in decimal: extract.py DQ3_PEOPLE).
 cast ch3:c3_16_00:4 dq3n:g90 poses 0,1,2,3,4,5,6,7 # the dog

@@ -274,33 +274,33 @@ cast ch2:c2_04_0B:2 dq3p:g6 poses 0,1,2,3,4,5,6,7 colors 184208>0C4038,296B10>18
 cast ch2:c2_04_0C:2 dq3p:g6 poses 0,1,2,3,4,5,6,7 colors 184208>0C4038,296B10>187060,5AB521>38B898
 cast ch2:c2_04_0D:2 dq3p:g6 poses 0,1,2,3,4,5,6,7 colors 184208>0C4038,296B10>187060,5AB521>38B898
 cast ch2:c2_04_0E:2 dq3p:g6 poses 0,1,2,3,4,5,6,7 colors 184208>0C4038,296B10>187060,5AB521>38B898
-cast ch2:c2_04_00:7 dq3:g9 poses 4,5,2,3,6,7,0,1 # Endor's guard: the soldier
-cast ch2:c2_04_01:5 dq3:g9 poses 4,5,2,3,6,7,0,1
-cast ch2:c2_04_05:5 dq3:g9 poses 4,5,2,3,6,7,0,1
-cast ch2:c2_04_09:4 dq3:g9 poses 4,5,2,3,6,7,0,1
-cast ch2:c2_13_03:6 dq3:g9 poses 4,5,2,3,6,7,0,1
-cast ch2:c2_04_07:7 dq3:g9 poses 4,5,2,3,6,7,0,1 # the colosseum's guard
-cast ch2:c2_04_06:4 dq3:g3 poses 4,5,6,7,0,1,2,3 # the bald old man
-cast ch2:c2_04_0A:4 dq3:g3 poses 4,5,6,7,0,1,2,3
-cast ch2:c2_13_04:4 dq3:g3 poses 4,5,6,7,0,1,2,3
-cast ch2:c2_04_01:4 dq3:g3 poses 4,5,6,7,0,1,2,3 hue 200-260>280 # the wizard in the pointed hat: the old man in violet
-cast ch2:c2_01_00:6 dq3:g6 poses 0,1,m2,m2,0,1,2,2 # the woman with long hair
-cast ch2:c2_01_02:4 dq3:g6 poses 0,1,m2,m2,0,1,2,2
-cast ch2:c2_04_00:8 dq3:g6 poses 0,1,m2,m2,0,1,2,2
-cast ch2:c2_04_01:11 dq3:g6 poses 0,1,m2,m2,0,1,2,2
-cast ch2:c2_04_02:8 dq3:g6 poses 0,1,m2,m2,0,1,2,2
-cast ch2:c2_04_04:4 dq3:g6 poses 0,1,m2,m2,0,1,2,2
-cast ch2:c2_04_05:8 dq3:g6 poses 0,1,m2,m2,0,1,2,2
-cast ch2:c2_04_0C:4 dq3:g6 poses 0,1,m2,m2,0,1,2,2
-cast ch2:c2_0C_00:9 dq3:g6 poses 0,1,m2,m2,0,1,2,2
-cast ch2:c2_0E_00:10 dq3:g6 poses 0,1,m2,m2,0,1,2,2
-cast ch2:c2_13_01:6 dq3:g6 poses 0,1,m2,m2,0,1,2,2
-cast ch2:c2_19_00:9 dq3:g6 poses 0,1,m2,m2,0,1,2,2
-cast ch2:c2_04_06:8 dq3:g15 poses 0,1,m3,m4,3,4,3,4 # the veiled woman in blue
-cast ch2:c2_04_07:9 dq3:g15 poses 0,1,m3,m4,3,4,3,4
-cast ch2:c2_04_0B:5 dq3:g0 poses 0,1,0,1,0,1,0,1 # the traveler
-cast ch2:c2_13_00:8 dq3:g0 poses 0,1,0,1,0,1,0,1
-cast ch2:c2_1F_00:5 dq3:g0 poses 0,1,0,1,0,1,0,1
+cast ch2:c2_04_00:7 dq3n:g64 poses 0,1,2,3,4,5,6,7 # Endor's guard: the soldier
+cast ch2:c2_04_01:5 dq3n:g64 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_05:5 dq3n:g64 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_09:4 dq3n:g64 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_13_03:6 dq3n:g64 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_07:7 dq3n:g64 poses 0,1,2,3,4,5,6,7 # the colosseum's guard
+cast ch2:c2_04_06:4 dq3n:g52 poses 0,1,2,3,4,5,6,7 # the bald old man
+cast ch2:c2_04_0A:4 dq3n:g52 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_13_04:4 dq3n:g52 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_01:4 dq3n:g84 poses 0,1,2,3,4,5,6,7 # the wizard in the pointed hat
+cast ch2:c2_01_00:6 dq3n:g45 poses 0,1,2,3,4,5,6,7 # the woman with long hair
+cast ch2:c2_01_02:4 dq3n:g45 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_00:8 dq3n:g45 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_01:11 dq3n:g45 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_02:8 dq3n:g45 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_04:4 dq3n:g45 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_05:8 dq3n:g45 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_0C:4 dq3n:g45 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_0C_00:9 dq3n:g45 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_0E_00:10 dq3n:g45 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_13_01:6 dq3n:g45 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_19_00:9 dq3n:g45 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_06:8 dq3n:g42 poses 0,1,2,3,4,5,6,7 # the veiled woman in blue
+cast ch2:c2_04_07:9 dq3n:g42 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_04_0B:5 dq3n:g50 poses 0,1,2,3,4,5,6,7 # the traveler
+cast ch2:c2_13_00:8 dq3n:g50 poses 0,1,2,3,4,5,6,7
+cast ch2:c2_1F_00:5 dq3n:g50 poses 0,1,2,3,4,5,6,7
 
 # Characters the scenes do not pass, drawn by Dragon Quest III itself by their numbers (dq3_people.figs; the set's
 # number is the game's own, in decimal: extract.py DQ3_PEOPLE).
