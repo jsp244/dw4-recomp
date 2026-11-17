@@ -75,7 +75,7 @@ doors, the casino's slot machines.
 Santeem, Surene, Tempe, Frenor, the Birdsong Tower, the shrine of the travel door and Endor add;
 `maps/chapter3.map` Lakanaba, Foxville, Bonmalmo and the two caves near them; `maps/chapter4.map`
 Monbaraba with its theater, Kievs, the cave west of it, Aktemto and its mine, Haville with its ship
-and Keeleon's castle
+and Keeleon's castle; `maps/chapter5.map` the hero and what the towns still lacked
 (a line for any kind of map serves every place that has the square). `scenes/dw4_places.txt`
 lists every place of the game; `extract.py` dumps them all and writes one inventory for each kind
 of map (`generated/sfc/nes_kXX.json`). (A level can be two maps side by side, the second loaded as the
@@ -89,7 +89,7 @@ player walks into it: a direction after the level's number has it dumped again f
    other numbers there while it changes maps (`extract.py` lists chapter 1's that way: `NES_WARPS`).
    Another chapter's people need that chapter's game: it starts by itself when its number (`$615A`, counted
    from 0) is held while a new quest's adventure log is continued (`--sav`), title card, opening and party
-   included. `extract.py` does that for chapters 2 to 4 (`CH2_STEPS`, `CH3_STEPS`, `CH4_STEPS`) and walks their parties
+   included. `extract.py` does that for chapters 2 to 5 (`CH2_STEPS` ... `CH5_STEPS`) and walks their parties
    to the same door, so their places are dumped with their own people: `generated/sfc/nes_people_ch2.json`,
    `nes_people_ch3.json`. (Chapter 3's opening ends with Taloon in bed and waits for a direction to be pressed.)
 2. `sfclib.py sheet` / `sfcfig.py sheet` show the Super Famicom libraries the same way.

@@ -56,7 +56,9 @@ A map file says which Super Famicom art takes the place of which NES map square 
     cast INV:DUMP:KIND LIB:gSET poses U,U,R,R,D,D,L,L [hue A-B>C] [colors FROM>TO[@A-B[/C-D]],...]
                                           the same for a set whose pictures are in no fixed order (Dragon Quest
                                           III's): the set's picture numbers for up, right, down and left, two
-                                          steps each; "m" before a number mirrors it (m4 = picture 4 mirrored)
+                                          steps each; "m" before a number mirrors it (m4 = picture 4 mirrored).
+                                          DUMP "*": that kind in every dump of the inventory (a hero, who is
+                                          the same figure wherever he goes)
     cast INV:DUMP:KIND LIB:gSET [hue A-B>C]   a whole character: the eight pictures (four facings, two steps) of
                                           kind KIND of the people inventory INV's dump DUMP drawn as set SET of
                                           the figure library LIB; "hue 200-260>320" turns the set's colors
@@ -532,7 +534,7 @@ def build(out, paths, quiet=False):
             raise SystemExit("%s: no inventory %r or no library %r" % (where, inv, lib))
         poses = {e["pose"]: e for e in m.figs[lib] if e["group"] == int(group)}
         m.used.update(id(e) for e in poses.values())
-        who = [e for e in m.people[inv] if e["dump"] == dump and e["kind"] == int(kind)]
+        who = [e for e in m.people[inv] if dump in ("*", e["dump"]) and e["kind"] == int(kind)]
         if not poses:
             raise SystemExit("%s: the library has no set %s" % (where, group))
         if not who:
