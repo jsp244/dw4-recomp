@@ -3,13 +3,14 @@
 
     python tools/sfc/extract.py --dq3 "Dragon Quest III (Japan).sfc"
                                 [--nes "Dragon Warrior IV (USA).nes"] [--uncensor HACK.ips] [--out sfc.pak]
-                                [--keep-captures] [--dq12 "Dragon Quest I & II (Japan).sfc" [--write-supplement]]
+                                [--keep-captures] [--dq12 "Dragon Quest I & II (Japan).sfc"]
+                                [--dq5 "Dragon Quest V (Japan).sfc"] [--write-supplement]
 
 One Super Famicom game is needed: Dragon Quest III, where nearly all the art comes from. The few pictures of other
-games of the series (Dragon Quest I.II's castle brick and a handful more) are read from the supplement
-(tools/sfc/supplement.bin, locked to the Dragon Quest III ROM: supplement.py). With --dq12 that game is run as well
-and its pictures are cut from it instead; --write-supplement then writes the supplement again from what the map
-files use: that is for whoever changes the map files.
+games of the series (Dragon Quest I.II's castle brick and a handful more, the ship of Dragon Quest V) are read from
+the supplement (tools/sfc/supplement.bin, locked to the Dragon Quest III ROM: supplement.py). With --dq12 and
+--dq5 those games are run as well and their pictures are cut from them instead; with both, --write-supplement
+writes the supplement again from what the map files use: that is for whoever changes the map files.
 
 What it does, step by step (everything it writes is under generated/sfc, which git ignores, and the pack):
  1. runs both Super Famicom games without a window (build/sfc-capture: `make sfc-capture`), pressing the
@@ -34,10 +35,15 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 EXE = ".exe" if os.name == "nt" else ""
-KNOWN = {"dq12": "1c0c6d78bf2bc29160adf48b17ebf5a5bc46230e", "dq3": "b711341e4b1022d7645c5313840874aebc01b7b7"}
+KNOWN = {"dq12": "1c0c6d78bf2bc29160adf48b17ebf5a5bc46230e", "dq3": "b711341e4b1022d7645c5313840874aebc01b7b7",
+         "dq5": "1c47ed62c561d7965fe5dc2a03f4c37feb4a46b5"}
 
 # the libraries cut from games other than Dragon Quest III: what the map files use of them goes into the supplement
-SUPPLEMENT_LIBRARIES = ("dq1_castle.sfclib", "dq1_ow.sfclib", "dq1.figs")
+SUPPLEMENT_LIBRARIES = ("dq1_castle.sfclib", "dq1_ow.sfclib", "dq1.figs", "dq5_ship.sfclib")
+# Dragon Quest V opens on a ship: its script (scenes/dq5.keys) starts a new game, lets the opening's words pass, walks
+# the boy out of his cabin, through the storeroom and up the stairs, opens the deckhouse's door and walks the deck
+# from bow to stern; scenes/dq5.captures names the 27 pictures the deck is cut from. That game keeps its map's
+# squares at odd tile columns and rows of its tile map (sfclib.py: parity=1,1).
 # the captures each library is cut from (names from scenes/dq12.captures)
 DQ1_CASTLE = ["dq1_throne1", "dq1_throne2", "dq1_castle0", "dq1_castle1", "dq1_castle2", "dq1_castle3", "dq1_castle4", "dq1_x5"] + \
              ["w1_%03d" % i for i in list(range(0, 33)) + [38]]
@@ -225,7 +231,10 @@ def main():
                     "game itself instead of reading them from the supplement")
     ap.add_argument("--supplement", default=os.path.join(HERE, "supplement.bin"),
                     help="the pictures of the games other than Dragon Quest III (default: tools/sfc/supplement.bin)")
-    ap.add_argument("--write-supplement", action="store_true", help="with --dq12: write the supplement from what the map files use")
+    ap.add_argument("--dq5", default=None, help="Dragon Quest V (Japan), Super Famicom: cut its ship from the game itself "
+                    "instead of reading it from the supplement")
+    ap.add_argument("--write-supplement", action="store_true",
+                    help="with --dq12 and --dq5: write the supplement from what the map files use")
     ap.add_argument("--dq3", required=True, help="Dragon Quest III (Japan), Super Famicom")
     ap.add_argument("--nes", default=None, help="Dragon Warrior IV (USA); default: the one in rom/")
     ap.add_argument("--uncensor", default=None, help="the Graphical Uncensoring hack's .ips, to cover what it changes")
@@ -241,11 +250,12 @@ def main():
             raise SystemExit("%s is not built: %s" % (need, how))
     if not nes:
         raise SystemExit("no Dragon Warrior IV ROM: put it in rom/ or pass --nes")
-    if a.write_supplement and not a.dq12:
-        raise SystemExit("--write-supplement needs the other games too: --dq12")
-    if not a.dq12 and not os.path.exists(a.supplement):
-        raise SystemExit("%s is not there: the pictures of Dragon Quest I.II come from it, or from that game with --dq12" % a.supplement)
-    for name, path in (("dq12", a.dq12), ("dq3", a.dq3)):
+    if a.write_supplement and not (a.dq12 and a.dq5):
+        raise SystemExit("--write-supplement needs the other games too: --dq12 and --dq5")
+    if not (a.dq12 and a.dq5) and not os.path.exists(a.supplement):
+        raise SystemExit("%s is not there: the pictures of the other games come from it, or from those games "
+                         "with --dq12 and --dq5" % a.supplement)
+    for name, path in (("dq12", a.dq12), ("dq3", a.dq3), ("dq5", a.dq5)):
         if path and sha1(path) != KNOWN[name]:
             print("note: %s is not the dump these scripts were made with (SHA-1 %s); the result may differ" % (path, sha1(path)))
     gen = os.path.join(ROOT, "generated", "sfc")
@@ -260,6 +270,12 @@ def main():
             run([capture, a.dq12, "--frames", str(frames), "--keys", os.path.join(scenes, "dq12.keys"),
                  "--captures", os.path.join(scenes, "dq12.captures"), cap])
         run([capture, a.dq3, "--frames", "1001", "--capture", "1000", os.path.join(cap, "dq3_overworld")])   # its opening shows the overworld
+    if a.dq5:                           # (a short scene: it is also played when its captures are not there yet)
+        lines = [ln.split() for ln in open(os.path.join(scenes, "dq5.captures")) if ln.strip()]
+        if not a.keep_captures or not all(os.path.exists(os.path.join(cap, ln[1] + ".regs")) for ln in lines):
+            print("   Dragon Quest V: %d frames" % (int(lines[-1][0]) + 1), flush=True)
+            run([capture, a.dq5, "--frames", str(int(lines[-1][0]) + 1), "--keys", os.path.join(scenes, "dq5.keys"),
+                 "--captures", os.path.join(scenes, "dq5.captures"), cap])
     names = []
     upstairs = os.path.join(cap, "dq3_upstairs.state")
     for scene in ("dq3", "dq3_front", "dq3_cave"):
@@ -302,12 +318,15 @@ def main():
                     os.remove(copy)
 
     print("2. the libraries")
+    if not (a.dq12 and a.dq5):      # (the other games' libraries with only the pictures the map files use)
+        py("supplement.py", "unpack", a.supplement, a.dq3, gen)
     if a.dq12:
         py("sfclib.py", "build", os.path.join(gen, "dq1_castle.sfclib"), *["%s=%s" % (n, os.path.join(cap, n)) for n in DQ1_CASTLE])
         py("sfclib.py", "build", os.path.join(gen, "dq1_ow.sfclib"), *["%s=%s" % (n, os.path.join(cap, n)) for n in DQ1_OVERWORLD])
         py("sfcfig.py", "build", os.path.join(gen, "dq1.figs"), *["%s=%s" % (n, os.path.join(cap, n)) for n in DQ1_CASTLE])
-    else:           # (the same libraries with only the pictures the map files use)
-        py("supplement.py", "unpack", a.supplement, a.dq3, gen)
+    if a.dq5:
+        ship = [ln.split()[1] for ln in open(os.path.join(scenes, "dq5.captures")) if ln.strip()]
+        py("sfclib.py", "build", os.path.join(gen, "dq5_ship.sfclib"), "parity=1,1", *["%s=%s" % (n, os.path.join(cap, n)) for n in ship])
     py("sfclib.py", "dq3-overworld", os.path.join(gen, "dq3_ow.sfclib"), a.dq3, os.path.join(cap, "dq3_overworld"))
     town, castle, front, house, figures = dq3_sets(names)
     cave, cellar, tower = (sorted(n for n in names if n.startswith(p)) for p in ("v_", "w_", "x_"))

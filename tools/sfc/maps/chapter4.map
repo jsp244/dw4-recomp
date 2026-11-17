@@ -7,6 +7,7 @@ lib dq3h ../../../generated/sfc/dq3_house.sfclib
 lib dq1 ../../../generated/sfc/dq1_castle.sfclib
 lib dq3w ../../../generated/sfc/dq3_tower.sfclib
 lib dq3ow ../../../generated/sfc/dq3_ow.sfclib
+lib dq5 ../../../generated/sfc/dq5_ship.sfclib
 lib dq3v ../../../generated/sfc/dq3_cave.sfclib
 nes town ../../../generated/sfc/nes_town.json
 nes k01 ../../../generated/sfc/nes_k01.json
@@ -18,6 +19,7 @@ nes k2C ../../../generated/sfc/nes_k2C.json
 nes k10 ../../../generated/sfc/nes_k10.json
 nes k16 ../../../generated/sfc/nes_k16.json
 nes k2F ../../../generated/sfc/nes_k2F.json
+nes k2E ../../../generated/sfc/nes_k2E.json
 nes rooms ../../../generated/sfc/nes_rooms.json
 figs dq3n ../../../generated/sfc/dq3_people.figs
 people ch4 ../../../generated/sfc/nes_people_ch4.json
@@ -75,33 +77,36 @@ sq k10:E8DFD8208E7DFEAA =k10:DE5FEDC9DD4DEAE6 over ~dq3t:316d8b20 clear 1e here 
 sq k10:51D4A7A78919EEED =k10:DE5FEDC9DD4DEAE6 over dq3c:75608358.hi here # the stone table
 sq k10:E70AE1749FF8DFD6 =k10:DE5FEDC9DD4DEAE6 over ~dq3c:75608358 clear 1e here # and its stone seats
 
-# ---- the ship in Haville's harbour (kind $2F) ----
-# Dragon Quest III has no ship's deck. The deck is its plank floor (the rooms' wooden floor, as the NES has it too),
-# the rim a lighter wood; sails, mast, cabin roof, rail, barrels and the wheel keep their NES shapes in its wood's
-# and cloth's colors until a ship's own art is found (Dragon Quest V opens on one).
-sq k2F:7289C731FF7B58F2 dq3t:c1be8db5 here # the ship's rim, of lighter wood
+# ---- the ship in Haville's harbour (kind $2F; below decks $2E) ----
+# Dragon Quest III has no ship's deck: this is Dragon Quest V's, the ship its story opens on. Its deck planks, its
+# pale rim, its mast (top, pole and foot), its barrels, its wheel, the planks of its raised deck for the cabin's
+# roof, its cabin door. The sails (Dragon Quest V shows none from above), the roof's edges, the gangway and the
+# gratings keep their NES shapes, in that ship's wood.
+sq k2F:D758A26F452DEB92 dq5:f8538595 here # the deck
+sq k2E:D758A26F452DEB92 dq5:f8538595 here # and the floors below it
+sq k2F:7289C731FF7B58F2 dq5:94badb41 here # the ship's rim
 sq k2F:F31955FBBFE4CE6B ~dq3ow:3ac67643 gray 55 dark -55 here # the sails
-sq k2F:0EDB9B58F95F3852 =rooms:D758A26F452DEB92 over ~dq3t:316d8b20 clear 1e here # the mast
-sq k2F:A236C8BB35C46DBC =rooms:D758A26F452DEB92 over ~dq3t:316d8b20 clear 1e here
-sq k2F:47E4142B9C4D2DFC ~dq3t:316d8b20 here
-sq k2F:0B0CC85923999440 =rooms:D758A26F452DEB92 over ~dq3t:316d8b20 clear 1e here
-sq k2F:58793A4B94DCDA7A ~dq3t:316d8b20 here # barrels
-sq k2F:D50DB52C5269C612 ~dq3t:316d8b20 here # the cabin's roof of planks and its edges
-sq k2F:408BF39C0AF012BA ~dq3t:316d8b20 here
-sq k2F:08B0188B4B01A43E ~dq3t:316d8b20 here
-sq k2F:13EA47B918F59CE2 ~dq3t:316d8b20 here
-sq k2F:731E65DA57B73A92 ~dq3t:316d8b20 here
-sq k2F:EEEFB8F6FCC9ADAB ~dq3t:316d8b20 here
-sq k2F:F05046DBA3489B43 ~dq3t:316d8b20 here
-sq k2F:68564A07A6340E68 ~dq3t:316d8b20 here
-sq k2F:6AEB952EB6FF995C ~dq3t:316d8b20 here
-sq k2F:7AA8216F2ED26310 ~dq3t:316d8b20 here
-sq k2F:2F7DEC4DCA8E1899 ~dq3t:316d8b20 here
-sq k2F:B91C98B78FC96770 ~dq3t:316d8b20 here # the wheel
-sq k2F:8927C68571A90A7A ~dq3t:316d8b20 here # the cabin's front and its door
-sq k2F:84302EE8A8B1AF03 ~dq3t:316d8b20 here
-sq k2F:804F8C82A522E047 ~dq3t:316d8b20 here
-sq k2F:804F15DEE62D0C9A ~dq3t:316d8b20 here # the gangway's stakes
+sq k2F:A236C8BB35C46DBC dq5:24dbeafe here # the mast: its top,
+sq k2F:0EDB9B58F95F3852 dq5:81df2b45 here # its pole
+sq k2F:0B0CC85923999440 dq5:81df2b45 here
+sq k2F:47E4142B9C4D2DFC dq5:91425a8b here # and its foot
+sq k2F:58793A4B94DCDA7A dq5:24d9e0ff here # barrels
+sq k2F:D50DB52C5269C612 dq5:e6f5e9d5 here # the cabin's roof of planks
+sq k2F:408BF39C0AF012BA ~dq5:e6f5e9d5 here # and its edges
+sq k2F:08B0188B4B01A43E ~dq5:e6f5e9d5 here
+sq k2F:13EA47B918F59CE2 ~dq5:e6f5e9d5 here
+sq k2F:731E65DA57B73A92 ~dq5:e6f5e9d5 here
+sq k2F:EEEFB8F6FCC9ADAB ~dq5:e6f5e9d5 here
+sq k2F:F05046DBA3489B43 ~dq5:e6f5e9d5 here
+sq k2F:68564A07A6340E68 ~dq5:e6f5e9d5 here
+sq k2F:6AEB952EB6FF995C ~dq5:e6f5e9d5 here
+sq k2F:7AA8216F2ED26310 ~dq5:e6f5e9d5 here
+sq k2F:2F7DEC4DCA8E1899 ~dq5:e6f5e9d5 here
+sq k2F:B91C98B78FC96770 dq5:f485c1d0 here # the wheel
+sq k2F:8927C68571A90A7A dq5:7d1fe7b9 here # the cabin's front
+sq k2F:84302EE8A8B1AF03 dq5:b607fe5b here # and its door
+sq k2F:804F8C82A522E047 ~dq5:7d1fe7b9 here
+sq k2F:804F15DEE62D0C9A ~dq5:f8538595 here # the gangway's stakes
 sq k2F:0D8AE314DFB12455 ~dq3t:f3543fd3 here # the gratings of the hold, in iron
 
 # ---- chapter 4's people ----

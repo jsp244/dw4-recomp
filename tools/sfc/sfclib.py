@@ -9,6 +9,7 @@ different square once.
 
 usage:
     sfclib.py build LIB.sfclib NAME=CAPTURE...     cut the captures (CAPTURE: the dump's path, without .vram etc.)
+                                                   ("parity=1,1" before the names: the map's grid in the tile map, see cut)
     sfclib.py dq3-overworld LIB.sfclib DQ3.sfc CAPTURE   Dragon Quest III's overworld blocks, read from the ROM itself
                                                    (the colors from a capture of its overworld)
     sfclib.py sheet LIB.sfclib OUT.png [FIRST [COUNT]]   the squares, numbered
@@ -66,9 +67,13 @@ def layer_squares(d, layers, ox, oy):
     return out
 
 
-def cut(d):
-    """the capture's squares at the parity that repeats best (the map's own grid)"""
+def cut(d, parity=None):
+    """the capture's squares at the parity that repeats best (the map's own grid); or at the parity given: a game
+    keeps its map's squares at the same tile columns and rows of the tile map from picture to picture, and saying
+    which is surer than counting where planks and water repeat either way (Dragon Quest V's ship)"""
     layers = [1, 0]                      # BG2 under BG1
+    if parity:
+        return layer_squares(d, layers, parity[0], parity[1])
     best = None
     for oy in (0, 1):
         for ox in (0, 1):
@@ -82,10 +87,14 @@ def cut(d):
 def build(lib_path, named):
     squares = []            # {"px": 256 BGR555 words, "from": name, "at": (x, y) on that capture's screen, "count": n}
     index = {}
+    parity = None
+    if named and named[0].startswith("parity="):        # "parity=1,1": see cut()
+        parity = tuple(int(v) for v in named[0][7:].split(","))
+        named = named[1:]
     for item in named:
         name, path = item.split("=", 1)
         d = Dump(path)
-        for (c, r), (px, sig, at, lo, hi) in sorted(cut(d).items()):
+        for (c, r), (px, sig, at, lo, hi) in sorted(cut(d, parity).items()):
             if px not in index:
                 index[px] = len(squares)
                 squares.append({"px": px, "from": name, "at": at, "count": 0, "sig": sig, "lo": lo, "hi": hi})
