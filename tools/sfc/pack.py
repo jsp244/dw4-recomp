@@ -53,7 +53,7 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           on their real grass
     fig NES SFC [dx DX] [dy DY]           the NES figure NES drawn as the figure SFC, its picture starting
                                           DX, DY pixels from the NES figure's corner (default: same feet)
-    cast INV:DUMP:KIND LIB:gSET poses U,U,R,R,D,D,L,L [hue A-B>C] [colors FROM>TO[@A-B],...]
+    cast INV:DUMP:KIND LIB:gSET poses U,U,R,R,D,D,L,L [hue A-B>C] [colors FROM>TO[@A-B[/C-D]],...]
                                           the same for a set whose pictures are in no fixed order (Dragon Quest
                                           III's): the set's picture numbers for up, right, down and left, two
                                           steps each; "m" before a number mirrors it (m4 = picture 4 mirrored)
@@ -67,7 +67,11 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           a figure's hair, dress and trim one by one, where a hero of this
                                           game wears other colors than the class that stands for him; "@0-10":
                                           only in those rows of the picture, counted from 0 at its top (a
-                                          color the hair shares with the clothes)
+                                          color the hair shares with the clothes); "@0-3/5-10": and only in
+                                          those columns, from 0 at its left (a helmet's crest, not the tip
+                                          of the spear beside it); a rule ending in "+": only pixels with
+                                          one of the rules' old colors to their left or right (a cap's cloth,
+                                          not a thin pole of the same white)
 
 ~SFC for SFC draws the NES square's own shapes in the colors of the square SFC (its darkest, its two middle
 and its lightest color for the NES square's four, dark to light): for the few things the Super Famicom games
@@ -251,22 +255,33 @@ def weights(nes):
 
 
 def recast(px, w, rules, where):
-    """a figure's pixels with colors exchanged: "FROM>TO[@A-B],..." (RRGGBB; @A-B: only in those rows)"""
+    """a figure's pixels with colors exchanged: "FROM>TO[@A-B[/C-D]],..." (RRGGBB; @A-B: only in those rows; /C-D:
+    and only in those columns)"""
+    def span(text):
+        lo, _, hi = text.partition("-")
+        return (int(lo), int(hi or lo)) if text else (0, 1 << 30)
+
     todo = []
     for rule in rules.split(","):
-        pair, _, rows = rule.partition("@")
+        beside = rule.endswith("+")
+        pair, _, at = rule.rstrip("+").partition("@")
         old, _, new = pair.partition(">")
-        lo, _, hi = rows.partition("-")
+        rows, _, cols = at.partition("/")
         try:
-            todo.append((int(old, 16), int(new, 16), int(lo) if rows else 0, int(hi or lo) if rows else 1 << 30))
+            todo.append((int(old, 16), int(new, 16)) + span(rows) + span(cols) + (beside,))
         except ValueError:
-            raise SystemExit("%s: colors wants FROM>TO[@A-B],... in RRGGBB, not %r" % (where, rule))
+            raise SystemExit("%s: colors wants FROM>TO[@A-B[/C-D]][+],... in RRGGBB, not %r" % (where, rule))
+    olds = set(t[0] for t in todo)
+
+    def is_old(j, row):
+        return 0 <= j < len(px) and j // w == row and (px[j] >> 24) & 255 and px[j] & 0xFFFFFF in olds
+
     out = list(px)
     for i, p in enumerate(px):
         if not (p >> 24) & 255:
             continue
-        for old, new, lo, hi in todo:
-            if p & 0xFFFFFF == old and lo <= i // w <= hi:
+        for old, new, r0, r1, c0, c1, beside in todo:
+            if p & 0xFFFFFF == old and r0 <= i // w <= r1 and c0 <= i % w <= c1 and (not beside or is_old(i - 1, i // w) or is_old(i + 1, i // w)):
                 out[i] = (p & 0xFF000000) | new
                 break
     return tuple(out)
