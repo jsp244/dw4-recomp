@@ -76,15 +76,15 @@ DQ3_FACINGS = (("", (0, 1, 2, 3)), ("R", (3, 0, 1, 2)))
 # number: who (the map files name a set by the number in decimal: dq3n:g90 is the dog). The game has more; add a
 # number here and its captures are made on the next run, also with --keep-captures.
 DQ3_PEOPLE = {
-    0x1C: "the striped cat", 0x22: "a dwarf", 0x23: "a winged demon", 0x24: "a slime", 0x2A: "a woman in blue",
-    0x2C: "a girl", 0x2D: "a woman in red", 0x2E: "a woman in green", 0x32: "a young man", 0x33: "a woman in lilac",
+    0x1B: "a sage (the woman)", 0x1C: "the striped cat", 0x22: "a dwarf", 0x23: "a winged demon", 0x24: "a slime", 0x2A: "a woman in blue",
+    0x2C: "a girl", 0x2D: "a woman in red", 0x2E: "a woman in green", 0x31: "a hooded man", 0x32: "a young man", 0x33: "a woman in lilac",
     0x34: "a bald old man in blue", 0x36: "an old woman in brown", 0x37: "a king", 0x3B: "a man in a turban",
     0x3F: "a boy", 0x40: "a soldier", 0x43: "a swordsman", 0x46: "a merchant in green",
     0x45: "a stout merchant", 0x47: "an old woman in blue", 0x48: "a townsman", 0x49: "a man in a striped shirt",
     0x4A: "a bandit in green", 0x4B: "a bearded ruffian", 0x4C: "a bald old man with a beard", 0x4D: "a king in red",
     0x4E: "a nun", 0x4F: "a woman in a white bonnet", 0x50: "a dancer", 0x52: "a bunny girl", 0x54: "a wizard with a staff",
     0x55: "an elf", 0x56: "a dwarf in a pointed cap", 0x59: "a cat", 0x5A: "a dog", 0x5B: "a horse", 0x5C: "a skeleton",
-    0x5D: "a gargoyle", 0x5E: "a slime", 0x5F: "a sailor", 0x73: "a white horse", 0x74: "a king", 0x76: "a pirate",
+    0x5D: "a gargoyle", 0x5E: "a slime", 0x5F: "a sailor", 0x73: "a white horse", 0x74: "a king", 0x75: "a warrior in a horned helmet", 0x76: "a pirate",
     0x78: "a flame", 0x79: "a green flame", 0x7A: "a boulder", 0x95: "a priest in a mitre", 0x96: "a bald old man in white",
 }
 
@@ -156,6 +156,17 @@ CH3_STEPS = [
 ]
 # Lakanaba, Foxville, Bonmalmo, the castle on the way to Endor, two villages, Endor's castle and casino
 CH3_PLACES = [(0x16, 3), (0x0F, 2), (0x06, 4), (0x05, 2), (0x18, 2), (0x14, 3), (0x04, 2)]
+# Chapter 4's people (the number 3 held). Its opening is Nara and Mara's talk in the dressing room of Monbaraba's
+# theater; the last A answers Nara's "Shall we leave now?", and they stand in the town. One of the town's stairs
+# (at 7,18) takes them, as before, to the foot of Burland castle's stairs, and they stop on its door.
+CH4_STEPS = [
+    ("1600:START;1606:-;1910:A;1916:-;2120:A;2126:-;2330:A;2336:-;"
+     + ";".join("%d:A;%d:-" % (t, t + 6) for t in range(2600, 6601, 200)), ["2130-6790:615A:03"], 6790),
+    ("40:DOWN;90:-;195:DOWN;320:-",
+     ["20-24:44:07", "20-24:45:11", "70-75:63:02", "70-75:64:02", "180-184:44:10", "180-184:45:23"], 214),
+]
+# Monbaraba, Kievs, the cave west of it, Haville, Aktemto and its mine, Keeleon's castle
+CH4_PLACES = [(0x15, 4), (0x17, 2), (0x31, 5), (0x0A, 1), (0x11, 6), (0x00, 5)]
 
 # A map is dumped at several moments: the game moves water by redrawing tiles, so a fountain is another square at
 # another moment (eight steps of 16 frames). The dumps whose tiles differ are kept.
@@ -358,20 +369,21 @@ def main():
             run(game + ["--state-load", state, "--keys", "0:DOWN;55:-", "--poke", "5-21:63:%02X" % place,
                         "--poke", "9-21:64:%02X" % level, "--frames", "115", "--map-dump", dumps[-1], "--quiet"])
     py("nesmap.py", "figures", os.path.join(gen, "nes_people_ch2"), *dumps)
-    # chapter 3's people (CH3_STEPS, CH3_PLACES): the same with Taloon
-    for n, (keys, pokes, frames) in enumerate(CH3_STEPS):
-        cmd = game + (["--state-load", state] if n else ["--sav", sav]) + ["--keys", keys, "--frames", str(frames),
-                                                                         "--state-save", state, "--quiet"]
-        for p in pokes:
-            cmd += ["--poke", p]
-        run(cmd)
-    dumps = []
-    for place, levels in CH3_PLACES:
-        for level in range(levels):
-            dumps.append(os.path.join(gen, "c3_%02X_%02X.map" % (place, level)))
-            run(game + ["--state-load", state, "--keys", "0:DOWN;55:-", "--poke", "5-21:63:%02X" % place,
-                        "--poke", "9-21:64:%02X" % level, "--frames", "115", "--map-dump", dumps[-1], "--quiet"])
-    py("nesmap.py", "figures", os.path.join(gen, "nes_people_ch3"), *dumps)
+    # chapter 3's people (CH3_STEPS, CH3_PLACES): the same with Taloon; chapter 4's with Nara and Mara
+    for chapter, steps, places in ((3, CH3_STEPS, CH3_PLACES), (4, CH4_STEPS, CH4_PLACES)):
+        for n, (keys, pokes, frames) in enumerate(steps):
+            cmd = game + (["--state-load", state] if n else ["--sav", sav]) + ["--keys", keys, "--frames", str(frames),
+                                                                             "--state-save", state, "--quiet"]
+            for p in pokes:
+                cmd += ["--poke", p]
+            run(cmd)
+        dumps = []
+        for place, levels in places:
+            for level in range(levels):
+                dumps.append(os.path.join(gen, "c%d_%02X_%02X.map" % (chapter, place, level)))
+                run(game + ["--state-load", state, "--keys", "0:DOWN;55:-", "--poke", "5-21:63:%02X" % place,
+                            "--poke", "9-21:64:%02X" % level, "--frames", "115", "--map-dump", dumps[-1], "--quiet"])
+        py("nesmap.py", "figures", os.path.join(gen, "nes_people_ch%d" % chapter), *dumps)
     os.remove(sav)
     os.remove(state)
 

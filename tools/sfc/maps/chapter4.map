@@ -1,0 +1,93 @@
+# Chapter 4: Monbaraba, Kievs, Haville, Keeleon's castle and what lies between them.
+# Nearly all their squares are the earlier chapters'; this file pairs the towns' few new ones and casts the sisters.
+# (Still to come: the cave west of Kievs and the ship in the harbour.)
+
+lib dq3t ../../../generated/sfc/dq3_town.sfclib
+lib dq3c ../../../generated/sfc/dq3_castle.sfclib
+lib dq3h ../../../generated/sfc/dq3_house.sfclib
+lib dq1 ../../../generated/sfc/dq1_castle.sfclib
+nes town ../../../generated/sfc/nes_town.json
+nes k01 ../../../generated/sfc/nes_k01.json
+nes k04 ../../../generated/sfc/nes_k04.json
+nes k08 ../../../generated/sfc/nes_k08.json
+nes k09 ../../../generated/sfc/nes_k09.json
+nes k0B ../../../generated/sfc/nes_k0B.json
+nes k2C ../../../generated/sfc/nes_k2C.json
+figs dq3n ../../../generated/sfc/dq3_people.figs
+people ch4 ../../../generated/sfc/nes_people_ch4.json
+
+# ---- Monbaraba's theater (kind $2C) ----
+# The audience: the NES draws a square per head, from behind or from the front, in two colors, and has them sway
+# (two squares each). Here they are Dragon Quest III's townswomen from the shoulders up, on the theater's floor.
+sq k2C:34C5C365B9A6622E =town:3E51A0A88427F85B over @dq3n:g45:0 here # from behind, in red
+sq k2C:7B5106ECB297C50B =town:3E51A0A88427F85B over @dq3n:g45:1 here
+sq k2C:6AE4DBCE8933289D =town:3E51A0A88427F85B over @dq3n:g45:4 here # from the front
+sq k2C:ADA123707F84741C =town:3E51A0A88427F85B over @dq3n:g45:5 here
+sq k2C:7FBC4008F24690CC =town:3E51A0A88427F85B over @dq3n:g46:0 here # from behind, in green
+sq k2C:ACB203EC722E409D =town:3E51A0A88427F85B over @dq3n:g46:1 here
+sq k2C:05FAE661D0274A05 =town:3E51A0A88427F85B over @dq3n:g46:4 here # from the front
+sq k2C:70937F293596768C =town:3E51A0A88427F85B over @dq3n:g46:5 here
+sq k2C:5EA898AE2885CB50 =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80 # the stage's stepped corners (Haville's quay has the same)
+sq k2C:971BE12BF8912A39 =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80
+
+# ---- Kievs, Haville, Keeleon's castle ----
+sq k04:852F4D70CFD53187 dq3h:3290b79c # stairs down, in the log house
+sq k08:405A7DD97AA9F178 =town:173A98CBC7910EFD over ~dq3t:316d8b20 clear 1,3 here # a row of stakes on the grass
+sq k09:7F1961190BFDA867 =town:3E51A0A88427F85B over ~dq3t:316d8b20 clear 3 here # the gilded seats of the throne room
+sq k0B:F76E84E63EC896DC ~dq1:b68350b8 # the dark archway in the castle's wall (two squares)
+sq k0B:180E6AA2DF4F54C8 ~dq1:b68350b8
+
+# ---- chapter 4's people ----
+# Nara is Dragon Quest III's sage, with her violet hair and her circlet; Mara its dancer, her pink hair turned to
+# her own violet (the NES game draws Mara and every other dancer with one figure, and so does this).
+cast ch4:c4_15_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 # Nara: the sage
+cast ch4:c4_15_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_15_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_15_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_17_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_17_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_31_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_31_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_31_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_31_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_31_04:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_0A_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_11_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_11_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_11_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_11_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_11_04:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_11_05:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_00_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_00_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_00_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_00_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_00_04:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_15_00:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278 # Mara: the dancer
+cast ch4:c4_15_01:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_15_02:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_15_03:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_17_00:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_17_01:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_31_00:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_31_01:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_31_02:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_31_03:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_31_04:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_0A_00:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_11_00:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_11_01:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_11_02:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_11_03:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_11_04:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_11_05:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_00_00:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_00_01:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_00_02:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_00_03:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_00_04:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
+cast ch4:c4_17_00:4 dq3n:g95 poses 0,1,2,3,4,5,6,7 # the man in the cap: the sailor in his bandana
+cast ch4:c4_11_01:4 dq3n:g95 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_0A_00:5 dq3n:g92 poses 0,1,2,3,4,5,6,7 # the skeleton
+cast ch4:c4_00_00:5 dq3n:g117 poses 0,1,2,3,4,5,6,7 # the warrior in the horned helmet
+cast ch4:c4_00_01:5 dq3n:g49 poses 0,1,2,3,4,5,6,7 # the hooded man

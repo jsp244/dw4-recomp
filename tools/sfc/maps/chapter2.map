@@ -283,7 +283,7 @@ cast ch2:c2_04_07:7 dq3n:g64 poses 0,1,2,3,4,5,6,7 # the colosseum's guard
 cast ch2:c2_04_06:4 dq3n:g52 poses 0,1,2,3,4,5,6,7 # the bald old man
 cast ch2:c2_04_0A:4 dq3n:g52 poses 0,1,2,3,4,5,6,7
 cast ch2:c2_13_04:4 dq3n:g52 poses 0,1,2,3,4,5,6,7
-cast ch2:c2_04_01:4 dq3n:g84 poses 0,1,2,3,4,5,6,7 # the wizard in the pointed hat
+cast ch2:c2_04_01:4 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278 # the dancer (the figure that is Mara in chapter 4): Dragon Quest III's, her hair violet
 cast ch2:c2_01_00:6 dq3n:g45 poses 0,1,2,3,4,5,6,7 # the woman with long hair
 cast ch2:c2_01_02:4 dq3n:g45 poses 0,1,2,3,4,5,6,7
 cast ch2:c2_04_00:8 dq3n:g45 poses 0,1,2,3,4,5,6,7
