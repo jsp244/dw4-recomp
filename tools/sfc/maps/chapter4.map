@@ -38,31 +38,31 @@ sq k0B:F76E84E63EC896DC ~dq1:b68350b8 # the dark archway in the castle's wall (t
 sq k0B:180E6AA2DF4F54C8 ~dq1:b68350b8
 
 # ---- chapter 4's people ----
-# Nara is Dragon Quest III's sage, with her violet hair and her circlet; Mara its dancer, her pink hair turned to
+# Nara is Dragon Quest III's sage, with her violet hair and her circlet, her dress purple; Mara its dancer, her pink hair turned to
 # her own violet (the NES game draws Mara and every other dancer with one figure, and so does this).
-cast ch4:c4_15_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 # Nara: the sage
-cast ch4:c4_15_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_15_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_15_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_17_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_17_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_31_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_31_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_31_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_31_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_31_04:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_0A_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_11_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_11_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_11_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_11_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_11_04:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_11_05:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_00_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_00_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_00_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_00_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
-cast ch4:c4_00_04:0 dq3n:g27 poses 0,1,2,3,4,5,6,7
+cast ch4:c4_15_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78 # Nara: the sage, her pink dress the purple the NES gives her
+cast ch4:c4_15_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_15_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_15_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_17_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_17_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_31_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_31_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_31_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_31_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_31_04:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_0A_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_11_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_11_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_11_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_11_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_11_04:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_11_05:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_00_00:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_00_01:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_00_02:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_00_03:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
+cast ch4:c4_00_04:0 dq3n:g27 poses 0,1,2,3,4,5,6,7 colors DE52BD>982EC2,9C216B>591C78
 cast ch4:c4_15_00:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278 # Mara: the dancer
 cast ch4:c4_15_01:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
 cast ch4:c4_15_02:1 dq3n:g80 poses 0,1,2,3,4,5,6,7 hue 300-345>278
