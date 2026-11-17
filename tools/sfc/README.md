@@ -68,8 +68,9 @@ of map (`generated/sfc/nes_kXX.json`).
    other numbers there while it changes maps (`extract.py` lists chapter 1's that way: `NES_WARPS`).
    Another chapter's people need that chapter's game: it starts by itself when its number (`$615A`, counted
    from 0) is held while a new quest's adventure log is continued (`--sav`), title card, opening and party
-   included. `extract.py` does that for chapter 2 (`CH2_STEPS`) and walks its party to the same door, so its
-   places are dumped with their own people: `generated/sfc/nes_people_ch2.json`.
+   included. `extract.py` does that for chapters 2 and 3 (`CH2_STEPS`, `CH3_STEPS`) and walks their parties
+   to the same door, so their places are dumped with their own people: `generated/sfc/nes_people_ch2.json`,
+   `nes_people_ch3.json`. (Chapter 3's opening ends with Taloon in bed and waits for a direction to be pressed.)
 2. `sfclib.py sheet` / `sfcfig.py sheet` show the Super Famicom libraries the same way.
 3. Add lines to a map file (see the head of `pack.py` for the forms) and build the pack.
 4. `nes-headless --sfc-check --sfc-pack sfc.pak` plays a script or random input and reports every
