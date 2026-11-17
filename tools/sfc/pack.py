@@ -53,7 +53,7 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           on their real grass
     fig NES SFC [dx DX] [dy DY]           the NES figure NES drawn as the figure SFC, its picture starting
                                           DX, DY pixels from the NES figure's corner (default: same feet)
-    cast INV:DUMP:KIND LIB:gSET poses U,U,R,R,D,D,L,L [hue A-B>C]
+    cast INV:DUMP:KIND LIB:gSET poses U,U,R,R,D,D,L,L [hue A-B>C] [colors FROM>TO[@A-B],...]
                                           the same for a set whose pictures are in no fixed order (Dragon Quest
                                           III's): the set's picture numbers for up, right, down and left, two
                                           steps each; "m" before a number mirrors it (m4 = picture 4 mirrored)
@@ -61,7 +61,13 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           kind KIND of the people inventory INV's dump DUMP drawn as set SET of
                                           the figure library LIB; "hue 200-260>320" turns the set's colors
                                           between those hues (degrees) to hue 320, for a character the Super
-                                          Famicom games have only in other colors
+                                          Famicom games have only in other colors.
+                                          "colors 5AB521>F0C828,CECECE>F8B050@0-10" gives every pixel of the
+                                          first color (RRGGBB, as the figures' sheet shows it) the second:
+                                          a figure's hair, dress and trim one by one, where a hero of this
+                                          game wears other colors than the class that stands for him; "@0-10":
+                                          only in those rows of the picture, counted from 0 at its top (a
+                                          color the hair shares with the clothes)
 
 ~SFC for SFC draws the NES square's own shapes in the colors of the square SFC (its darkest, its two middle
 and its lightest color for the NES square's four, dark to light): for the few things the Super Famicom games
@@ -242,6 +248,28 @@ def weights(nes):
                 n[((t[y] >> (7 - x)) & 1) | (((t[y + 8] >> (7 - x)) & 1) << 1)] += 1
     w = [0 if not c else max(1, (c * 15 + 128) // 256) for c in n[1:]]
     return w if any(w) else [1, 1, 1]
+
+
+def recast(px, w, rules, where):
+    """a figure's pixels with colors exchanged: "FROM>TO[@A-B],..." (RRGGBB; @A-B: only in those rows)"""
+    todo = []
+    for rule in rules.split(","):
+        pair, _, rows = rule.partition("@")
+        old, _, new = pair.partition(">")
+        lo, _, hi = rows.partition("-")
+        try:
+            todo.append((int(old, 16), int(new, 16), int(lo) if rows else 0, int(hi or lo) if rows else 1 << 30))
+        except ValueError:
+            raise SystemExit("%s: colors wants FROM>TO[@A-B],... in RRGGBB, not %r" % (where, rule))
+    out = list(px)
+    for i, p in enumerate(px):
+        if not (p >> 24) & 255:
+            continue
+        for old, new, lo, hi in todo:
+            if p & 0xFFFFFF == old and lo <= i // w <= hi:
+                out[i] = (p & 0xFF000000) | new
+                break
+    return tuple(out)
 
 
 def row_list(text, where):
@@ -509,6 +537,8 @@ def build(out, paths):
                 span, to = opt["hue"].split(">")
                 lo, hi = (float(v) for v in span.split("-"))
                 px = tuple(turn_hue(p, lo, hi, float(to)) for p in px)
+            if "colors" in opt:
+                px = recast(px, a["w"], opt["colors"], where)
             figures.append((key, ref_colors, (16 - a["w"]) // 2, 16 - a["h"], a["w"], a["h"], px))
     with open(out, "wb") as f:
         f.write(b"DW4S" + struct.pack("<III", 2, len(squares), len(figures)))
