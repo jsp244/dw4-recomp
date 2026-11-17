@@ -42,7 +42,14 @@ for every wall (the castle inside and out, the towns' buildings), and Dragon Que
 ground, the plants, the water, the furniture, the people and the overworld (single trees, the
 throne rooms' white and blue tiles and the barrier floor are Dragon Quest I's too: it has the very
 things). The heroes are Dragon Quest III's classes as they walk in its party: Ragnar its soldier, Alena
-its fighter, Cristo its priest, Brey its mage. The caves' rock is Dragon
+its fighter, Cristo its priest, Brey its mage, Taloon its merchant. The scenes pass only some thirty
+of Dragon Quest III's characters, so the others are drawn by the game itself where `extract.py` asks
+for them (`DQ3_PEOPLE`: the dog, the cat, the horse, the slime, the nun, the wizard, the man in the
+striped shirt, a flame, a boulder, ...): in a copy of the ROM, deleted again afterwards, the people
+on the ground floor of Luisa's Place are given a character's number and the four facings, and the
+floor is loaded from the first scene's state upstairs. `sfcfig.py buildn` cuts those captures into
+`dq3_people.figs`, a set per number with all eight pictures, whatever size the game draws it
+(a map file names the set by the number in decimal: `dq3n:g90` is the dog). The caves' rock is Dragon
 Quest III's boulder wall in each cave's own color, and the tower's walls its dressed stone. Where the right thing
 exists only in another place's colors, the map file tones it (`gray`, `dark`, `hue`): Dragon Quest
 III's round towers, gate and braziers stand in the brick's grey on Burland's castle front.

@@ -19,6 +19,7 @@ nes k14 ../../../generated/sfc/nes_k14.json
 nes k17 ../../../generated/sfc/nes_k17.json
 figs dq3 ../../../generated/sfc/dq3.figs
 figs dq3p ../../../generated/sfc/dq3_party.figs
+figs dq3n ../../../generated/sfc/dq3_people.figs
 people ch3 ../../../generated/sfc/nes_people_ch3.json
 
 # ---- fields, a stone bridge, a ruin's rock ----
@@ -115,3 +116,15 @@ cast ch3:c3_18_00:0 dq3p:g10 poses 0,1,2,3,4,5,6,7 colors D6DEDE>E84030@0-8+,524
 cast ch3:c3_18_01:0 dq3p:g10 poses 0,1,2,3,4,5,6,7 colors D6DEDE>E84030@0-8+,524A52>8C1818@0-8+,8C73DE>B82828@0-8+
 cast ch3:c3_06_00:9 dq3:g18 poses 0,1,0,1,0,1,0,1 # a boy
 cast ch3:c3_18_00:6 dq3:g18 poses 0,1,0,1,0,1,0,1
+# Characters the scenes do not pass, drawn by Dragon Quest III itself by their numbers (dq3_people.figs; the set's
+# number is the game's own, in decimal: extract.py DQ3_PEOPLE).
+cast ch3:c3_16_00:4 dq3n:g90 poses 0,1,2,3,4,5,6,7 # the dog
+cast ch3:c3_0F_00:9 dq3n:g90 poses 0,1,2,3,4,5,6,7
+cast ch3:c3_0F_00:8 dq3n:g73 poses 0,1,2,3,4,5,6,7 # the man in the striped shirt
+cast ch3:c3_0F_01:8 dq3n:g73 poses 0,1,2,3,4,5,6,7
+cast ch3:c3_05_00:4 dq3n:g73 poses 0,1,2,3,4,5,6,7
+cast ch3:c3_0F_01:5 dq3n:g71 poses 0,1,2,3,4,5,6,7 # the old woman in her hood: the old woman in blue
+cast ch3:c3_06_00:11 dq3n:g78 poses 0,1,2,3,4,5,6,7 # the sister: the nun
+cast ch3:c3_18_00:9 dq3n:g76 poses 0,1,2,3,4,5,6,7 # the bald old man with the staff
+cast ch3:c3_18_01:5 dq3n:g76 poses 0,1,2,3,4,5,6,7
+cast ch3:c3_14_01:4 dq3n:g76 poses 0,1,2,3,4,5,6,7

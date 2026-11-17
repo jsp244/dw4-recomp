@@ -9,7 +9,8 @@ What it does, step by step (everything it writes is under generated/sfc, which g
  1. runs both Super Famicom games without a window (build/sfc-capture: `make sfc-capture`), pressing the
     buttons the scripts in tools/sfc/scenes name, and saves the machine's memory at the frames they list;
  2. cuts those captures into libraries: the 16x16 map squares (sfclib.py) and the people (sfcfig.py); Dragon
-    Quest III's overworld squares are read straight from its ROM;
+    Quest III's overworld squares are read straight from its ROM. Characters of Dragon Quest III that the scenes
+    do not pass (its dog, its cat, its horse, ...) the game is asked to draw by their numbers: see DQ3_PEOPLE;
  3. runs Dragon Warrior IV (build/nes-headless-recomp) to the maps the textures cover and lists their squares
     and people (nesmap.py), also with the "Graphical Uncensoring" hack if its file is given: it changes a few.
     A short script plays to Burland; the chapter's other maps are loaded from there without playing to them
@@ -49,6 +50,29 @@ DQ1_OVERWORLD = ["w1_%03d" % i for i in (34, 35, 36, 40, 41, 42, 43, 44)]
 # --holds) and the battles are fought by pressing A; from the cave's east end on it also keeps the game's count of
 # steps to the next battle up, and there are none.
 DQ3_SKIP = {"c_000", "c_047", "h_015"}          # (pictures between two maps: black)
+# Dragon Quest III's people by their numbers. The towns the scripts walk through show only some thirty of the game's
+# characters. But the game has a record of twelve bytes for every person of every map (in the ROM from $0808D4, the
+# records numbered through all maps): the character is bits 6-13 of the word at +6, the way it faces bits 14-15
+# (0 up, 1 right, 2 down, 3 left). So the game is asked to draw the others: in a copy of the ROM the four people on
+# the ground floor of Luisa's Place (DQ3_RECORDS) are given a wanted character's number and the four facings, the
+# first scene's state upstairs there is loaded (DQ3_UPSTAIRS: the frame of scenes/dq3.keys at which the hero stands
+# in the registry, the last companion entered) and he walks down the stairs (scenes/dq3_people.keys), which
+# loads the floor: the character stands there in its own colors, walking on the spot, and two captures sixteen
+# frames apart have both steps. A second run turns the one behind the counter left. The copy is deleted again.
+DQ3_UPSTAIRS = 102762
+DQ3_RECORDS = (0x082AD0, 0x082ADC, 0x082AE8, 0x082B0C)
+DQ3_FACINGS = (("", (0, 1, 2, 3)), ("L", (3, 0, 1, 2)))
+# number: who (the map files name a set by the number in decimal: dq3n:g90 is the dog). The game has more; add a
+# number here and its captures are made on the next run, also with --keep-captures.
+DQ3_PEOPLE = {
+    0x1C: "the striped cat", 0x22: "a dwarf", 0x23: "a winged demon", 0x24: "a slime", 0x36: "an old woman in brown",
+    0x45: "a stout merchant", 0x47: "an old woman in blue", 0x48: "a townsman", 0x49: "a man in a striped shirt",
+    0x4A: "a bandit in green", 0x4B: "a bearded ruffian", 0x4C: "a bald old man with a beard", 0x4D: "a king in red",
+    0x4E: "a nun", 0x4F: "a woman in a white bonnet", 0x50: "a dancer", 0x52: "a bunny girl", 0x54: "a wizard with a staff",
+    0x55: "an elf", 0x56: "a dwarf in a pointed cap", 0x59: "a cat", 0x5A: "a dog", 0x5B: "a horse", 0x5C: "a skeleton",
+    0x5D: "a gargoyle", 0x5E: "a slime", 0x5F: "a sailor", 0x73: "a white horse", 0x74: "a king", 0x76: "a pirate",
+    0x78: "a flame", 0x79: "a green flame", 0x7A: "a boulder", 0x95: "a priest in a mitre", 0x96: "a bald old man in white",
+}
 
 
 def dq3_sets(names):
@@ -187,6 +211,7 @@ def main():
              "--captures", os.path.join(scenes, "dq12.captures"), cap])
         run([capture, a.dq3, "--frames", "1001", "--capture", "1000", os.path.join(cap, "dq3_overworld")])   # its opening shows the overworld
     names = []
+    upstairs = os.path.join(cap, "dq3_upstairs.state")
     for scene in ("dq3", "dq3_front", "dq3_cave"):
         lines = [ln.split() for ln in open(os.path.join(scenes, scene + ".captures")) if ln.strip()]
         names += [ln[1] for ln in lines]
@@ -194,8 +219,37 @@ def main():
             continue
         print("   Dragon Quest III, %s: %d frames (a few minutes)" % (scene, int(lines[-1][0]) + 1), flush=True)
         holds = os.path.join(scenes, scene + ".holds")      # (the cave's script keeps the hero's hit points up)
-        run([capture, a.dq3, "--frames", str(int(lines[-1][0]) + 1), "--keys", os.path.join(scenes, scene + ".keys"),
-             "--captures", os.path.join(scenes, scene + ".captures"), cap] + (["--holds", holds] if os.path.exists(holds) else []))
+        cmd = [capture, a.dq3, "--keys", os.path.join(scenes, scene + ".keys"),
+               "--captures", os.path.join(scenes, scene + ".captures"), cap] + (["--holds", holds] if os.path.exists(holds) else [])
+        if scene == "dq3":          # (in two parts: the state between them is where the people by number are drawn from)
+            run(cmd + ["--frames", str(DQ3_UPSTAIRS), "--state-save", upstairs])
+            cmd += ["--state-load", upstairs, "--start", str(DQ3_UPSTAIRS)]
+        run(cmd + ["--frames", str(int(lines[-1][0]) + 1)])
+    # Dragon Quest III's people by number (DQ3_PEOPLE): whoever has no captures yet is drawn by the game now
+    people = ["n%02X%s_%s" % (n, tag, step) for n in sorted(DQ3_PEOPLE) for tag, _ in DQ3_FACINGS for step in "ab"]
+    todo = [n for n in sorted(DQ3_PEOPLE) if not all(os.path.exists(os.path.join(cap, "n%02X%s_%s.regs" % (n, tag, step)))
+                                                     for tag, _ in DQ3_FACINGS for step in "ab")]
+    if todo:
+        print("   Dragon Quest III, %d of its people by number" % len(todo), flush=True)
+        if not os.path.exists(upstairs):            # (captures kept from before there was this step)
+            run([capture, a.dq3, "--keys", os.path.join(scenes, "dq3.keys"), "--frames", str(DQ3_UPSTAIRS), "--state-save", upstairs])
+        rom3 = open(a.dq3, "rb").read()
+        head = 512 if len(rom3) % 0x8000 == 512 else 0
+        copy = os.path.join(cap, "people.sfc")
+        for n in todo:
+            for tag, facings in DQ3_FACINGS:
+                changed = bytearray(rom3)
+                for at, facing in zip(DQ3_RECORDS, facings):
+                    w = changed[head + at + 6] | (changed[head + at + 7] << 8)
+                    w = (w & 0x003F) | (n << 6) | (facing << 14)
+                    changed[head + at + 6], changed[head + at + 7] = w & 255, w >> 8
+                open(copy, "wb").write(changed)
+                try:
+                    run([capture, copy, "--keys", os.path.join(scenes, "dq3_people.keys"), "--state-load", upstairs, "--frames", "340",
+                         "--capture", "323", os.path.join(cap, "n%02X%s_a" % (n, tag)),
+                         "--capture", "339", os.path.join(cap, "n%02X%s_b" % (n, tag))])
+                finally:
+                    os.remove(copy)
 
     print("2. the libraries")
     py("sfclib.py", "build", os.path.join(gen, "dq1_castle.sfclib"), *["%s=%s" % (n, os.path.join(cap, n)) for n in DQ1_CASTLE])
@@ -211,6 +265,8 @@ def main():
     # the hero and his companions (the end of the first scene: Luisa's Place), a set for each class
     py("sfcfig.py", "build3p", os.path.join(gen, "dq3_party.figs"), a.dq3,
        *["%s=%s" % (n, os.path.join(cap, n)) for n in sorted(n for n in names if n.startswith("y_"))])
+    # and the people the game drew by their numbers, a set for each number
+    py("sfcfig.py", "buildn", os.path.join(gen, "dq3_people.figs"), *["%s=%s" % (n, os.path.join(cap, n)) for n in people])
 
     print("3. Dragon Warrior IV's maps")
     script = os.path.join(scenes, "dw4_chapter1.input")

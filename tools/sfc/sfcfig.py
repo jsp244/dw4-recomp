@@ -17,11 +17,19 @@ build3p keeps only those, a set per block (its number is the block's), a set's p
 the ROM. A picture may borrow a tile from another's (a woman's from the man's): most of its tiles say whose it is. Companions
 walking in a column overlap on the screen, so there a figure's six sprites are those nearest it in the sprite
 list.
+Any other character of Dragon Quest III (the cat, the dog, the horse, the old woman, the slime: the game has some
+150) is drawn by the game itself where extract.py asks for it: in a copy of the ROM the people on the ground floor
+of Luisa's Place are given that character's number and the four facings, and the floor is loaded. buildn cuts
+those captures: a set per character (its number is the game's), its pictures up, up, right, right, down, down,
+left, left (the two steps of each facing), whatever size the game draws it.
 
 usage:
     sfcfig.py build LIB.figs NAME=CAPTURE...
     sfcfig.py build3 LIB.figs DQ3.sfc NAME=CAPTURE...   Dragon Quest III's
     sfcfig.py build3p LIB.figs DQ3.sfc NAME=CAPTURE...  Dragon Quest III's party: the hero and his companions
+    sfcfig.py buildn LIB.figs NAME=CAPTURE...           Dragon Quest III's people by number (NAME: nXX_a, nXX_b,
+                                                        nXXL_a, nXXL_b: number XX in hex, the two steps, L =
+                                                        the run that turns the first of them left)
     sfcfig.py sheet LIB.figs OUT.png
 The library holds the games' art: it stays with your own copies (generated/ is git-ignored).
 """
@@ -186,10 +194,96 @@ def build3(lib_path, rom_path, named, party=False):
     print("%s: %d figures of %d characters from %d captures" % (lib_path, len(figs), len(groups), len(named)))
 
 
+# Where the people of Luisa's ground floor stand on the screen when the hero has come down the stairs (the corner of
+# a 16x24 picture), and the first picture of the facing each run turns them to: the one behind the counter, the one
+# in the middle of the room, the one on the carpet. The hero himself stands at HERO_AT.
+SPOTS = {"": (((24, 112), 0), ((80, 96), 2), ((24, 192), 4)), "L": (((24, 112), 6),)}
+HERO_AT = (120, 96)
+OBJ_SIZES = {0: (8, 16), 1: (8, 32), 2: (8, 64), 3: (16, 32), 4: (16, 64), 5: (32, 64)}
+
+
+def buildn(lib_path, named):
+    figs, lacking = [], set()
+    for item in named:
+        name, path = item.split("=", 1)
+        number, run, step = int(name[1:3], 16), name[3:-2], "ab".index(name[-1])
+        d = Dump(path)
+        small, big = OBJ_SIZES.get(d.regs.get("objSize", 0), (8, 16))
+        spr = []
+        for i in range(128):
+            x, y, t, a = d.oam[i * 4:i * 4 + 4]
+            hb = (d.hoam[i >> 2] >> ((i & 3) * 2)) & 3
+            size = big if hb >> 1 else small
+            if hb & 1:
+                x -= 256
+            if y >= 224 or x + size <= 0:
+                continue                        # not on the screen
+            if HERO_AT[0] <= x < HERO_AT[0] + 16 and HERO_AT[1] <= y < HERO_AT[1] + 24:
+                continue                        # the hero
+            spr.append((i, x, y, size, t | ((a & 1) << 8), (a >> 1) & 7, (a >> 6) & 1, a >> 7))
+        for (sx, sy), pose in SPOTS[run]:
+            # the sprites of the one who stands there: those over the spot and those touching them
+            mine = [s for s in spr if s[1] < sx + 16 and s[1] + s[3] > sx and s[2] < sy + 24 and s[2] + s[3] > sy]
+            grew = bool(mine)
+            while grew:
+                grew = False
+                for s in spr:
+                    if s in mine or abs(s[1] + s[3] / 2 - sx - 8) > 40 or abs(s[2] + s[3] / 2 - sy - 12) > 40:
+                        continue
+                    if any(s[1] <= m[1] + m[3] and m[1] <= s[1] + s[3] and s[2] <= m[2] + m[3] and m[2] <= s[2] + s[3] for m in mine):
+                        mine.append(s)
+                        grew = True
+            if not mine:
+                lacking.add(number)
+                continue
+            # a picture as wide to the left of the spot's middle as to the right, down to the spot's foot
+            ext = max(0, sx - min(s[1] for s in mine), max(s[1] + s[3] for s in mine) - sx - 16)
+            left, w = sx - ext, 16 + 2 * ext
+            top = min(sy, min(s[2] for s in mine))
+            h = max(sy + 24, max(s[2] + s[3] for s in mine)) - top
+            px = [0] * (w * h)
+            for i, x, y, size, t, pal, hf, vf in sorted(mine, reverse=True):       # (the first in the list lies on top)
+                for q in range((size // 8) ** 2):
+                    qx, qy = q % (size // 8), q // (size // 8)
+                    n = (t & 0x100) | ((t + qy * 16) & 0xF0) | ((t + qx) & 0x0F)
+                    base = d.regs["objTileAdr1"] if n < 256 else d.regs["objTileAdr2"]
+                    tp = d.tile_pixels(base, n & 255, 4)
+                    for yy in range(8):
+                        for xx in range(8):
+                            v = tp[yy][xx]
+                            if not v:
+                                continue
+                            u, r = qx * 8 + xx, qy * 8 + yy
+                            if hf:
+                                u = size - 1 - u
+                            if vf:
+                                r = size - 1 - r
+                            if 0 <= x + u - left < w and 0 <= y + r - top < h:
+                                px[(y + r - top) * w + x + u - left] = argb(d.cg[128 + pal * 16 + v])
+            if not any(px):
+                lacking.add(number)
+                continue
+            while h > 1 and not any(px[:w]):                                        # empty rows above it
+                px, h = px[w:], h - 1
+            while w > 2 and not any(px[k * w] or px[k * w + w - 1] for k in range(h)):   # and columns, both sides alike
+                px = [p for k in range(h) for p in px[k * w + 1:k * w + w - 1]]
+                w -= 2
+            figs.append({"px": tuple(px), "w": w, "h": h, "from": name, "group": number, "pose": pose + step})
+    figs.sort(key=lambda e: (e["group"], e["pose"]))
+    with open(lib_path, "wb") as f:
+        pickle.dump(figs, f)
+    groups = sorted(set(e["group"] for e in figs))
+    short = [g for g in groups if sum(1 for e in figs if e["group"] == g) < 8]
+    print("%s: %d figures of %d characters from %d captures%s%s" % (
+        lib_path, len(figs), len(groups), len(named),
+        "; not all eight pictures of %s" % ", ".join("%02X" % g for g in short) if short else "",
+        "; nothing drawn of %s" % ", ".join("%02X" % g for g in sorted(lacking - set(groups))) if lacking - set(groups) else ""))
+
+
 def sheet(lib_path, out):
     from PIL import Image, ImageDraw
     figs = pickle.load(open(lib_path, "rb"))
-    cols, size = 12, 54
+    cols, size = 12, max(54, max(e["w"] for e in figs) * 3 + 6)
     tall = max(e["h"] for e in figs) * 3 + 6
     im = Image.new("RGB", (cols * size, ((len(figs) + cols - 1) // cols) * (tall + 10)), (70, 70, 90))
     dr = ImageDraw.Draw(im)
@@ -213,6 +307,8 @@ def main():
         build3(a[2], a[3], a[4:])
     elif len(a) >= 5 and a[1] == "build3p":
         build3(a[2], a[3], a[4:], party=True)
+    elif len(a) >= 4 and a[1] == "buildn":
+        buildn(a[2], a[3:])
     elif len(a) == 4 and a[1] == "sheet":
         sheet(a[2], a[3])
     else:

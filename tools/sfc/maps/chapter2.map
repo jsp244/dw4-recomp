@@ -30,6 +30,7 @@ nes k2D ../../../generated/sfc/nes_k2D.json
 lib dq3f ../../../generated/sfc/dq3_front.sfclib
 figs dq3 ../../../generated/sfc/dq3.figs
 figs dq3p ../../../generated/sfc/dq3_party.figs
+figs dq3n ../../../generated/sfc/dq3_people.figs
 people ch2 ../../../generated/sfc/nes_people_ch2.json
 
 # ---- Santeem's castle ($0D), its upper floors ($09) ----
@@ -300,3 +301,10 @@ cast ch2:c2_04_07:9 dq3:g15 poses 0,1,m3,m4,3,4,3,4
 cast ch2:c2_04_0B:5 dq3:g0 poses 0,1,0,1,0,1,0,1 # the traveler
 cast ch2:c2_13_00:8 dq3:g0 poses 0,1,0,1,0,1,0,1
 cast ch2:c2_1F_00:5 dq3:g0 poses 0,1,0,1,0,1,0,1
+
+# Characters the scenes do not pass, drawn by Dragon Quest III itself by their numbers (dq3_people.figs; the set's
+# number is the game's own, in decimal: extract.py DQ3_PEOPLE).
+cast ch2:c2_01_01:6 dq3n:g89 poses 0,1,2,3,4,5,6,7 # the cat
+cast ch2:c2_0C_00:5 dq3n:g115 poses 0,1,2,3,4,5,6,7 hue 80-170>24 # the horse: the white one, its green mane brown
+cast ch2:c2_3F_00:4 dq3n:g85 poses 0,1,2,3,4,5,6,7 # the elf
+cast ch2:c2_04_07:11 dq3n:g94 poses 0,1,2,3,4,5,6,7 hue 235-300>228 # the slime, blue as this game has it
