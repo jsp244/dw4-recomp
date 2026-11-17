@@ -189,7 +189,7 @@ Textures: SNES Remaster draws the map and the people on it with the art of the S
 Famicom Dragon Quest games. That art does not come with the program: the choice appears
 when a pack of it, sfc.pak, lies in the program's folder (Android:
 Android/data/<package>/files). The pack is built from your own dump of Dragon Quest III
-(Japan, Super Famicom) with the tools in the source (tools/sfc/README.md). It covers the places of chapters 1 to 3 and the towns of chapter 4 so far; whatever it has
+(Japan, Super Famicom) with the tools in the source (tools/sfc/README.md). It covers the places of chapters 1 to 4 so far; whatever it has
 no art for, and the windows, the text and the battles, look as they do with Pixel
 Remaster.
 

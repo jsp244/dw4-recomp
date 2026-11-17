@@ -1,4 +1,4 @@
-# Chapter 4: Monbaraba, Kievs, Haville with its ship, Keeleon's castle, and the cave west of Kievs.
+# Chapter 4: Monbaraba, Kievs, Aktemto and its mine, Haville with its ship, Keeleon's castle, the cave west of Kievs.
 # Nearly all their squares are the earlier chapters'; this file pairs the towns' few new ones and casts the sisters.
 
 lib dq3t ../../../generated/sfc/dq3_town.sfclib
@@ -15,6 +15,7 @@ nes k08 ../../../generated/sfc/nes_k08.json
 nes k09 ../../../generated/sfc/nes_k09.json
 nes k0B ../../../generated/sfc/nes_k0B.json
 nes k2C ../../../generated/sfc/nes_k2C.json
+nes k10 ../../../generated/sfc/nes_k10.json
 nes k16 ../../../generated/sfc/nes_k16.json
 nes k2F ../../../generated/sfc/nes_k2F.json
 nes rooms ../../../generated/sfc/nes_rooms.json
@@ -56,6 +57,23 @@ sq k16:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 56:52 dark 34 here # th
 sq k16:B5B4419A63FD7B01 =k16:DE5FEDC9DD4DEAE6 over dq3v:ecf9c237.hi here # treasure chest
 sq k16:A7539FEF8615D765 ~dq3w:efc08409 gray 85 here # the stone bridge: its deck and rail
 sq k16:D41B16899989449B ~dq3w:efc08409 gray 85 here # its arches
+
+# ---- Aktemto's mine (place $2D, its upper levels: kind $10) ----
+# Rock and floor are the caves' (chapter 1), in the olive this mine has: the earth floor gets a line of its own
+# here, as in every cave (the game's tint of the shared one turns it green). The timbering, the heaps of ore, the
+# ladder and the cask keep their NES shapes in Dragon Quest III's wood and rock.
+sq k10:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 56:52 dark 34 here # the floor
+sq k10:B5B4419A63FD7B01 =k10:DE5FEDC9DD4DEAE6 over dq3v:ecf9c237.hi here # treasure chest
+sq k10:F0943D0420DFE56E dq3t:30f34ccc tint 55:45 dark 45 here # the rock's face, in shadow
+sq k10:6133FC8375682B54 dq3t:30f34ccc tint 55:45 dark 45 here
+sq k10:57352E8081AEE208 ~dq3h:bc978def dark 35 here # the timbering: planks
+sq k10:E512AEBBC41F08AC ~dq3h:bc978def dark 35 here # and posts
+sq k10:3D2A2C4C96A3DDA8 ~dq3h:bc978def dark 35 here
+sq k10:16AF477027AC1311 =k10:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 1e tint 45:45 here # a heap of ore
+sq k10:95675832C93898AD =k10:DE5FEDC9DD4DEAE6 over ~dq3t:316d8b20 clear 1e here # a ladder
+sq k10:E8DFD8208E7DFEAA =k10:DE5FEDC9DD4DEAE6 over ~dq3t:316d8b20 clear 1e here # a cask
+sq k10:51D4A7A78919EEED =k10:DE5FEDC9DD4DEAE6 over dq3c:75608358.hi here # the stone table
+sq k10:E70AE1749FF8DFD6 =k10:DE5FEDC9DD4DEAE6 over ~dq3c:75608358 clear 1e here # and its stone seats
 
 # ---- the ship in Haville's harbour (kind $2F) ----
 # Dragon Quest III has no ship's deck. The deck is its plank floor (the rooms' wooden floor, as the NES has it too),

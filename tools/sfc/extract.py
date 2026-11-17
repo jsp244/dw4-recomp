@@ -165,8 +165,9 @@ CH4_STEPS = [
     ("40:DOWN;90:-;195:DOWN;320:-",
      ["20-24:44:07", "20-24:45:11", "70-75:63:02", "70-75:64:02", "180-184:44:10", "180-184:45:23"], 214),
 ]
-# Monbaraba, Kievs, the cave west of it, Haville, Aktemto and its mine, Keeleon's castle
-CH4_PLACES = [(0x15, 4), (0x17, 2), (0x31, 5), (0x0A, 1), (0x11, 6), (0x00, 5)]
+# Monbaraba, Kievs, the cave west of it, Aktemto, Haville with its ship, Keeleon's castle, Aktemto's mine (the upper
+# five levels of place $2D, which no icon of the overworld leads to: it is entered from the town)
+CH4_PLACES = [(0x15, 4), (0x17, 2), (0x31, 5), (0x0A, 1), (0x11, 6), (0x00, 5), (0x2D, 5)]
 
 # A map is dumped at several moments: the game moves water by redrawing tiles, so a fountain is another square at
 # another moment (eight steps of 16 frames). The dumps whose tiles differ are kept.

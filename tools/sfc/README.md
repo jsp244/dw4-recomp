@@ -74,7 +74,8 @@ doors, the casino's slot machines.
 `maps/chapter1.map` pairs Burland, Izmit and the places between them; `maps/chapter2.map` what
 Santeem, Surene, Tempe, Frenor, the Birdsong Tower, the shrine of the travel door and Endor add;
 `maps/chapter3.map` Lakanaba, Foxville, Bonmalmo and the two caves near them; `maps/chapter4.map`
-Monbaraba with its theater, Kievs, Haville and Keeleon's castle
+Monbaraba with its theater, Kievs, the cave west of it, Aktemto and its mine, Haville with its ship
+and Keeleon's castle
 (a line for any kind of map serves every place that has the square). `scenes/dw4_places.txt`
 lists every place of the game; `extract.py` dumps them all and writes one inventory for each kind
 of map (`generated/sfc/nes_kXX.json`). (A level can be two maps side by side, the second loaded as the
