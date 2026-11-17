@@ -297,9 +297,9 @@ sq ow:BA49B9EB07364D4C dq3ow:734132f6+dq3ow:8efbdac0+dq3ow:38e4b17b+dq3ow:354185
 # ---- the people (Dragon Quest III's, 16x24) ----
 # pictures of a set: up, up, right, right, down, down, left, left ("m" = mirrored)
 # The player's soldier has no picture of his own in these games: the castle soldier, his blue turned to rose.
-cast people:castle:0 dq3p:g1 poses 0,1,2,3,4,5,6,7 # Ragnar: Dragon Quest III's soldier as he walks in its hero's party (dq3_party.figs)
-cast people:town:0 dq3p:g1 poses 0,1,2,3,4,5,6,7
-cast people:overworld:0 dq3p:g1 poses 0,1,2,3,4,5,6,7
+cast people:castle:0 dq3p:g2 poses 0,1,2,3,4,5,6,7 # Ragnar: Dragon Quest III's soldier as he walks in its hero's party (dq3_party.figs)
+cast people:town:0 dq3p:g2 poses 0,1,2,3,4,5,6,7
+cast people:overworld:0 dq3p:g2 poses 0,1,2,3,4,5,6,7
 # the castle
 cast people:castle:4 dq3:g6 poses 0,1,m2,m2,0,1,2,2 # woman
 cast people:castle:5 dq3:g9 poses 4,5,2,3,6,7,0,1 hue 200-260>355 # the king's guard: the soldier in red

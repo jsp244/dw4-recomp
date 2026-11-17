@@ -38,7 +38,9 @@ DQ1_OVERWORLD = ["w1_%03d" % i for i in (34, 35, 36, 40, 41, 42, 43, 44)]
 # last scene to Aliahan, the king's audience and three long walks through the town: about 91,000 frames; then
 # to Luisa's Place there, where a soldier, a fighter, a priest and a mage are entered in the register upstairs and
 # called to the party at the counter (a ready-made soldier and priest first, the soldier later left for the
-# mage), and the party walks in the four directions for its pictures (captures y_*): 16,700 frames more.
+# mage), and the party walks in the four directions for its pictures (captures y_*): 16,700 frames more; then a
+# merchant and a female priest are registered, the three companions left, and those two called with the ready-made
+# female mage, for the same walk: 7,600 frames more.
 # scenes/dq3_cave goes on from the town: out of its south gate, over the bridge to the cape, into the cave there
 # (captures v_*: its rock, its floor, its stairs and its treasure chests), up the stairs at the cave's east end into
 # the passages under the tower on the island (w_*) and up into the tower's ground floor (x_*: its stone floors
@@ -103,6 +105,15 @@ CH2_STEPS = [
 # chapter 2's places and how many levels each has (the game's numbers, as in scenes/dw4_places.txt): Santeem castle,
 # Surene, Tempe, Frenor, the desert Bazaar, the shrines of the travel doors, the Birdsong Tower, Endor
 CH2_PLACES = [(0x01, 3), (0x13, 5), (0x0E, 1), (0x19, 3), (0x0C, 1), (0x1D, 1), (0x1E, 1), (0x1F, 1), (0x3F, 6), (0x04, 15)]
+
+# Chapter 3's people. Its opening is run the same way (the number 2 held): Taloon lies in his bed in Lakanaba when the
+# opening's words are over, his pictures loaded (the scene does not go on from there in this run, so he is not
+# walked anywhere: the map is dumped as it stands). Its townspeople are in the places' lists when the chapter's
+# number is held while chapter 2's party, at the door, has a place loaded.
+CH3_OPENING = ("1600:START;1606:-;1910:A;1916:-;2120:A;2126:-;2330:A;2336:-;"
+               + ";".join("%d:A;%d:-" % (t, t + 6) for t in range(2600, 4001, 200)), 4300)
+# Lakanaba, Foxville, Bonmalmo, the castle on the way to Endor, two villages, Endor's castle and casino
+CH3_PLACES = [(0x16, 3), (0x0F, 2), (0x06, 4), (0x05, 2), (0x18, 2), (0x14, 3), (0x04, 2)]
 
 # A map is dumped at several moments: the game moves water by redrawing tiles, so a fountain is another square at
 # another moment (eight steps of 16 frames). The dumps whose tiles differ are kept.
@@ -260,6 +271,16 @@ def main():
             run(game + ["--state-load", state, "--keys", "0:DOWN;55:-", "--poke", "5-21:63:%02X" % place,
                         "--poke", "9-21:64:%02X" % level, "--frames", "115", "--map-dump", dumps[-1], "--quiet"])
     py("nesmap.py", "figures", os.path.join(gen, "nes_people_ch2"), *dumps)
+    # chapter 3's people (CH3_OPENING, CH3_PLACES)
+    dumps = [os.path.join(gen, "c3_start.map")]
+    run(game + ["--sav", sav, "--keys", CH3_OPENING[0], "--poke", "2130-%d:615A:02" % CH3_OPENING[1],
+                "--frames", str(CH3_OPENING[1]), "--map-dump", dumps[0], "--quiet"])
+    for place, levels in CH3_PLACES:
+        for level in range(levels):
+            dumps.append(os.path.join(gen, "c3_%02X_%02X.map" % (place, level)))
+            run(game + ["--state-load", state, "--keys", "0:DOWN;55:-", "--poke", "0-200:615A:02", "--poke", "5-21:63:%02X" % place,
+                        "--poke", "9-21:64:%02X" % level, "--frames", "115", "--map-dump", dumps[-1], "--quiet"])
+    py("nesmap.py", "figures", os.path.join(gen, "nes_people_ch3"), *dumps)
     os.remove(sav)
     os.remove(state)
 

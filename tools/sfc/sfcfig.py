@@ -11,8 +11,10 @@ as one run from the ROM, where they lie uncompressed; which six make a picture i
 so it keeps every different picture the captures show, the characters told apart by where their tiles lie in
 the ROM. Which picture is which facing and step is then said in the map file (pack.py: cast ... poses).
 The party (the hero and the companions behind him) has its tiles loaded picture by picture, from one block of
-the ROM per class and sex ($C40 bytes each from $0E0000: the hero, the soldier, ...): build3p keeps only those,
-a set per block (its number is the block's), a set's pictures in the order they lie in the ROM. Companions
+the ROM per class and sex ($600 bytes each from $0E00E0, a class's man and then its woman: 0 the hero, 2 the
+soldier, 4 the priest, 5 the female priest, 6 the mage, 7 the female mage, 9 the female fighter, 10 the merchant):
+build3p keeps only those, a set per block (its number is the block's), a set's pictures in the order they lie in
+the ROM. A picture may borrow a tile from another's (a woman's from the man's): most of its tiles say whose it is. Companions
 walking in a column overlap on the screen, so there a figure's six sprites are those nearest it in the sprite
 list.
 
@@ -81,7 +83,7 @@ def build(lib_path, named):
     print("%s: %d figures in %d sets from %d captures" % (lib_path, len(figs), len(sets), len(named)))
 
 
-PARTY_AT, PARTY_END, PARTY_BLOCK = 0x0E0000, 0x0F0000, 0xC40
+PARTY_AT, PARTY_END, PARTY_BLOCK = 0x0E00E0, 0x0F0000, 0x600
 
 
 def build3(lib_path, rom_path, named, party=False):
@@ -147,8 +149,10 @@ def build3(lib_path, rom_path, named, party=False):
                 if not PARTY_AT <= min(offs) < PARTY_END:
                     continue
                 seen.add(px)
-                figs.append({"px": px, "w": 16, "h": 24, "from": name, "group": (min(offs) - PARTY_AT) // PARTY_BLOCK,
-                             "pose": 0, "rom": min(offs), "roms": tuple(offs)})
+                blocks = [(o - PARTY_AT) // PARTY_BLOCK for o in offs]
+                whose = max(set(blocks), key=lambda b: (blocks.count(b), b))
+                figs.append({"px": px, "w": 16, "h": 24, "from": name, "group": whose, "pose": 0,
+                             "rom": min(o for o, b in zip(offs, blocks) if b == whose), "roms": tuple(offs)})
                 continue
             seen.add(px)
             # the character: the run of tiles this picture's first tile was loaded with (the game copies a

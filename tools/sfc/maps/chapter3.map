@@ -7,6 +7,9 @@ nes town ../../../generated/sfc/nes_town.json
 nes k04 ../../../generated/sfc/nes_k04.json
 nes k05 ../../../generated/sfc/nes_k05.json
 nes k07 ../../../generated/sfc/nes_k07.json
+figs dq3 ../../../generated/sfc/dq3.figs
+figs dq3p ../../../generated/sfc/dq3_party.figs
+people ch3 ../../../generated/sfc/nes_people_ch3.json
 
 # ---- fields, a stone bridge, a ruin's rock ----
 sq k04:7C3177D00A5275DD dq3t:b5d04690 rows 0-11,2-5 over ~dq3t:e911c8dc clear 2 dark 22 # a vegetable plot: the NES's plants in the grass's greens, on earth
@@ -15,3 +18,9 @@ sq k05:DF6FCE00417F10BF dq3t:a1e452fd basegray 60 over ~dq3t:a1e452fd clear 1,2,
 sq k07:DF6FCE00417F10BF dq3t:a1e452fd basegray 60 over ~dq3t:a1e452fd clear 1,2,3 gray 60
 sq k07:E04D5D809C9C26E1 dq3t:52d321d7 # a ruin's walls of rough rock: the boulder wall of Dragon Quest III's town
 sq k07:34421D9B8D4F3D79 dq3t:b1728a08
+
+# ---- chapter 3's people ----
+# Taloon is Dragon Quest III's merchant, as he walks in its hero's party (dq3_party.figs, set 10).
+cast ch3:c3_start:0 dq3p:g10 poses 0,1,2,3,4,5,6,7 # Taloon: the merchant
+cast ch3:c3_06_00:9 dq3:g18 poses 0,1,0,1,0,1,0,1 # a boy
+cast ch3:c3_18_00:6 dq3:g18 poses 0,1,0,1,0,1,0,1
