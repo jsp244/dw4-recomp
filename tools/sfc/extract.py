@@ -251,9 +251,10 @@ def main():
         if len(t) < 2:
             continue
         place, level = int(t[0], 16), int(t[1], 16)
-        dumps = moments(game + ["--state-load", state, "--keys", "0:DOWN;55:-",
-                                "--poke", "5-21:63:%02X" % place, "--poke", "9-21:64:%02X" % level], 115,
-                        os.path.join(gen, "p%02X_%02X" % (place, level)))
+        walk = t[2] if len(t) > 2 else ""       # a level in two parts: the game loads the second on the way there
+        dumps = moments(game + ["--state-load", state, "--keys", "0:DOWN;55:-" + (";130:%s;230:-" % walk if walk else ""),
+                                "--poke", "5-21:63:%02X" % place, "--poke", "9-21:64:%02X" % level], 260 if walk else 115,
+                        os.path.join(gen, "p%02X_%02X%s" % (place, level, "b" if walk else "")))
         kinds.setdefault(open(dumps[0], "rb").read()[KIND_AT], []).extend(dumps)
     for kind in sorted(kinds):
         py("nesmap.py", "squares", os.path.join(gen, "nes_k%02X" % kind), *kinds[kind])

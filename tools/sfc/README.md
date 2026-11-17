@@ -55,10 +55,12 @@ games have no picture of keeps its NES shape in their colors, laid over their re
 doors, the casino's slot machines.
 
 `maps/chapter1.map` pairs Burland, Izmit and the places between them; `maps/chapter2.map` what
-Santeem, Surene, Tempe, Frenor, the Birdsong Tower, the shrine of the travel door and Endor add
+Santeem, Surene, Tempe, Frenor, the Birdsong Tower, the shrine of the travel door and Endor add;
+`maps/chapter3.map` Lakanaba, Foxville, Bonmalmo and the two caves near them
 (a line for any kind of map serves every place that has the square). `scenes/dw4_places.txt`
 lists every place of the game; `extract.py` dumps them all and writes one inventory for each kind
-of map (`generated/sfc/nes_kXX.json`).
+of map (`generated/sfc/nes_kXX.json`). (A level can be two maps side by side, the second loaded as the
+player walks into it: a direction after the level's number has it dumped again from there.)
 
 ## Adding a map
 

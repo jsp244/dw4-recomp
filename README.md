@@ -113,8 +113,8 @@ whole by a square of that art, chosen to fit the material and the colors the NES
 the place. None of the art is in this repository or in the packages. `tools/sfc` takes it
 from your own dumps of Dragon Quest I & II and Dragon Quest III (Japan, Super Famicom) into
 a pack, `sfc.pak`; the choice is offered when that file lies beside the program
-(`tools/sfc/README.md` has the two commands). The pack covers the places of chapters 1 and
-2 so far, and grows place by place: a square or a person it has no art for is drawn as
+(`tools/sfc/README.md` has the two commands). The pack covers the places of chapters 1 to 3
+so far, and grows place by place: a square or a person it has no art for is drawn as
 Pixel Remaster draws it, and so are the windows, the text and the battles.
 
 ## Widescreen

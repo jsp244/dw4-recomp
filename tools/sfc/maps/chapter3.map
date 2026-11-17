@@ -1,12 +1,22 @@
-# Chapter 3: Lakanaba, Foxville, Bonmalmo and the places between them.
+# Chapter 3: Lakanaba, Foxville, Bonmalmo, the places between them and the two caves near them.
 # Nearly all their squares are chapter 1's and 2's (a line for any kind of map serves every place that has the
 # square); this file pairs the few that are new.
 
 lib dq3t ../../../generated/sfc/dq3_town.sfclib
+lib dq3c ../../../generated/sfc/dq3_castle.sfclib
+lib dq3h ../../../generated/sfc/dq3_house.sfclib
+lib dq3w ../../../generated/sfc/dq3_tower.sfclib
+lib dq3ow ../../../generated/sfc/dq3_ow.sfclib
+lib dq3v ../../../generated/sfc/dq3_cave.sfclib
+lib dq1 ../../../generated/sfc/dq1_castle.sfclib
 nes town ../../../generated/sfc/nes_town.json
 nes k04 ../../../generated/sfc/nes_k04.json
 nes k05 ../../../generated/sfc/nes_k05.json
 nes k07 ../../../generated/sfc/nes_k07.json
+nes tunnel ../../../generated/sfc/nes_tunnel.json
+nes k13 ../../../generated/sfc/nes_k13.json
+nes k14 ../../../generated/sfc/nes_k14.json
+nes k17 ../../../generated/sfc/nes_k17.json
 figs dq3 ../../../generated/sfc/dq3.figs
 figs dq3p ../../../generated/sfc/dq3_party.figs
 people ch3 ../../../generated/sfc/nes_people_ch3.json
@@ -18,6 +28,69 @@ sq k05:DF6FCE00417F10BF dq3t:a1e452fd basegray 60 over ~dq3t:a1e452fd clear 1,2,
 sq k07:DF6FCE00417F10BF dq3t:a1e452fd basegray 60 over ~dq3t:a1e452fd clear 1,2,3 gray 60
 sq k07:E04D5D809C9C26E1 dq3t:52d321d7 # a ruin's walls of rough rock: the boulder wall of Dragon Quest III's town
 sq k07:34421D9B8D4F3D79 dq3t:b1728a08
+
+# ---- the cave with the shrine (place $38: kind $14 its upper levels, $13 its lower ones) ----
+# The rock is chapter 1's: the boulder wall of Dragon Quest III's town, grey as it is, its foot in shadow; the
+# floor the same earth in this cave's olive. The shrine's raised floor, its statues and the seal keep their NES
+# shapes, in stone and gold.
+sq k14:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 56:52 dark 34 here # the floor
+sq k13:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 56:52 dark 34 here
+sq k14:B5B4419A63FD7B01 =k14:DE5FEDC9DD4DEAE6 over dq3v:ecf9c237.hi here # treasure chest
+sq k13:B5B4419A63FD7B01 =k13:DE5FEDC9DD4DEAE6 over dq3v:ecf9c237.hi here
+sq k14:8DA17CE1D99E0580 =k14:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi here # stairs up
+sq k13:8DA17CE1D99E0580 =k13:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi here
+sq k14:5598ED42178C6F2A dq3h:df287325 # the dark beyond the rock
+sq k14:0102087CEE1C3414 dq3t:52d321d7 # rock (two squares wide, three courses)
+sq k14:A11EE53E313AB5B8 dq3t:b1728a08
+sq k14:4119D62BCD4C9B5F dq3t:253e4373
+sq k14:0E62D8482FACF9D1 dq3t:33fcadf1
+sq k14:32C6A8BD2BB4D266 dq3t:30f34ccc dark 35 # its foot, in shadow
+sq k14:A66DDF1DADF1BE44 dq3t:30f34ccc dark 35
+sq k13:92655F065DFDFF53 dq3t:b5d04690 rows 0-11,2-5 dark 38 # the lower floor, brown
+sq k14:1E7E2AFAE5836627 =k14:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi dark 30 here # stairs down, in shadow
+sq k14:55F4E6581DE1E7D6 dq3t:aa6b8d51 # steps down into the water
+sq k14:475C2673DCD18162 dq3ow:3ac67643 dark 40 # and under it
+sq k14:E69206BD6A25E3E1 ~dq3w:1154c159 # the round seal in the wall
+sq k13:AC6DA39235CCC6AF =k13:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here # the raised floor's stepped edges
+sq k13:C733834240021D92 =k13:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k13:9C592FA605B80C52 =k13:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k13:B09ACBADF8291562 =k13:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k13:0F4E650E6DB5FB2A =k13:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k13:92E58AF09B196A8A =k13:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k13:1C732AC8C819D0FB =k13:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k13:D2AB2D1381210649 =k13:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k13:663B654F8C9EFCC8 =k13:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here # the steps up to it
+sq k13:1E7E2AFAE5836627 =k13:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi dark 30 here # the stairs down between the guardians
+sq k13:4D80CD4A70938942 =k13:DE5FEDC9DD4DEAE6 over ~dq3w:1154c159 clear 3 here # the stone guardian (two squares)
+sq k13:B440A3052453DEEB ~dq3w:1154c159
+sq k13:8ABBD618C3728D32 =k13:DE5FEDC9DD4DEAE6 over ~dq3t:316d8b20 clear 3 here # the golden demon (four squares)
+sq k13:10CDD317E44435F4 =k13:DE5FEDC9DD4DEAE6 over ~dq3t:316d8b20 clear 3 here
+sq k13:D6819CB4AEECBBE8 =k13:DE5FEDC9DD4DEAE6 over ~dq3t:316d8b20 clear 3 here
+sq k13:A7B5562AAD5FBA3F =k13:DE5FEDC9DD4DEAE6 over ~dq3t:316d8b20 clear 3 here
+
+# ---- the cave of red brick (place $32, kind $17) ----
+sq k17:569ABC7830F1E2D9 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 tint 15:62 dark 63 here # walls: Dragon Quest I's brick, in this place's dark red
+sq k17:1445BA8ED3C57659 dq1:7fe8dc4d rows 4,1-15 tint 8:68 dark 64 here
+sq k17:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 26:58 dark 28 here # the floor: the same earth, brown here
+sq k17:92655E065DFDFDA0 dq3t:b5d04690 rows 0-11,2-5 tint 22:58 dark 50 here # the walls' shadow on it
+sq k17:B5B4419A63FD7B01 =k17:DE5FEDC9DD4DEAE6 over dq3v:ecf9c237.hi here # treasure chest
+sq k17:1D55372BF296EA47 ~dq3t:84d1bc46 here # the patterned plate between the pillars (four squares)
+sq k17:C733844240021F45 =k17:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here # a raised floor's stepped edges
+sq k17:B09ACCADF8291715 =k17:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k17:9C5930A605B80E05 =k17:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k17:5233B08B0D3DD14E =k17:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k17:848ACE187E3CE2D2 =k17:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k17:1C7329C8C819CF48 =k17:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k17:AC6DA29235CCC4FC =k17:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here # (the vault's, in the level's second part)
+sq k17:481BD352A19C347A =k17:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k17:D2AB2C1381210496 =k17:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k17:9B378C11EE8A18C5 =k17:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here
+sq k17:663B684F8C9F01E1 =k17:DE5FEDC9DD4DEAE6 over ~dq3c:a4db257b clear 3 here # steps between two walls
+sq k17:8DA17DE1D99E0733 =k17:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi here # stairs
+sq k17:1E7E29FAE5836474 =k17:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi dark 30 here # stairs down
+sq k17:1F18EC89317DE12E =k17:DE5FEDC9DD4DEAE6 over ~dq3c:75608358 clear 3 here # a pillar of round stones (two squares)
+sq k17:5AE81AA94566FC16 =k17:DE5FEDC9DD4DEAE6 over ~dq3c:75608358 clear 3 here
+sq k17:B298A84F099436D7 =k17:DE5FEDC9DD4DEAE6 over ~dq3w:1154c159 clear 3 here # a figure of stone
 
 # ---- chapter 3's people ----
 # Taloon is Dragon Quest III's merchant, as he walks in its hero's party (dq3_party.figs, set 10); he is kind 0 of

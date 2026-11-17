@@ -1,6 +1,8 @@
 # Every place of Dragon Warrior IV and its levels, by the game's own numbers (hex): PLACE LEVEL   # kind of map
 # (found by having the game load each: a place's levels end where the game gives kind 3F). tools/sfc/extract.py
 # lists the squares of each for the inventories nes_kXX, one for every kind of map.
+# PLACE LEVEL DIRECTION: a level that is two maps side by side (the game loads the second as the player walks into
+# it). The level is dumped once more after walking that way from where it is entered: pPP_LLb.
 00 00   # kind 0B
 00 01   # kind 09
 00 02   # kind 09
@@ -155,6 +157,7 @@
 31 04   # kind 03
 32 00   # kind 17
 32 01   # kind 17
+32 01 DOWN   # its second part, with the vault
 33 00   # kind 29
 33 01   # kind 29
 33 02   # kind 29
