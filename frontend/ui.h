@@ -4,6 +4,7 @@
 #include <SDL.h>
 
 enum { UI_ACTION, UI_CHOICE, UI_INT, UI_KEY, UI_INFO, UI_TEXT };
+#define UI_INFO_WARNING 1         /* the id of an INFO item that is a warning: drawn in the warning colour */
 
 typedef struct ui_item {
     const char *label;

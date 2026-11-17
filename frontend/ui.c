@@ -15,6 +15,7 @@ static const SDL_Color C_ROWHOV = { 26, 35, 43, 255 };
 static const SDL_Color C_ACCENT = { 53, 196, 162, 255 };
 static const SDL_Color C_TEXT   = { 232, 238, 242, 255 };
 static const SDL_Color C_DIM    = { 138, 151, 163, 255 };
+static const SDL_Color C_WARN   = { 240, 190, 84, 255 };
 static const SDL_Color C_LINE   = { 46, 58, 68, 255 };
 
 static void fill(SDL_Renderer *r, SDL_Rect rc, SDL_Color c) {
@@ -177,7 +178,7 @@ void ui_draw(SDL_Renderer *r, ui_menu *m, int ww, int wh) {
         int whole = iy >= right.y && iy + h <= right.y + right.h;
         if (iy + h < right.y || iy > right.y + right.h) { iy += h + s; continue; }
         if (it->kind == UI_INFO) {
-            wrap_text(r, right.x + mg, iy + s, maxw, small, C_DIM, it->info, 1);
+            wrap_text(r, right.x + mg, iy + s, maxw, small, it->id == UI_INFO_WARNING ? C_WARN : C_DIM, it->info, 1);
             if (whole) m->item_rects[i] = (SDL_Rect){ right.x, iy, right.w, h };
             iy += h + s;
             continue;

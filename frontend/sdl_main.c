@@ -1903,6 +1903,10 @@ static void refresh_patch_items(void) {
         snprintf(t[n].info, sizeof t[n].info, "ROM hacks as IPS files, applied to your ROM in memory and switched On and Off while you play. "
                  "Get them from their pages, then put the .ips files in this folder or drop them on the window:\n%.180s", patch_dir);
     n++;
+    t[n] = (ui_item){ "", UI_INFO, UI_INFO_WARNING, NULL, NULL, 0, 0, 0, 0, NULL, "", NULL };
+    snprintf(t[n].info, sizeof t[n].info, "Warning: enabling patches could break or corrupt save states. "
+             "Choose one patch setup for a playthrough and keep it to the end.");
+    n++;
     for (int i = 0; i < n_patch_entries; i++) have[patch_entries[i].kind] = 1;
     for (int i = 0; i < 4; i++) {
         static char labels[4][64];

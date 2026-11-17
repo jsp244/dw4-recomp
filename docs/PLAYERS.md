@@ -162,6 +162,10 @@ without Delocalized. One caution from the hack
 itself: do not switch Manual tactics off while a party is set to the Manual tactic;
 choose another tactic first.
 
+Warning: enabling patches could break or corrupt save states. A save state holds the game
+in the middle of its work, and a patch changes the program under it. Choose one patch setup
+for a playthrough and keep it to the end; the Patches tab shows this warning too.
+
 Shaders
 -------
 The shader row adds CRT-style effects to the picture: Scanlines (the beam lines
