@@ -20,7 +20,13 @@
  * Windows. The game draws its windows into the same name tables, tile by tile, so a window may
  * cover part of a square. Its four tiles are then no square the pack knows; but the square that
  * was there before is remembered, and the quarters that still hold its tiles are still drawn
- * from it. (An empty tile never counts: a window's inside is empty tiles too.)
+ * from it. (An empty tile never counts: a window's inside is empty tiles too.) And a window's
+ * inside is not the map either, though four of its empty tiles make the same square as the
+ * dark beyond a cave's rock or the black round a room, which the pack has art for: an empty
+ * tile that lies between a window's left and right edge, with nothing but what a window holds
+ * between it and one of them, is left out (the frame's tiles have the same numbers everywhere).
+ * An empty square shows nothing but the backdrop color: the art the pack has for it is drawn only
+ * while the backdrop is the color that art was made for (black), not on the title's pale sky.
  *
  * People. Everyone on a map is four 8x8 sprites in a square. The frame's sprites are taken from
  * the PPU's sprite memory and put together again: four that form a 16x16 square are one figure,
@@ -101,7 +107,7 @@ static uint8_t slot_tile[SLOTS][16], slot_known[SLOTS], slot_blank[SLOTS];
 static uint64_t slot_hash[SLOTS];
 
 /* a square's place on this frame: the pack's square for it, which quarters are its own, its tint */
-typedef struct { uint32_t gen; const square_t *sq; uint8_t quarters, pal, tinted; uint16_t tint[3]; } place_t;
+typedef struct { uint32_t gen; const square_t *sq; uint8_t quarters, pal, tinted, blank; uint16_t tint[3]; } place_t;
 typedef struct { const square_t *sq; uint64_t th[4]; uint8_t pal; } seen_t;
 static place_t nt_place[NT_SQUARES], band_place[BAND_SQUARES];
 static seen_t nt_seen[NT_SQUARES];
@@ -297,21 +303,51 @@ static int slot_of(int tile, int sprites) {
     return s < SLOTS && !cart.chr ? (int)s : SLOTS;
 }
 
-static void resolve(place_t *p, const uint8_t tile[4], int pal, seen_t *seen) {
+/* the tile at column x, row y of the four name tables (64 x 60, going round) */
+static uint8_t nt_tile(int x, int y) {
+    x &= 63;
+    y = ((y % 60) + 60) % 60;
+    return ppu.vram[ppu.nt_offset[(y >= 30 ? 2 : 0) | (x >= 32 ? 1 : 0)] + (y % 30) * 32 + (x & 31)];
+}
+
+/* Is the empty tile at (x, y) of the name tables a window's inside? Along its row the frame's left edge
+   ($84, its corners $86 $87, $83 where a line starts from it) comes first to the left, or its right edge
+   ($88, the corners $89 $8B) first to the right, past nothing but what a window holds: letters and empty
+   tiles (all below $83) and the frame's top and bottom ($85 $8A, $8C before a title). The map's own tiles
+   and another window's far edge end the search. */
+static int in_window(int x, int y) {
+    for (int dir = -1; dir <= 1; dir += 2)
+        for (int k = 1; k < 32; k++) {
+            uint8_t t = nt_tile(x + dir * k, y);
+            if (t < 0x83 || t == 0x85 || t == 0x8A || t == 0x8C) continue;
+            if (dir < 0 ? (t == 0x83 || t == 0x84 || t == 0x86 || t == 0x87) : (t == 0x88 || t == 0x89 || t == 0x8B)) return 1;
+            break;
+        }
+    return 0;
+}
+
+/* (tx, ty): where the square's first tile lies in the name tables; tx < 0 for a square of the canvas's map */
+static void resolve(place_t *p, const uint8_t tile[4], int pal, seen_t *seen, int tx, int ty) {
     uint64_t th[4];
-    int slot[4], ok = 1;
-    p->gen = gen; p->sq = NULL; p->quarters = 0; p->pal = (uint8_t)pal; p->tinted = 0;
+    int slot[4], ok = 1, inside = 0;
+    p->gen = gen; p->sq = NULL; p->quarters = 0; p->pal = (uint8_t)pal; p->tinted = 0; p->blank = 0;
     for (int q = 0; q < 4; q++) {
         slot[q] = slot_of(tile[q], 0);
         if (slot[q] >= SLOTS) { ok = 0; break; }
         th[q] = slot_hash[slot[q]];
     }
     if (!ok) { stat_unknown++; return; }
+    for (int q = 0; q < 4 && tx >= 0; q++)
+        if (slot_blank[slot[q]] && in_window(tx + (q & 1), ty + (q >> 1))) inside |= 1 << q;
+    if (inside == 15) return;           /* a window's inside: nothing of the map (what was here stays remembered) */
+    int blank = 1;
+    for (int q = 0; q < 4; q++) blank &= slot_blank[slot[q]];
+    p->blank = (uint8_t)blank;
     p->sq = find_square(square_key(th, pal) ^ scene_mix ^ map_mix);
     if (!p->sq) p->sq = find_square(square_key(th, pal) ^ scene_mix);
     if (!p->sq) p->sq = find_square(square_key(th, pal) ^ scene_mix ^ OVERWORLD_MIX);   /* (between the two, for a frame or two, memory says one and the screen still shows the other) */
     if (p->sq) {
-        p->quarters = 15;
+        p->quarters = (uint8_t)(15 & ~inside);
         stat_known++;
         if (seen) { seen->sq = p->sq; memcpy(seen->th, th, sizeof th); seen->pal = (uint8_t)pal; }
         return;
@@ -323,8 +359,6 @@ static void resolve(place_t *p, const uint8_t tile[4], int pal, seen_t *seen) {
         if (m) { p->sq = seen->sq; p->quarters = (uint8_t)m; p->pal = seen->pal; return; }
         seen->sq = NULL;
     }
-    int blank = 1;
-    for (int q = 0; q < 4; q++) blank &= slot_blank[slot[q]];
     if (!blank) {
         stat_unknown++;
         /* (listed only where the canvas drew it from the map: in the name tables it may be a window's) */
@@ -338,13 +372,13 @@ static void resolve_nt(place_t *p, int n) {
     uint8_t at = t[0x3C0 + (r >> 1) * 8 + (c >> 1)], tile[4];
     int pal = (at >> (((r & 1) ? 4 : 0) + ((c & 1) ? 2 : 0))) & 3;
     for (int q = 0; q < 4; q++) tile[q] = t[(r * 2 + (q >> 1)) * 32 + c * 2 + (q & 1)];
-    resolve(p, tile, pal, &nt_seen[n]);
+    resolve(p, tile, pal, &nt_seen[n], (nt & 1) * 32 + c * 2, (nt >> 1) * 30 + r * 2);
 }
 
 static void resolve_band(place_t *p, int n) {
     uint8_t tile[4], pal;
     if (!widescreen_square(n, tile, &pal)) { p->gen = gen; p->sq = NULL; p->quarters = 0; return; }
-    resolve(p, tile, pal, NULL);
+    resolve(p, tile, pal, NULL, -1, -1);
 }
 
 /* how the colors the game has now compare with the ones the art was made for: a factor per
@@ -548,6 +582,7 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
             if (!p->tinted) {
                 const uint8_t *pal = ppu.hd_palettes[HD_PALSET(b)];
                 uint8_t now[3] = { pal[p->pal * 4 + 1], pal[p->pal * 4 + 2], pal[p->pal * 4 + 3] };
+                if (p->blank && ((pal[0] ^ sq->ref[0]) & 0x3F)) { p->quarters = 0; continue; }     /* an empty square on another backdrop */
                 p->tinted = (uint8_t)(1 + !tint_of(sq->ref + 1, now, sq->w, 3, em, gray, p->tint));
             }
             unsigned f = sq->frames > 1 ? (unsigned)((ppu.frame / sq->ticks) % sq->frames) : 0;
