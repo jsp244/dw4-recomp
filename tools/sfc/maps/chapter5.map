@@ -635,3 +635,16 @@ sq k1C:13CC3892CDBAF3E3 ~dq3t:316d8b20 tint 322:62 dark -85 here # two seats, pi
 # picture its kind has in the towns
 people dng ../../../generated/sfc/nes_people_dng.json
 cast dng:p46_00:6 dq6n:g24 poses 0,1,2,3,4,5,6,7 colors 394218>8A3A14,737B21>D0603A,A5B500>F88868,EFBD21>F8F0E0,CE7B00>D8B090 # the young dragons of the tower on the clouds: Dragon Quest VI's small dragon, its greens turned to their salmon, its belly to their white
+
+# the great dragon of the tower on the clouds: the NES builds it of four figures (one kind, each facing shows a
+# quarter). Dragon Quest VI's great golden dragon stands for it: the first quarter carries the whole picture, the
+# other three draw nothing. Only in this kind of place ($09): the colosseum shows one of those quarters by itself
+# as a small creature of its own.
+figs dq6d ../../../generated/sfc/dq6_dragon.figs
+fig dng:630D99E858F49565 dq6d:794506a5 dx -16 dy -24 in 09
+fig dng:E71A71A865886F59 dq6d:cc02eb01 dx -18 dy -24 in 09
+fig dng:7AEBF923B3496721 none in 09
+fig dng:91874A64BCF19B12 none in 09
+fig dng:14C4618BDF202AD4 none in 09
+fig dng:9D63A33ABC31D148 none in 09
+fig dng:A8A6B294DCCD8778 none in 09

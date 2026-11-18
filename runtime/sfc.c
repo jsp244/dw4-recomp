@@ -406,7 +406,9 @@ static const figure_t *figure_of(const uint8_t tile[4], const uint8_t attr[4], c
         for (int i = 0; i < 3; i++) now[q * 3 + i] = pal[16 + (attr[q] & 3) * 4 + 1 + i];
     }
     uint64_t key = fnv(FNV_OFFSET, pat, 256);
-    const figure_t *first = find_figure(key ? key : 1), *g = first, *best = NULL;
+    const figure_t *first = find_figure((key ? key : 1) ^ map_mix), *g, *best = NULL;     /* bound to this kind of place? */
+    if (!first) first = find_figure(key ? key : 1);
+    g = first;
     if (!first) { missed(missed_fig, &n_missed_fig, key ? key : 1); return NULL; }
     for (;; g = &figures[g->next - 1]) {       /* the one made for these colors, else the first */
         int same = 1;

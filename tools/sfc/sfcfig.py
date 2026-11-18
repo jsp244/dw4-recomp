@@ -289,6 +289,58 @@ def buildn(lib_path, named, spots=SPOTS, hero_at=HERO_AT):
         "; nothing drawn of %s" % ", ".join("%02X" % g for g in sorted(lacking - set(groups))) if lacking - set(groups) else ""))
 
 
+def buildall(lib_path, paths):
+    """one figure of everything the sprites draw in each capture (a creature alone on the screen, however many
+    sprites it is made of): set 0, its pictures in the order given"""
+    figs = []
+    for pose, path in enumerate(paths):
+        d = Dump(path)
+        small, big = OBJ_SIZES.get(d.regs.get("objSize", 0), (8, 16))
+        spr = []
+        for i in range(128):
+            x, y, t, a = d.oam[i * 4:i * 4 + 4]
+            hb = (d.hoam[i >> 2] >> ((i & 3) * 2)) & 3
+            size = big if hb >> 1 else small
+            if hb & 1:
+                x -= 256
+            if y >= 224 or x + size <= 0:
+                continue                        # not on the screen
+            spr.append((i, x, y, size, t | ((a & 1) << 8), (a >> 1) & 7, (a >> 6) & 1, a >> 7))
+        if not spr:
+            raise SystemExit("%s: no sprite on the screen" % path)
+        left, top = min(s[1] for s in spr), min(s[2] for s in spr)
+        w, h = max(s[1] + s[3] for s in spr) - left, max(s[2] + s[3] for s in spr) - top
+        px = [0] * (w * h)
+        for i, x, y, size, t, pal, hf, vf in sorted(spr, reverse=True):       # (the first in the list lies on top)
+            for q in range((size // 8) ** 2):
+                qx, qy = q % (size // 8), q // (size // 8)
+                n = (t & 0x100) | ((t + qy * 16) & 0xF0) | ((t + qx) & 0x0F)
+                base = d.regs["objTileAdr1"] if n < 256 else d.regs["objTileAdr2"]
+                tp = d.tile_pixels(base, n & 255, 4)
+                for yy in range(8):
+                    for xx in range(8):
+                        v = tp[yy][xx]
+                        if not v:
+                            continue
+                        u, r = qx * 8 + xx, qy * 8 + yy
+                        if hf:
+                            u = size - 1 - u
+                        if vf:
+                            r = size - 1 - r
+                        if 0 <= x + u - left < w and 0 <= y + r - top < h:
+                            px[(y + r - top) * w + x + u - left] = argb(d.cg[128 + pal * 16 + v])
+        rows = [r for r in range(h) if any(px[r * w:(r + 1) * w])]
+        cols = [c for c in range(w) if any(px[r * w + c] for r in range(h))]
+        if not rows:
+            raise SystemExit("%s: the sprites draw nothing" % path)
+        px = [px[r * w + c] for r in range(rows[0], rows[-1] + 1) for c in range(cols[0], cols[-1] + 1)]
+        figs.append({"px": tuple(px), "w": cols[-1] + 1 - cols[0], "h": rows[-1] + 1 - rows[0],
+                     "from": os.path.basename(path), "group": 0, "pose": pose})
+    with open(lib_path, "wb") as f:
+        pickle.dump(figs, f)
+    print("%s: %s" % (lib_path, ", ".join("%dx%d" % (e["w"], e["h"]) for e in figs)))
+
+
 def sheet(lib_path, out):
     from PIL import Image, ImageDraw
     figs = pickle.load(open(lib_path, "rb"))
@@ -320,6 +372,8 @@ def main():
         buildn(a[2], a[3:])
     elif len(a) >= 4 and a[1] == "buildn6":
         buildn(a[2], a[3:], SPOTS6, HERO_AT6)
+    elif len(a) >= 4 and a[1] == "buildall":
+        buildall(a[2], a[3:])
     elif len(a) == 4 and a[1] == "sheet":
         sheet(a[2], a[3])
     else:

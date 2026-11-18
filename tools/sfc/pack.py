@@ -51,8 +51,12 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           "outline": and a dark line drawn around what is left): a
                                           signpost the Super Famicom games have no picture of then stands
                                           on their real grass
-    fig NES SFC [dx DX] [dy DY]           the NES figure NES drawn as the figure SFC, its picture starting
-                                          DX, DY pixels from the NES figure's corner (default: same feet)
+    fig NES SFC [dx DX] [dy DY] [in KK]   the NES figure NES drawn as the figure SFC, its picture starting
+                                          DX, DY pixels from the NES figure's corner (default: same feet).
+                                          "in 09": only in maps of that kind (hex), for a picture another
+                                          place uses for something else. SFC "none": nothing is drawn (the
+                                          other parts of a creature the NES builds of several figures, when
+                                          one of them carries the whole picture)
     cast INV:DUMP:KIND LIB:gSET poses U,U,R,R,D,D,L,L [hue A-B>C] [colors FROM>TO[@A-B[/C-D]],...]
                                           the same for a set whose pictures are in no fixed order (Dragon Quest
                                           III's): the set's picture numbers for up, right, down and left, two
@@ -109,6 +113,7 @@ import sys
 
 
 OVERWORLD_MIX = 0x9E3779B97F4A7C15      # into the keys of the overworld's squares (runtime/sfc.c)
+PLACE_MIX = 0xD6E8FEB86659FD93          # times a kind of map + 1: into the keys of figures bound to that kind
 
 
 def fnv(data, h=0xcbf29ce484222325):
@@ -355,7 +360,7 @@ class Maps:
                         opt = {"dx": None, "dy": None}
                         i = 3
                         while i < len(t):
-                            opt[t[i]] = int(t[i + 1]); i += 2
+                            opt[t[i]] = int(t[i + 1], 16 if t[i] == "in" else 10); i += 2
                         self.fig.append((where, t[1], t[2], opt))
                     else:
                         raise SystemExit("%s: what is %r?" % (where, t[0]))
@@ -531,10 +536,11 @@ def build(out, paths, quiet=False):
         if e is None:
             skipped += 1
             continue
-        a = m.art(ref, m.figs, where)
+        a = {"w": 1, "h": 1, "px": (0,)} if ref == "none" else m.art(ref, m.figs, where)
         dx = opt["dx"] if opt["dx"] is not None else (16 - a["w"]) // 2
         dy = opt["dy"] if opt["dy"] is not None else 16 - a["h"]
-        figures.append((int(e["key"], 16), bytes(e["colors"]), dx, dy, a["w"], a["h"], a["px"]))
+        bound = ((opt["in"] + 1) * PLACE_MIX) & 0xFFFFFFFFFFFFFFFF if "in" in opt else 0
+        figures.append((int(e["key"], 16) ^ bound, bytes(e["colors"]), dx, dy, a["w"], a["h"], a["px"]))
     # NES facings: up, right, down, left; the Super Famicom sets: up, down, left, right (two steps each)
     POSE = [0, 1, 6, 7, 2, 3, 4, 5]
     done = set((f[0], f[1]) for f in figures)
