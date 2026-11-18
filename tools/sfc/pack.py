@@ -7,6 +7,10 @@ A map file says which Super Famicom art takes the place of which NES map square 
     nes NAME FILE.json            an inventory of NES squares (nesmap.py squares) under a short name
     figs NAME FILE.figs           a library of Super Famicom figures (sfcfig.py)
     people NAME FILE.json         an inventory of NES figures (nesmap.py figures)
+    picture NAME FIGS:ART [colors FROM>TO,...]
+                                  a picture laid over the whole map, repeating (an entry of a figure
+                                  library, of any size: sfcfig.py buildscroll) under a short name;
+                                  "colors" as for cast, below
 
     sq NES SFC [SFC...] [ticks N] [over SFC] [top SFC] [here] [hue A-B>C] [tint H:S] [gray P] [dark P]
                         [basegray P] [basetint H:S] [basedark P] [basehue A-B>C] [rows LIST] [cols LIST] [clear V]
@@ -50,7 +54,15 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           two pixels left over, the grain the NES draws on sand;
                                           "outline": and a dark line drawn around what is left): a
                                           signpost the Super Famicom games have no picture of then stands
-                                          on their real grass
+                                          on their real grass.
+                                          "over %NAME clear 3" hands those same pixels to the picture
+                                          NAME instead: each shows the picture's pixel for its own place
+                                          on the map, so the picture runs on unbroken from square to
+                                          square and the squares only give it its outline (a cloud one
+                                          walks on, its edge against the sky). "rim 2:2:BCE3E8" keeps
+                                          the line the NES draws round that outline: the pixels of the
+                                          NES square's color 2 that reach a clear pixel through at most
+                                          two of their kind are that color instead of the picture's
     fig NES SFC [dx DX] [dy DY] [in KK] [colors FROM>TO,...]
                                           the NES figure NES drawn as the figure SFC, its picture starting
                                           DX, DY pixels from the NES figure's corner (default: same feet).
@@ -130,6 +142,7 @@ def art_hash(px):
 
 
 NES_PIXEL = -1      # in a square's pixels: left to the NES (the pack holds a clear pixel there)
+PICTURE = -2        # and PICTURE - N: the pixel of picture N for this place on the map (alpha 1, N in the low bits)
 
 
 def solid(p):
@@ -163,6 +176,41 @@ NES_LUMA = [102, 43, 36, 43, 52, 49, 42, 40, 44, 46, 49, 48, 48, 0, 0, 0,
             173, 98, 86, 93, 101, 97, 87, 85, 99, 102, 106, 105, 103, 0, 0, 0,
             254, 169, 158, 163, 170, 165, 160, 161, 171, 176, 181, 179, 177, 79, 0, 0,
             254, 220, 214, 216, 219, 217, 215, 216, 221, 224, 226, 225, 224, 184, 0, 0]
+
+
+def nes_values(nes):
+    """the NES square's 256 pixels as its palette's color numbers (0-3)"""
+    val = [0] * 256
+    for q, hexed in enumerate(nes["tiles"]):
+        t = bytes.fromhex(hexed)
+        for y in range(8):
+            for x in range(8):
+                val[((q >> 1) * 8 + y) * 16 + (q & 1) * 8 + x] = ((t[y] >> (7 - x)) & 1) | (((t[y + 8] >> (7 - x)) & 1) << 1)
+    return val
+
+
+def rimmed(nes, px, rule, where):
+    """px with the line the NES draws round a shape in a color of its own: "V:N:RRGGBB" gives that color to the
+    pixels of the NES square's color V that reach a clear pixel of px through at most N of their kind"""
+    try:
+        v, n, color = rule.split(":")
+        v, n, color = int(v), int(n), 0xFF000000 | int(color, 16)
+    except ValueError:
+        raise SystemExit("%s: rim wants COLOR:STEPS:RRGGBB, not %r" % (where, rule))
+    val = nes_values(nes)
+    out = list(px)
+    todo = [(i, 0) for i in range(256) if px[i] is None]
+    seen = set(i for i, _ in todo)
+    while todo:
+        i, d = todo.pop(0)
+        if d >= n:
+            continue
+        for j in (i - 16, i + 16, i - 1 if i % 16 else -1, i + 1 if i % 16 != 15 else -1):
+            if 0 <= j < 256 and j not in seen and val[j] == v:
+                seen.add(j)
+                out[j] = color
+                todo.append((j, d + 1))
+    return tuple(out)
 
 
 def recolored(nes, sfc_px, clear=()):
@@ -320,6 +368,7 @@ class Maps:
         self.libs, self.nes, self.figs, self.people = {}, {}, {}, {}
         self.files, self.used = {}, set()       # library file -> its entries; the entries a line has taken (supplement.py)
         self.sq, self.fig, self.cast = [], [], []
+        self.pictures = {}                      # name -> (where, the figure library's entry, its options)
         self.lines = []
         for path in paths:
             base = os.path.dirname(os.path.abspath(path))
@@ -339,13 +388,15 @@ class Maps:
                         self.figs[t[1]] = self.library(os.path.join(base, t[2]))
                     elif t[0] == "people":
                         self.people[t[1]] = self.inventory(os.path.join(base, t[2]))
+                    elif t[0] == "picture":
+                        self.pictures[t[1]] = (where, t[2], dict(zip(t[3::2], t[4::2])))
                     elif t[0] == "sq":
                         ticks, refs, i, extra = 16, [], 2, {}
                         while i < len(t):
                             if t[i] == "ticks":
                                 ticks = int(t[i + 1]); i += 2
                             elif t[i] in ("over", "top", "hue", "tint", "gray", "dark", "basegray", "basetint", "basedark",
-                                          "basehue", "rows", "cols", "clear", "cutting"):
+                                          "basehue", "rows", "cols", "clear", "cutting", "rim"):
                                 extra[t[i]] = t[i + 1]; i += 2
                             elif t[i] == "here":
                                 extra["here"] = True; i += 1
@@ -439,7 +490,20 @@ class Maps:
 def build(out, paths, quiet=False):
     m = Maps(paths)
     squares, figures = {}, []
+    pictures, picture_of = [], {}           # (width, height, pixels) in the pack's order; name -> its number
     skipped = 0
+
+    def picture(name, where):
+        """the pack's number of the picture NAME (it goes into the pack when a square first asks for it)"""
+        if name not in picture_of:
+            if name not in m.pictures:
+                raise SystemExit("%s: no picture %r" % (where, name))
+            at, ref, opt = m.pictures[name]
+            a = m.art(ref, m.figs, at)
+            px = recast(a["px"], a["w"], opt["colors"], at) if "colors" in opt else a["px"]
+            picture_of[name] = len(pictures)
+            pictures.append((a["w"], a["h"], px))
+        return picture_of[name]
 
     def made(e, frames, ticks, extra, where):
         """the pack's square for the NES square e: the frames after the line's rows, tones, "over" and "top" """
@@ -470,6 +534,11 @@ def build(out, paths, quiet=False):
                         if (p >> 24) & 255:
                             over[y * 16 + x + (16 - min(16, w)) // 2] = p
                 over = tuple(over)
+            elif extra["over"].startswith("%"):      # the NES square's shapes as pixels of a picture laid over the map
+                over = recolored(e, (PICTURE - picture(extra["over"][1:], where),) * 256,
+                                 tuple(v for v in extra.get("clear", "").split(",") if v))
+                if "rim" in extra:
+                    over = rimmed(e, over, extra["rim"], where)
             elif extra["over"].startswith("~"):
                 over = recolored(e, m.art(extra["over"][1:], m.libs, where)["px"],
                                  tuple(v for v in extra.get("clear", "").split(",") if v))
@@ -489,7 +558,7 @@ def build(out, paths, quiet=False):
                                 todo.append(j)
                     over = tuple(over)
             if tone:
-                over = tuple(None if o is None else toned(solid(o), extra) for o in over)
+                over = tuple(o if o is None or o <= PICTURE else toned(solid(o), extra) for o in over)
             frames = [tuple(o if o is not None else p for p, o in zip(px, over)) for px in frames]
         elif tone:
             frames = [tuple(p if p == NES_PIXEL else toned(solid(p), extra) for p in px) for px in frames]
@@ -614,17 +683,23 @@ def build(out, paths, quiet=False):
                 dx, dy, w, h = 16 - (dy + h), dx, h, w
             figures.append((key, ref_colors, dx, dy, w, h, px))
     with open(out, "wb") as f:
-        f.write(b"DW4S" + struct.pack("<III", 2, len(squares), len(figures)))
+        f.write(b"DW4S" + struct.pack("<III", 3 if pictures else 2, len(squares), len(figures)))
         for key, (ref, frames, ticks, top, w) in sorted(squares.items()):
             f.write(struct.pack("<Q4sBBBB", key, ref, len(frames), max(1, min(255, ticks)), (1 if top else 0) | (w[2] << 4),
                                 w[0] | (w[1] << 4)))
             for px in frames:
-                f.write(struct.pack("<256I", *[0 if p == NES_PIXEL else solid(p) for p in px]))
+                f.write(struct.pack("<256I", *[0 if p == NES_PIXEL else 0x01000000 | (PICTURE - p) if p is not None and p <= PICTURE
+                                               else solid(p) for p in px]))
             if top:
                 f.write(struct.pack("<256I", *[0 if p is None else solid(p) for p in top]))
         for key, ref, dx, dy, w, h, px in figures:
             f.write(struct.pack("<Q12sbbBB", key, ref, dx, dy, w, h))
             f.write(struct.pack("<%dI" % (w * h), *px))
+        if pictures:                    # (a pack without them is version 2, as before)
+            f.write(struct.pack("<I", len(pictures)))
+            for w, h, px in pictures:
+                f.write(struct.pack("<HH", w, h))
+                f.write(struct.pack("<%dI" % (w * h), *px))
     if not quiet:
         print("%s: %d map squares, %d figures%s" % (out, len(squares), len(figures),
               "; %d lines left out (their NES squares or people are in no inventory given)" % skipped if skipped else ""))
@@ -636,7 +711,7 @@ def freeze(path):
     out = []
     for _, raw in m.lines:
         t = raw.split()
-        if t and t[0] in ("sq", "fig"):
+        if t and t[0] in ("sq", "fig", "picture"):
             words = raw.rstrip("\n").split(" ")
             for i, w in enumerate(words):
                 if w == "#":

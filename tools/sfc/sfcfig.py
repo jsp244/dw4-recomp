@@ -36,6 +36,10 @@ usage:
     sfcfig.py buildall LIB.figs CAPTURE[@X0,Y0,X1,Y1]...  one figure of all the sprites of each capture (a
                                                         creature alone on the screen; with a box: only the
                                                         sprites that lie inside it)
+    sfcfig.py buildscroll LIB.figs BG WIDTH ROW0-ROW1 CAPTURE...  a painting a background layer scrolls through
+                                                        (BG 1-4), put together from what each capture shows of
+                                                        it: WIDTH is its repeat, the rows are counted from the
+                                                        first capture's scroll
     sfcfig.py sheet LIB.figs OUT.png
 The library holds the games' art: it stays with your own copies (generated/ is git-ignored).
 """
@@ -349,6 +353,53 @@ def buildall(lib_path, paths):
     print("%s: %s" % (lib_path, ", ".join("%dx%d" % (e["w"], e["h"]) for e in figs)))
 
 
+# The Super Famicom's picture starts one line below the scroll's row. Dragon Quest VI keeps a black frame of eight
+# pixels round its picture, and writes the tiles a scrolling layer needs next under that frame: only what lies
+# well inside it is the painting as it is shown.
+SHOWN = (12, 12, 244, 212)
+
+
+def buildscroll(lib_path, layer, width, rows, paths):
+    """a painting that a background layer scrolls through, larger than the screen: what each capture shows of the
+    layer is laid by the layer's scroll and folded to `width`, the painting's repeat. The scroll's registers hold
+    one screen's worth, so the way travelled is added up from capture to capture (they must lie less than half a
+    screen apart). Rows ROW0-ROW1 of it are the picture (the first capture's scroll counts as it stands): one
+    figure, set 0. Every pixel of it must have been seen, and seen the same each time."""
+    row0, _, row1 = rows.partition("-")
+    row0, row1 = int(row0), int(row1)
+    seen = {}
+    last = None
+    for path in paths:
+        d = Dump(path)
+        im = d.layer_image(layer)
+        px = im.load()
+        h, v = d.bg[layer]["hScroll"] % im.width, d.bg[layer]["vScroll"] % im.height
+        if last is None:
+            x0, y0 = h, v
+        else:
+            x0 += (h - last[0] + im.width // 2) % im.width - im.width // 2
+            y0 += (v - last[1] + im.height // 2) % im.height - im.height // 2
+        last = (h, v)
+        for line in range(SHOWN[1], SHOWN[3]):
+            y = y0 + 1 + line
+            if not row0 <= y <= row1:
+                continue
+            for sx in range(SHOWN[0], SHOWN[2]):
+                r, g, b, a = px[(h + sx) % im.width, (v + 1 + line) % im.height]
+                c = (0xFF000000 | (r << 16) | (g << 8) | b) if a else 0
+                k = (y - row0) * width + (x0 + sx) % width
+                if seen.setdefault(k, c) != c:
+                    raise SystemExit("%s shows the painting otherwise than a capture before it (other colours, a flash?)" % path)
+    n = width * (row1 - row0 + 1)
+    if len(seen) != n or not all(seen.values()):
+        raise SystemExit("%s: %d of the painting's %d pixels were not seen" % (lib_path, n - sum(1 for c in seen.values() if c), n))
+    figs = [{"px": tuple(seen[k] for k in range(n)), "w": width, "h": row1 - row0 + 1, "from": os.path.basename(paths[0]),
+             "group": 0, "pose": 0}]
+    with open(lib_path, "wb") as f:
+        pickle.dump(figs, f)
+    print("%s: %dx%d" % (lib_path, width, row1 - row0 + 1))
+
+
 def sheet(lib_path, out):
     from PIL import Image, ImageDraw
     figs = pickle.load(open(lib_path, "rb"))
@@ -382,6 +433,8 @@ def main():
         buildn(a[2], a[3:], SPOTS6, HERO_AT6)
     elif len(a) >= 4 and a[1] == "buildall":
         buildall(a[2], a[3:])
+    elif len(a) >= 7 and a[1] == "buildscroll":
+        buildscroll(a[2], int(a[3]) - 1, int(a[4]), a[5], a[6:])
     elif len(a) == 4 and a[1] == "sheet":
         sheet(a[2], a[3])
     else:

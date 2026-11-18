@@ -3,7 +3,7 @@
 Graphics > Textures > **SNES Remaster** draws the game's map squares and people with the art of the
 Super Famicom Dragon Quest games. That art is not in the packages: it is taken from your own
 cartridge dump into a pack, `sfc.pak`, that the game loads from its folder. Without the pack the
-choice is not offered. (This repository holds nineteen squares and ten figures of it, locked to the ROM
+choice is not offered. (This repository holds nineteen squares, ten figures and one painting of it, locked to the ROM
 you supply: the supplement, below.)
 
 You need one Super Famicom game, the Japanese **Dragon Quest III**, and your Dragon Warrior IV ROM
@@ -23,7 +23,10 @@ tower, the wild-haired brutes of chapter 5 (its ogre, turned purple), Keeleon (n
 has a lion-beast: its troll, turned brown), the stone guards of chapter 5 (its stone giant), the
 young dragons of the tower on the clouds (its small dragon, turned salmon), the great dragon they
 guard (the golden dragon of its opening) and the giant on his throne (the demon lord of that
-opening, who sits there in shadow: his greys turned to the giant's flesh).
+opening, who sits there in shadow: his greys turned to the giant's flesh). The clouds one walks on
+in chapter 5 are that opening's as well: the painting of cloud its dragon flies through, a night
+sky there, turned to the NES cloud's white and pale blue. It is one picture laid over the whole
+map (`picture`, `over %NAME` in a map file), and the NES's cloud squares give it their outline.
 They come from the supplement,
 `tools/sfc/supplement.bin`: just those pictures, combined with
 a stream made from the Dragon Quest III ROM's contents, so that the file opens only with that very
@@ -32,7 +35,7 @@ too: `--dq12 "Dragon Quest I & II (Japan).sfc"`, `--dq5 "Dragon Quest V (Japan).
 is then played from power-on onto its ship's deck, 12,814 frames), `--dq6 "Dragon Quest VI
 (Japan).sfc"` (played to the cliff of its opening, 5,596 frames, where the game is asked to draw
 each wanted character in place of the man who waits there, and once on from there, 12,781 frames,
-past the great dragon to the demon lord on his throne). Whoever changes the map files
+past the great dragon and through the clouds to the demon lord on his throne). Whoever changes the map files
 writes the supplement again with `--dq12 ... --dq5 ... --dq6 ... --write-supplement`: it holds what
 the map files use of the other games' libraries and nothing else.
 

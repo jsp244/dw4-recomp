@@ -277,19 +277,24 @@ sq k11:491CEBABFC679B86 =k11:5DCB784C4BCE7245 over dq3t:aa6b8d51.hi here # stair
 sq k11:1E7E2AFAE5836627 =k11:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi dark 30 here # stairs down, in shadow
 
 # the place in the sky (place $3E, kind $22): a castle far off on its cloud, and the terraces before its gate.
-# None of the games' openings shows clouds: these are the NES's own cloud shapes, in white and a pale blue
-# (the colors are lent by Dragon Quest I's white and blue tiles, lightened).
+# The clouds are Dragon Quest VI's: the painting of cloud its dragon flies through in the opening, a night sky
+# there (dark with pale wisps), here turned to the NES cloud's white with the wisps in its pale blue. It is one
+# picture laid over the whole map, not a square repeated: the NES's cloud squares only give it their outline
+# against the sky ("over %cloud clear 3": every pixel but the sky's), and the pale line the NES draws round a
+# cloud stays, in its own colour ("rim").
 nes k22 ../../../generated/sfc/nes_k22.json
+figs dq6s ../../../generated/sfc/dq6_sky.figs
+picture cloud dq6s:e315d1ee colors 002121>FFFFFF,002931>F4FAFB,08394A>E6F4F6,295A73>D7EEF1,4A94AD>C9E8EC,63C6D6>BCE3E8,94E7F7>ACDCE3
 sq k22:68E0482A58AFF73F dq3h:4ec6fd25 tint 238:52 here # the sky, the deep blue it has up here
-sq k22:A97E99B0CA5681F4 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here # cloud
-sq k22:900E601062200311 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here # the cloud's edges against the sky
-sq k22:C1B734609D17A32C =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
-sq k22:A086B3579FB1CBA2 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
-sq k22:4783E2339E8020E3 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
-sq k22:6686ED2656E49314 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
-sq k22:12B1D4F09C3719F7 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
-sq k22:DD2D1889CDF8F1C4 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
-sq k22:3C29978363767C1B =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
+sq k22:A97E99B0CA5681F4 =k22:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here # cloud
+sq k22:900E601062200311 =k22:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here # the cloud's edges against the sky
+sq k22:C1B734609D17A32C =k22:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
+sq k22:A086B3579FB1CBA2 =k22:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
+sq k22:4783E2339E8020E3 =k22:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
+sq k22:6686ED2656E49314 =k22:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
+sq k22:12B1D4F09C3719F7 =k22:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
+sq k22:DD2D1889CDF8F1C4 =k22:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
+sq k22:3C29978363767C1B =k22:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
 sq k22:87623F73B66208B6 =k22:A97E99B0CA5681F4 over ~dq3w:efc08409 clear 3 gray 90 here # the castle far off on the cloud (four squares)
 sq k22:859EB207CAD73E9D =k22:A97E99B0CA5681F4 over ~dq3w:efc08409 clear 3 gray 90 here
 sq k22:B5C69927A95DA38C =k22:A97E99B0CA5681F4 over ~dq3w:efc08409 clear 3 gray 90 here
@@ -357,13 +362,13 @@ sq k21:B5B4419A63FD7B01 =k21:C8E9D0D954110E54 over dq3v:ecf9c237.hi here
 # are, on a court paved in dark teal, the cloud it stands on, steps, small doorways and the great door in gold
 nes k32 ../../../generated/sfc/nes_k32.json
 sq k32:68E0482A58AFF73F dq3h:4ec6fd25 tint 214:85 dark -40 here # the sky, light blue
-sq k32:A97E9AB0CA5683A7 =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here # the cloud the tower stands on, and its edges against the sky
-sq k32:3C29968363767A68 =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
-sq k32:DD2D1989CDF8F377 =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
-sq k32:C1B735609D17A4DF =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
-sq k32:A086B4579FB1CD55 =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
-sq k32:4783E1339E801F30 =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
-sq k32:900E5F106220015E =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
+sq k32:A97E9AB0CA5683A7 =k32:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here # the cloud the tower stands on, and its edges against the sky
+sq k32:3C29968363767A68 =k32:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
+sq k32:DD2D1989CDF8F377 =k32:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
+sq k32:C1B735609D17A4DF =k32:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
+sq k32:A086B4579FB1CD55 =k32:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
+sq k32:4783E1339E801F30 =k32:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
+sq k32:900E5F106220015E =k32:68E0482A58AFF73F over %cloud clear 3 rim 2:3:BCE3E8 here
 sq k32:B6A317C9F269451C dq3w:f17493a2 tint 190:32 dark 45 here # the court: the tower's flagstones, in dark teal
 sq k32:329350D37F49E5B4 =k32:B6A317C9F269451C over dq3f:20766aa2.hi gray 92 dark 18 here # a round tower's foot on the court (two squares)
 sq k32:D8FFD69163EE426F =k32:B6A317C9F269451C over dq3f:2709e28b.hi gray 92 dark 18 here

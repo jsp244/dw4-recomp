@@ -41,6 +41,12 @@ int widescreen_people_list(const ws_person_t **list);
    it when the canvas draws that square from the map, -2 when it is one the PPU shows (look in the
    name tables), -1 when there is none. For art that stands taller than its square. */
 int widescreen_below(int sx, int line);
+/* Where on the map the PPU picture's first pixel lies, in pixels from the map's first square (sixteen to a
+   square; negative above and left of it): for art that is laid over the map by place. Known from the last
+   frame whose map was decoded;
+   while a window hides too much of the map for that, the scroll carries it on. Returns 0 until a map has
+   been decoded. */
+int widescreen_origin(int *wx, int *wy);
 /* Does the canvas take the PPU picture's first eight pixels from the map (the game blanks them)? */
 int widescreen_strip(void);
 

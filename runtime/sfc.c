@@ -39,22 +39,32 @@
  * from level to level (the sky round a statue's rim, black where the same rim stands in the
  * dark) no scaling can follow it: the pack leaves those pixels clear, and the NES's own stay.
  *
+ * Pictures laid over the map. A cloud one walks on is not a square repeated: the Super Famicom
+ * games paint clouds as one wide picture. A square of the pack may therefore hand pixels to a
+ * picture that is thought laid over the whole map, repeating: such a pixel shows the picture's
+ * pixel at the place on the map where it lies (widescreen_origin says where the screen is), so
+ * the picture runs on unbroken from square to square, and the square only says where it shows
+ * (the cloud's own outline against the sky).
+ *
  * Tall art. A Super Famicom tree is taller than a map square: its crown lies over the square
  * above, and over anyone standing there. A square of the pack may therefore have a top, sixteen
  * rows of pixels that belong above it (clear where the square above shows through). After the
  * squares and the figures are drawn, every pixel asks the square below its own for a top.
  *
- * Pack: "DW4S", version 2 (1: no tops), the number of squares, the number of figures, then
+ * Pack: "DW4S", version 3 (1: no tops; 2: no pictures), the number of squares, the number of
+ * figures, then
  *   per square: key (64 bits), the four NES colors it was made for, the number of animation
  *     frames, the game frames each one lasts, a flags byte (bit 0: a top follows the frames; its
  *     high four bits: how much of the NES square is in its third color, 0 to 15), a byte with the
  *     same for the first color (low four bits) and the second (high; all three 0 in an older
  *     pack: they count alike), then the frames, each 256 pixels (ARGB, row by row; alpha 0
- *     where the NES's own pixel stays), then the top
- *     (256 pixels, alpha 0 where it is clear);
+ *     where the NES's own pixel stays; alpha 1 where a picture shows, its number in the low
+ *     24 bits), then the top (256 pixels, alpha 0 where it is clear);
  *   per figure: key, the twelve NES colors of its four quarters' palettes, where its picture
  *     starts from the NES figure's top left corner (two signed bytes), its width and height,
- *     then the pixels (ARGB; alpha 0 where it is clear).
+ *     then the pixels (ARGB; alpha 0 where it is clear);
+ *   from version 3: the number of pictures, and per picture its width and height (16 bits
+ *     each) and its pixels (ARGB; alpha 0 where the NES's own pixel stays).
  * All little-endian.
  */
 #include "sfc.h"
@@ -76,9 +86,11 @@ typedef struct { uint64_t key; uint8_t ref[4], frames, ticks, w[3]; const uint32
 static int any_tops;
 typedef struct { uint64_t key; uint8_t ref[12]; int8_t dx, dy; uint8_t w, h; const uint32_t *px; int next; } figure_t;
 
+typedef struct { uint32_t w, h; const uint32_t *px; } picture_t;
 static square_t *squares;
 static figure_t *figures;
-static uint32_t n_squares, n_figures, sq_cap, fig_cap;
+static picture_t *pictures;             /* laid over the whole map */
+static uint32_t n_squares, n_figures, n_pictures, sq_cap, fig_cap;
 static int32_t *sq_table, *fig_table;   /* open-addressed: index + 1, 0 = empty (figures: the first of a key's chain) */
 static uint32_t *pixels;                /* every square's and figure's, one block */
 static int ready;
@@ -150,9 +162,9 @@ static uint32_t rd32(const uint8_t *p) { return p[0] | (p[1] << 8) | ((uint32_t)
 static uint64_t rd64(const uint8_t *p) { return rd32(p) | ((uint64_t)rd32(p + 4) << 32); }
 
 void sfc_forget(void) {
-    free(squares); free(figures); free(sq_table); free(fig_table); free(pixels);
-    squares = NULL; figures = NULL; sq_table = fig_table = NULL; pixels = NULL;
-    n_squares = n_figures = sq_cap = fig_cap = 0;
+    free(squares); free(figures); free(pictures); free(sq_table); free(fig_table); free(pixels);
+    squares = NULL; figures = NULL; pictures = NULL; sq_table = fig_table = NULL; pixels = NULL;
+    n_squares = n_figures = n_pictures = sq_cap = fig_cap = 0;
     ready = 0;
     any_tops = 0;
 }
@@ -171,7 +183,7 @@ int sfc_init(const char *pack_path) {
     long len = ftell(f);
     fseek(f, 0, SEEK_SET);
     uint8_t *d = len >= 16 && len < (64L << 20) ? malloc((size_t)len) : NULL;
-    if (!d || fread(d, 1, (size_t)len, f) != (size_t)len || memcmp(d, "DW4S", 4) || rd32(d + 4) < 1 || rd32(d + 4) > 2) { free(d); fclose(f); return 0; }
+    if (!d || fread(d, 1, (size_t)len, f) != (size_t)len || memcmp(d, "DW4S", 4) || rd32(d + 4) < 1 || rd32(d + 4) > 3) { free(d); fclose(f); return 0; }
     fclose(f);
     uint32_t ns = rd32(d + 8), nf = rd32(d + 12);
     if (ns > 65536 || nf > 65536) { free(d); return 0; }
@@ -232,6 +244,23 @@ int sfc_init(const char *pack_path) {
             h->next = (int)n_figures + 1;
         }
         n_figures++;
+    }
+    if (!bad && rd32(d + 4) >= 3) {
+        uint32_t np = o + 4 <= (size_t)len ? rd32(d + o) : 0;
+        o += 4;
+        if (np > 256 || !(pictures = calloc(np + 1, sizeof *pictures))) bad = 1;
+        for (uint32_t i = 0; i < np && !bad; i++) {
+            if (o + 4 > (size_t)len) { bad = 1; break; }
+            picture_t *pc = &pictures[n_pictures];
+            pc->w = d[o] | (d[o + 1] << 8); pc->h = d[o + 2] | (d[o + 3] << 8);
+            o += 4;
+            size_t n = (size_t)pc->w * pc->h;
+            if (!n || o + n * 4 > (size_t)len) { bad = 1; break; }
+            pc->px = pixels + used;
+            for (size_t k = 0; k < n; k++) pixels[used++] = rd32(d + o + k * 4);
+            o += n * 4;
+            n_pictures++;
+        }
     }
     free(d);
     if (bad || !(n_squares + n_figures)) { sfc_forget(); return 0; }
@@ -500,6 +529,7 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
     }
 
     /* the map squares */
+    int wx = 0, wy = 0, laid = n_pictures && widescreen_origin(&wx, &wy);       /* where the pictures lie */
     for (int y = 0; y < h; y++) {
         const uint32_t *br = bg + (size_t)y * src_stride, *sr = spr_kept + (size_t)y * w;
         const uint16_t *cr = cell + (size_t)y * src_stride;
@@ -522,6 +552,12 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
             }
             unsigned f = sq->frames > 1 ? (unsigned)((ppu.frame / sq->ticks) % sq->frames) : 0;
             uint32_t px = sq->px[f * 256 + ((q >> 1) * 8 + HD_ROW(b)) * 16 + (q & 1) * 8 + HD_COL(b)];
+            if ((px >> 24) == 1) {          /* a picture's: the one at this place of the map */
+                if (!laid || (px & 0xFFFFFF) >= n_pictures) continue;
+                const picture_t *pc = &pictures[px & 0xFFFFFF];
+                int mx = (wx + x + org_x) % (int)pc->w, my = (wy + y + org_y) % (int)pc->h;
+                px = pc->px[(size_t)(my < 0 ? my + (int)pc->h : my) * pc->w + (mx < 0 ? mx + (int)pc->w : mx)];
+            }
             if (!(px >> 24)) continue;      /* left to the NES: its own pixel, in whatever color it has there */
             o[x] = p->tinted == 1 ? (0xFF000000u | px) : tinted(px, p->tint);
         }

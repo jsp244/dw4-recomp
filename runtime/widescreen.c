@@ -236,6 +236,7 @@ static void draw_people(int strip) {
    map's position moves by more while the scroll does not has the bands a square off (the camera
    square was taken wrong). widescreen_jumps counts them. */
 static int last_ok, last_wx, last_wy, last_sx, last_sy;
+static int world_ok, world_x, world_y;    /* the map's pixel at the picture's first one (widescreen_origin) */
 static uint64_t last_frame;
 long widescreen_jumps;
 
@@ -254,6 +255,12 @@ static void note_position(void) {
         int sx = wrapped(scroll_x - last_sx, 512), sy = wrapped(scroll_y - last_sy, 480);
         if (sx >= -3 && sx <= 3 && sy >= -3 && sy <= 3 && !continues(wx, wy)) widescreen_jumps++;
     }
+    if (decoded) {      /* (the camera's square counted from the player's: at a map's first row or column it is 255 in memory) */
+        world_x = (ctx_px + (int8_t)(ctx_cam_x + cam_dx - ctx_px)) * 16 + fine_x;
+        world_y = (ctx_py + (int8_t)(ctx_cam_y + cam_dy - ctx_py)) * 16 + fine_y;
+        world_ok = 1;
+    }
+    else if (world_ok) { world_x += wrapped(scroll_x - last_sx, 512); world_y += wrapped(scroll_y - last_sy, 480); }
     last_ok = decoded; last_wx = wx; last_wy = wy; last_sx = scroll_x; last_sy = scroll_y; last_frame = ppu.frame;
 }
 
@@ -388,6 +395,13 @@ int widescreen_square(int n, uint8_t tile[4], uint8_t *pal) {
 }
 
 int widescreen_strip(void) { decode(); return decoded && !(ppu.mask & 0x02); }
+
+int widescreen_origin(int *wx, int *wy) {
+    decode();
+    if (!world_ok) return 0;
+    *wx = world_x; *wy = world_y;
+    return 1;
+}
 
 int widescreen_below(int sx, int line) {
     decode();
