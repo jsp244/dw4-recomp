@@ -460,3 +460,122 @@ sq k30:913405741C9C1D59 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b
 sq k30:62344A007D2CD6C4 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # a gargoyle on the wall
 sq k30:518553623B9DDE60 dq3w:8ad4ae05 tint 261:45 dark -15 here # a hall's floor: the tower's patterned floor, violet
 sq k30:852F4F70CFD534ED dq3h:3290b79c gray 95 here # stairs down, grey here
+
+# the cave of waterfalls (place $34, kind $18): sheets of falling water between floors of pale cobble, pools at
+# their foot. The pools are Dragon Quest III's water in this cave's light blue; the falls are the NES's own
+# streaks in a deeper blue; the stone is the NES's shapes in the grey rock's colors
+nes k18 ../../../generated/sfc/nes_k18.json
+sq k18:05FAEF1DFDFBB89A dq3ow:3ac67643 tint 214:75 dark -55 here # the pools
+sq k18:9B14C420AE6EB6F7 dq3ow:3ac67643 tint 214:75 dark -55 here
+sq k18:3FEECB61B4547993 =k18:05FAEF1DFDFBB89A over ~dq3t:52d321d7 clear 1,2,3 gray 95 here # a pool's edges: the dark line the NES draws along them
+sq k18:9063D8CDB5D261AE =k18:05FAEF1DFDFBB89A over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:B6E07F3C47B14F9E =k18:05FAEF1DFDFBB89A over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:AE895F0B1F060AB8 =k18:05FAEF1DFDFBB89A over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:749DFF29CDA5E1AB =k18:05FAEF1DFDFBB89A over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:2762D13A40B654C8 =k18:05FAEF1DFDFBB89A over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:25FED225D8F91242 =k18:05FAEF1DFDFBB89A over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:D85871D653384443 =k18:05FAEF1DFDFBB89A over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:6A5B035172E5BB2B =k18:9B14C420AE6EB6F7 over ~dq3t:52d321d7 clear 1,2,3 gray 95 here # stones in the water
+sq k18:079EB91122245E49 ~dq3t:52d321d7 basetint 216:74 basedark 4 over ~dq3t:52d321d7 clear 1,2,3 gray 95 here # the falls, and their edges
+sq k18:DB59013456303072 ~dq3t:52d321d7 basetint 216:74 basedark 4 over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:4753300357074642 ~dq3t:52d321d7 basetint 216:74 basedark 4 over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:18BEDD4D4ECF524E ~dq3t:52d321d7 basetint 216:74 basedark 4 over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:C133959C476AD31C ~dq3t:52d321d7 basetint 216:74 basedark 4 over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:9392FA92417099FC ~dq3t:52d321d7 basetint 216:74 basedark 4 over ~dq3t:52d321d7 clear 1,2,3 gray 95 here
+sq k18:90C1FC9BD6AE2BE9 ~dq3t:52d321d7 clear 3 gray 95 dark -30 here # the floors: pale cobble
+sq k18:3B5CB60C696C4FF6 ~dq3t:52d321d7 clear 3 gray 95 dark -30 here # a floor under a ledge
+sq k18:18D1E376AA3C5C6D ~dq3t:52d321d7 clear 3 gray 95 dark -30 here
+sq k18:AE93E3A665661274 ~dq3t:52d321d7 clear 3 gray 95 dark -30 here # a floor's shaded edge
+sq k18:265CE968489789D2 ~dq3t:52d321d7 clear 3 gray 95 dark -30 here # the rock's face
+sq k18:19678BAA3889017C ~dq3t:52d321d7 clear 3 gray 95 dark -30 here
+sq k18:58838F913471C7EE ~dq3t:52d321d7 clear 3 gray 95 dark -30 here
+sq k18:529752150039CE72 ~dq3t:52d321d7 clear 3 gray 95 dark -30 here # steps
+sq k18:1BD5B4AE0488C501 ~dq3t:52d321d7 clear 3 gray 95 dark -30 here # a stairway down into the rock
+sq k18:8CD05FDC1823EA07 ~dq3t:316d8b20 tint 34:70 dark -60 here # the patterned tiles round a chest, orange
+sq k18:B5B4419A63FD7B01 =k18:90C1FC9BD6AE2BE9 over dq3v:ecf9c237.hi here # treasure chest
+sq k18:852F4D70CFD53187 dq3h:3290b79c gray 95 here # stairs down
+
+# the way down into the dark (place $3C, kind $1E): a path of olive rock winding along cliffs of brown strata, a
+# throne of grey stone at its head with bones strewn before it, water glinting far off. The NES's own shapes: the rock in the grey rock's
+# colors turned olive, the strata of the cliffs in one brown, as the NES draws them
+nes k1E ../../../generated/sfc/nes_k1E.json
+sq k1E:5598EC42178C6D77 ~dq3t:52d321d7 tint 58:60 dark 50 here # the dark around: the rock's own darkest shade, so that no square shows its edge
+sq k1E:5DCB774C4BCE7092 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here # the path: olive rock
+sq k1E:BAC51BBFA846F275 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here # the cliffs: brown strata in the dark
+sq k1E:3B7363DEAE1F3971 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:9C9DE8E8C19004D0 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:4F52F178C89BCFB3 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:5216B59A9B293971 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:0325DA533DD54A5B ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:80A689BB338B9DC0 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:BA753E0A095AB49C ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:B238F34BD28571AE ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:1BDEAA9184CD3DC8 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:1C27983AA22F28E9 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here # the path's edges and the cliffs' heads
+sq k1E:0F8EA63C4F6123D2 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:9A8C2F4BD79B8BD4 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:65DA57570196EE9D ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:F2ADA6FA2E731A10 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:07F47BC8B8F57D30 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:61C202F5505AC63D ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:2B53C90F7AA0D1B4 ~dq3t:52d321d7 basetint 58:60 basedark 50 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:B298A94F0994388A =k1E:5DCB774C4BCE7092 over ~dq3t:52d321d7 clear 3 gray 88 dark -15 here # bones strewn on the path
+sq k1E:4CEDC59CB8831FB5 ~dq3t:52d321d7 basegray 95 basedark 10 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here # the throne at the path's head: grey stone, its trim brown
+sq k1E:7917F4FF6121F44A ~dq3t:52d321d7 basegray 95 basedark 10 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:5123A98A7895290C ~dq3t:52d321d7 basegray 95 basedark 10 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:68972FD798A1C299 ~dq3t:52d321d7 basegray 95 basedark 10 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:98D63D71D9761706 ~dq3t:52d321d7 basegray 95 basedark 10 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:7722DAF25AA50E12 ~dq3t:52d321d7 basegray 95 basedark 10 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:B41F7DA38C7241E1 ~dq3t:52d321d7 basegray 95 basedark 10 over ~dq3t:316d8b20 clear 0,1,2 tint 20:72 dark -75 here
+sq k1E:F0A42EE9A0FB5CF4 ~dq3t:52d321d7 tint 188:60 dark 15 here # water glinting in the dark, far off
+sq k1E:78B0CAA8E7E82D72 ~dq3t:52d321d7 tint 188:60 dark 15 here
+
+# the World Tree (place $40): its crown against the sky (kind $23: leaves, boughs, the rings of its wood where
+# it is walked on, floors carved in it) and its foot (kind $24: bark, roots, the hollow, the ladder). The NES's
+# own shapes in the colors of Dragon Quest III's wood; the leaves in its hedge's greens, the sky showing through
+nes k23 ../../../generated/sfc/nes_k23.json
+nes k24 ../../../generated/sfc/nes_k24.json
+sq k23:68E0482A58AFF73F dq3h:4ec6fd25 tint 214:85 dark -40 here # the sky, light blue
+sq k23:993B22E3CB4B7A22 =k23:68E0482A58AFF73F over ~dq3t:662e9c69 clear 2 hue 40-100>125 dark 8 here # the leaves, the sky showing between them
+sq k23:393351A45086BF47 =k23:68E0482A58AFF73F over ~dq3t:662e9c69 clear 2 hue 40-100>125 dark 8 here
+sq k23:FF6B76FFCEB87D7D =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here # the tree's wood: its rings, its bark in shadow, the sky at its rim
+sq k23:E4B9601BD2565F51 =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:83D5E820130ECE57 =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:A0DEBD4CA2138A31 =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:37F493F5103245E9 =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:0F7BD116AC22B417 =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:32E0D3154ACAE94E =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:7A0003EA13596654 =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:605DE3D068A27B40 =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:5020A7E64441EE4F =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:FC6C4F47B0FA37B0 =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:0030F9F114BCFCE5 =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:85FCFC7E2B334E00 =k23:68E0482A58AFF73F over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:557DD90CBA845094 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here # boughs, carved floors, the hollow, ladders: the same wood with its pale grain
+sq k23:435CDF88D630A356 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:024E874F6C05C4BB ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:F2CC2809845D3F44 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:354E0BF50BA87113 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:40C9CDB28A6B763F ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:769444D1E61E34A8 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:E8DFD7208E7DFCF7 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:95675532C9389394 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:2FB3BA4B4E51173F ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:01CB37ACF80B7C60 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:6B3D150E03CCF6C5 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:86F74C1574675A72 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:8A807E9E017A7AA6 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here # at the tree's foot: bark, roots, the hollow, the ladder
+sq k24:7AFD05616944F4B7 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:80589B88DF3F1E43 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:769444D1E61E34A8 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:435CDF88D630A356 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:024E874F6C05C4BB ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:354E0BF50BA87113 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:F2CC2809845D3F44 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:CDDD401F3E832F9C ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:40C9CDB28A6B763F ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:BA3FDFCDDF05BAE6 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:7D373EC4C59E3468 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:AFC31303BFBBFADE ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k24:56B155DE7242733F ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
+sq k23:B5B4419A63FD7B01 =k23:557DD90CBA845094 over dq3v:ecf9c237.hi here # treasure chest, on the carved floor
