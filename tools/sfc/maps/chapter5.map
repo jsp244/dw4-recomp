@@ -188,3 +188,57 @@ sq k10:854A430F1AD8B5C0 ~dq3t:316d8b20 here # the moving floors: their arrows as
 sq k10:6432872DD3231CB3 ~dq3t:316d8b20 here
 sq k10:058CAC601A4291D9 ~dq3t:316d8b20 here
 sq k10:D1DFC6FA673A7945 ~dq3t:316d8b20 here
+
+# the boulder cave of place $35 (kind $1A; its entrance level is kind $14, chapter 3's cave): grey boulders green
+# with moss, an olive floor, pools, floors that carry, a floor in the dark
+nes k1A ../../../generated/sfc/nes_k1A.json
+sq k1A:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 61:55 dark 40 here # the floor
+sq k1A:4C53A4F894A8D3C5 dq3t:b5d04690 rows 0-11,2-5 tint 118:50 dark 78 here # the floor in the dark, green
+sq k1A:5D4D19838C9BBD1F dq3ow:3ac67643 dark 28 here # the pools
+sq k1A:0102087CEE1C3414 dq3t:52d321d7 gray 95 here # rock: grey boulders
+sq k1A:A11EE53E313AB5B8 dq3t:b1728a08 gray 95 here
+sq k1A:4119D62BCD4C9B5F dq3t:253e4373 gray 95 here
+sq k1A:0E62D8482FACF9D1 dq3t:33fcadf1 gray 95 here
+sq k1A:0ED72CE1066263DD ~dq3t:52d321d7 basegray 95 over ~dq3t:662e9c69 clear 1,2 dark 45 here # the boulders' foot, green with moss: the NES's shapes, rock in the rock's colors, moss in the hedge's
+sq k1A:638D1EAA9BE1AE3E ~dq3t:b1728a08 basegray 95 over ~dq3t:662e9c69 clear 1,2 dark 45 here
+sq k1A:854A430F1AD8B5C0 =k1A:DE5FEDC9DD4DEAE6 over ~dq3t:316d8b20 clear 3 here # the moving floors: their arrows in gold on the floor
+sq k1A:6432872DD3231CB3 =k1A:DE5FEDC9DD4DEAE6 over ~dq3t:316d8b20 clear 3 here
+sq k1A:058CAC601A4291D9 =k1A:DE5FEDC9DD4DEAE6 over ~dq3t:316d8b20 clear 3 here
+sq k1A:D1DFC6FA673A7945 =k1A:DE5FEDC9DD4DEAE6 over ~dq3t:316d8b20 clear 3 here
+sq k1A:DB6F9A979E06CFFB =k1A:DE5FEDC9DD4DEAE6 over ~dq3w:90858dec clear 0e tint 125:34 dark 18 here # the green drums (two squares each)
+sq k1A:0FC0004CA16D715B =k1A:DE5FEDC9DD4DEAE6 over ~dq3w:e7991b51 clear 0e tint 125:34 dark 18 here
+sq k1A:03F28602EB6CB0AE =k1A:DE5FEDC9DD4DEAE6 over ~dq3t:f3543fd3 clear 3 here # the great door (four squares), in iron
+sq k1A:1F96094BF68F5FC3 =k1A:DE5FEDC9DD4DEAE6 over ~dq3t:f3543fd3 clear 3 here
+sq k1A:3AE8B33CBC9BF9D5 =k1A:DE5FEDC9DD4DEAE6 over ~dq3t:f3543fd3 clear 3 here
+sq k1A:56A4587A0DEC4DE9 =k1A:DE5FEDC9DD4DEAE6 over ~dq3t:f3543fd3 clear 3 here
+sq k1A:B5B4419A63FD7B01 =k1A:DE5FEDC9DD4DEAE6 over dq3v:ecf9c237.hi here # treasure chest
+sq k1A:1E7E2AFAE5836627 =k1A:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi dark 30 here # stairs down, in shadow
+sq k1A:8DA17CE1D99E0580 =k1A:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi here # stairs
+# and on its entrance level (kind $14): the stone steps between the boulders, the great door in gold
+nes k14 ../../../generated/sfc/nes_k14.json
+sq k14:BFCC277A7ABA0650 ~dq3h:3290b79c gray 95 here
+sq k14:13FB61ECFDD8E8CC ~dq3h:3290b79c gray 95 here
+sq k14:2F1519CC5B6B773F ~dq3t:316d8b20 here
+sq k14:8DE38BFD6384F9C8 ~dq3t:316d8b20 here
+sq k14:D724C4CDC578650E ~dq3t:316d8b20 here
+sq k14:AFE6787A5A22789A ~dq3t:316d8b20 here
+
+# the ice cave of place $2F (kind $19): walls of ice blocks, sheets of ice, an earth floor, floors that carry
+nes k19 ../../../generated/sfc/nes_k19.json
+sq k19:C88CB02568ACA384 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 tint 208:68 dark 2 here # walls: blocks of ice (Dragon Quest I's brick, in ice's pale blue)
+sq k19:FA2F1A8E8034A1F3 dq1:7fe8dc4d rows 4,1-15 tint 210:58 dark 18 here
+sq k19:E77F932447EB3F14 ~dq3ow:3ac67643 gray 10 dark -50 here # a sheet of ice: its sheen as the NES draws it, in the water's blues
+sq k19:DE5FECC9DD4DE933 dq3t:b5d04690 rows 0-11,2-5 tint 61:53 dark 40 here # the floor
+sq k19:533724D44AC9666C =k19:DE5FECC9DD4DE933 over ~dq3ow:3ac67643 clear 3 gray 35 dark -90 here # a spire of ice (two squares)
+sq k19:0B46829D65F818AE =k19:DE5FECC9DD4DE933 over ~dq3ow:3ac67643 clear 3 gray 35 dark -90 here
+sq k19:854A440F1AD8B773 ~dq3t:316d8b20 tint 250:35 dark -70 here # the moving floors, in this place's pale violet
+sq k19:6432862DD3231B00 ~dq3t:316d8b20 tint 250:35 dark -70 here
+sq k19:058CAB601A429026 ~dq3t:316d8b20 tint 250:35 dark -70 here
+sq k19:D1DFC5FA673A7792 ~dq3t:316d8b20 tint 250:35 dark -70 here
+sq k19:2F1518CC5B6B758C ~dq3t:f3543fd3 tint 215:30 dark -70 here # the great door (four squares), iron white with frost
+sq k19:8DE38CFD6384FB7B ~dq3t:f3543fd3 tint 215:30 dark -70 here
+sq k19:D724C5CDC57866C1 ~dq3t:f3543fd3 tint 215:30 dark -70 here
+sq k19:AFE6797A5A227A4D ~dq3t:f3543fd3 tint 215:30 dark -70 here
+sq k19:B5B4419A63FD7B01 =k19:DE5FECC9DD4DE933 over dq3v:ecf9c237.hi here # treasure chest
+sq k19:8DA17CE1D99E0580 =k19:DE5FECC9DD4DE933 over dq3t:aa6b8d51.hi here # stairs
+sq k19:1E7E2AFAE5836627 =k19:DE5FECC9DD4DE933 over dq3t:aa6b8d51.hi dark 30 here # stairs down, in shadow

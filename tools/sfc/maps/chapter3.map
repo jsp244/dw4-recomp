@@ -42,12 +42,12 @@ sq k13:B5B4419A63FD7B01 =k13:DE5FEDC9DD4DEAE6 over dq3v:ecf9c237.hi here
 sq k14:8DA17CE1D99E0580 =k14:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi here # stairs up
 sq k13:8DA17CE1D99E0580 =k13:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi here
 sq k14:5598ED42178C6F2A dq3h:df287325 # the dark beyond the rock
-sq k14:0102087CEE1C3414 dq3t:52d321d7 # rock (two squares wide, three courses)
-sq k14:A11EE53E313AB5B8 dq3t:b1728a08
-sq k14:4119D62BCD4C9B5F dq3t:253e4373
-sq k14:0E62D8482FACF9D1 dq3t:33fcadf1
-sq k14:32C6A8BD2BB4D266 dq3t:30f34ccc dark 35 # its foot, in shadow
-sq k14:A66DDF1DADF1BE44 dq3t:30f34ccc dark 35
+sq k14:0102087CEE1C3414 dq3t:52d321d7 gray 95 # rock (two squares wide, three courses): grey boulders, as the NES has them
+sq k14:A11EE53E313AB5B8 dq3t:b1728a08 gray 95
+sq k14:4119D62BCD4C9B5F dq3t:253e4373 gray 95
+sq k14:0E62D8482FACF9D1 dq3t:33fcadf1 gray 95
+sq k14:32C6A8BD2BB4D266 dq3t:30f34ccc gray 95 dark 35 # its foot, in shadow
+sq k14:A66DDF1DADF1BE44 dq3t:30f34ccc gray 95 dark 35
 sq k13:92655F065DFDFF53 dq3t:b5d04690 rows 0-11,2-5 dark 38 # the lower floor, brown
 sq k14:1E7E2AFAE5836627 =k14:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi dark 30 here # stairs down, in shadow
 sq k14:55F4E6581DE1E7D6 dq3t:aa6b8d51 # steps down into the water
