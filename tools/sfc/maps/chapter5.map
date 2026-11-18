@@ -275,3 +275,39 @@ sq k11:663B674F8C9F002E =k11:5DCB784C4BCE7245 over ~dq3t:316d8b20 clear 0e here 
 sq k11:B5B4419A63FD7B01 =k11:5DCB784C4BCE7245 over dq3v:ecf9c237.hi here # treasure chest
 sq k11:491CEBABFC679B86 =k11:5DCB784C4BCE7245 over dq3t:aa6b8d51.hi here # stairs
 sq k11:1E7E2AFAE5836627 =k11:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi dark 30 here # stairs down, in shadow
+
+# the place in the sky (place $3E, kind $22): a castle far off on its cloud, and the terraces before its gate.
+# None of the games' openings shows clouds: these are the NES's own cloud shapes, in white and a pale blue
+# (the colors are lent by Dragon Quest I's white and blue tiles, lightened).
+nes k22 ../../../generated/sfc/nes_k22.json
+sq k22:68E0482A58AFF73F dq3h:4ec6fd25 tint 238:52 here # the sky, the deep blue it has up here
+sq k22:A97E99B0CA5681F4 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here # cloud
+sq k22:900E601062200311 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here # the cloud's edges against the sky
+sq k22:C1B734609D17A32C =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
+sq k22:A086B3579FB1CBA2 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
+sq k22:4783E2339E8020E3 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
+sq k22:6686ED2656E49314 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
+sq k22:12B1D4F09C3719F7 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
+sq k22:DD2D1889CDF8F1C4 =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
+sq k22:3C29978363767C1B =k22:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 205:50 dark -90 here
+sq k22:87623F73B66208B6 =k22:A97E99B0CA5681F4 over ~dq3w:efc08409 clear 3 gray 90 here # the castle far off on the cloud (four squares)
+sq k22:859EB207CAD73E9D =k22:A97E99B0CA5681F4 over ~dq3w:efc08409 clear 3 gray 90 here
+sq k22:B5C69927A95DA38C =k22:A97E99B0CA5681F4 over ~dq3w:efc08409 clear 3 gray 90 here
+sq k22:7E1935C0416CC1E8 =k22:A97E99B0CA5681F4 over ~dq3w:efc08409 clear 3 gray 90 here
+sq k22:C8E9D0D954110E54 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 tint 6:50 dark 76 here # the terraces: brick, dark red
+sq k22:A81792E3999AB0C4 ~dq3w:efc08409 gray 95 here # blocks of grey stone
+sq k22:C882A6AAB993D156 ~dq3w:efc08409 gray 95 here # the same over a band of lattice
+sq k22:E206AE8DF62D581F ~dq3w:efc08409 gray 95 here
+sq k22:F0350C517914FA1D ~dq3w:efc08409 gray 95 here
+sq k22:15D496E0E7D81EA7 ~dq3w:efc08409 gray 95 here # the columns under a terrace's edge, each in its dark recess as the NES has them
+sq k22:70E93E0685DF985A ~dq3w:efc08409 gray 95 here
+sq k22:462A408C68117D87 ~dq3w:efc08409 gray 95 here
+sq k22:663B654F8C9EFCC8 ~dq3c:a4db257b gray 95 here # the long stair
+sq k22:B153ED804A118E13 ~dq3c:a4db257b gray 95 here
+sq k22:2CCEC96ED59DA77E ~dq3w:f6ff8c79 gray 95 here # the dais and its steps (six squares)
+sq k22:4EB376EE257C32E8 ~dq3w:f6ff8c79 gray 95 here
+sq k22:AA1A5C155D029866 ~dq3w:f6ff8c79 gray 95 here
+sq k22:D0559285EA0460D8 ~dq3w:f6ff8c79 gray 95 here
+sq k22:A3F28D9883C525F8 ~dq3w:f6ff8c79 gray 95 here
+sq k22:4254192D06F8614F ~dq3w:f6ff8c79 gray 95 here
+sq k22:852F4F70CFD534ED dq3h:3290b79c gray 95 here # stairs down
