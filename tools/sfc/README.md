@@ -3,7 +3,7 @@
 Graphics > Textures > **SNES Remaster** draws the game's map squares and people with the art of the
 Super Famicom Dragon Quest games. That art is not in the packages: it is taken from your own
 cartridge dump into a pack, `sfc.pak`, that the game loads from its folder. Without the pack the
-choice is not offered. (This repository holds nineteen squares and four figures of it, locked to the ROM
+choice is not offered. (This repository holds nineteen squares and five figures of it, locked to the ROM
 you supply: the supplement, below.)
 
 You need one Super Famicom game, the Japanese **Dragon Quest III**, and your Dragon Warrior IV ROM
@@ -17,9 +17,9 @@ python tools/sfc/extract.py --dq3 "Dragon Quest III - Soshite Densetsu e... (Jap
 Nearly all the art is Dragon Quest III's. Nine squares are Dragon Quest I & II's (its castle brick,
 its single tree, its barrier floor, its throne room's tiles), and the ship in Haville's harbour is
 Dragon Quest V's, the one its story opens on (ten squares: deck, rim, mast, barrel, wheel, cabin
-door). Four figures are Dragon Quest VI's: the party's wagon, the ox (its cow, turned brown), the
-fox (none of the games has one: its dog, turned fox-red) and the demon at the top of chapter 1's
-tower. They come from the supplement,
+door). Five figures are Dragon Quest VI's: the party's wagon, the ox (its cow, turned brown), the
+fox (none of the games has one: its dog, turned fox-red), the demon at the top of chapter 1's
+tower and the wild-haired brutes of chapter 5 (its ogre, turned purple). They come from the supplement,
 `tools/sfc/supplement.bin`: just those pictures, combined with
 a stream made from the Dragon Quest III ROM's contents, so that the file opens only with that very
 ROM (`supplement.py`). If you would rather take them from your own cartridges, give those games
