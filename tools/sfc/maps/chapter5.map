@@ -119,3 +119,55 @@ nes k2B ../../../generated/sfc/nes_k2B.json
 sq k05:708358192C8B40EF dq3w:8ad4ae05 gray 100 dark -85 here # the white stone at the bottom of the mine (place $2D level 9)
 sq k2B:7A3A9C1FBF4328CE =k2B:A3C180DA80659B9A over ~dq3t:316d8b20 clear 1,0e here # the torch on the wall of the tower of place $35 (two squares)
 sq k2B:53FC640DBCE19DDF =k2B:A3C180DA80659B9A over ~dq3t:316d8b20 clear 1,0e here
+
+# the stone shrine of place $37 (kind $15): the tower's grey stonework, a patterned floor of dark teal, pillars,
+# dragons in their frames, a statue on its dais
+nes k15 ../../../generated/sfc/nes_k15.json
+sq k15:8C66B3DFC61DD01C dq3w:8ad4ae05 tint 190:29 dark 28 here # the floor: the tower's patterned floor, in this place's dark teal
+sq k15:1D55392BF296EDAD ~dq3t:84d1bc46 gray 95 here # the dais: the patterned stone
+sq k15:9F31F31FD6151660 =k15:8C66B3DFC61DD01C over dq3w:90858dec.hi gray 100 dark -160 here # pillar, its head: the tower's, in the pale grey these have
+sq k15:A4EE3D3C5D73E160 =k15:8C66B3DFC61DD01C over dq3w:e7991b51.hi gray 100 dark -160 here # pillar, its foot
+sq k15:FA8C23275540D346 =k15:8C66B3DFC61DD01C over dq3w:1154c159.hi here # the dragon in its frame (four squares)
+sq k15:E2FCF50BB9B6553D =k15:8C66B3DFC61DD01C over dq3w:bae87c5b.hi here
+sq k15:5B54E41B75934585 =k15:8C66B3DFC61DD01C over dq3w:c8e82613.hi here
+sq k15:D0F6E8E80AB7C7D4 =k15:8C66B3DFC61DD01C over dq3w:6e105f36.hi here
+sq k15:AAC86EF7C9243DE0 dq3t:52d321d7 gray 95 here # the wall fallen in: grey rock (four squares)
+sq k15:E83FB38F1895B302 dq3t:b1728a08 gray 95 here
+sq k15:856EF6CE404994B5 dq3t:253e4373 gray 95 here
+sq k15:64DD3E5C42BA0B93 dq3t:33fcadf1 gray 95 here
+sq k15:3918F2F6760F8206 ~dq3h:3290b79c gray 95 here # steps
+sq k15:01962FACAA921033 ~dq3w:1154c159 here # the statue on the dais and its foot
+sq k15:F1CEEE471CEDE576 ~dq3w:1154c159 here
+sq k15:B5B4419A63FD7B01 =k15:8C66B3DFC61DD01C over dq3v:ecf9c237.hi here # treasure chest
+
+# the purple tower of place $42 (kind $28): the tower's stonework and fittings, all in this place's violet
+nes k28 ../../../generated/sfc/nes_k28.json
+sq k28:A78FBF5775107294 dq3c:37817fc5 tint 284:55 dark 7 here # the floor
+sq k28:A3C180DA80659B9A dq3w:efc08409 tint 262:50 dark 26 here # wall
+sq k28:B7FCB9B3A141B21B dq3w:efc08409 tint 262:50 dark 26 here
+sq k28:091E8E5062C966E1 dq3w:efc08409 tint 262:50 dark 26 here
+sq k28:339CBCC27B767E70 dq3w:efc08409 tint 262:50 dark 26 here
+sq k28:368D966FC25065A8 dq3w:efc08409 tint 262:55 dark 48 here # wall in shadow
+sq k28:E71129D7C5F8DF6E dq3w:efc08409 tint 262:55 dark 48 here
+sq k28:D676378C144255D4 ~dq3w:efc08409 tint 267:50 dark 32 here # the lattice around the rooms
+sq k28:A81792E3999AB0C4 ~dq3w:efc08409 tint 262:60 dark 8 here # the arcade: its top
+sq k28:3D6D14E03292C907 =k28:A78FBF5775107294 over ~dq3w:efc08409 clear 0e tint 262:60 dark 8 here # where its arches spring
+sq k28:0CA17E5308B13D3E =k28:A78FBF5775107294 over ~dq3w:efc08409 clear 0e tint 262:60 dark 8 here # its columns
+sq k28:852F4F70CFD534ED dq3h:3290b79c tint 262:44 dark 19 here # stairs down
+sq k28:5880E2775F1BA537 =k28:A78FBF5775107294 over dq3t:aa6b8d51.hi tint 262:40 dark 15 here # stairs
+sq k28:1D55392BF296EDAD ~dq3t:84d1bc46 tint 262:50 dark 22 here # the patterned stone
+sq k28:83A11E06C4CD49A2 =k28:A78FBF5775107294 over ~dq3w:1154c159 clear 0e tint 269:48 here # the urn on its stand (two squares)
+sq k28:3683C823C83560F5 =k28:A78FBF5775107294 over ~dq3w:1154c159 clear 0e tint 269:48 here
+sq k28:C3645E554946594B =k28:A78FBF5775107294 over ~dq3t:316d8b20 clear 3 here # the golden knights (two squares each)
+sq k28:9204B31752735024 =k28:A78FBF5775107294 over ~dq3t:316d8b20 clear 3 here
+sq k28:7A3A9C1FBF4328CE =k28:A3C180DA80659B9A over ~dq3t:316d8b20 clear 1,0e here # the torch on the wall (two squares)
+sq k28:53FC640DBCE19DDF =k28:A3C180DA80659B9A over ~dq3t:316d8b20 clear 1,0e here
+sq k28:2C95625F74AB3835 =k28:A78FBF5775107294 over ~dq3t:316d8b20 clear 3 here # the golden brazier and its flame (four squares)
+sq k28:09B8511880A9BC7D =k28:A78FBF5775107294 over ~dq3t:316d8b20 clear 3 here
+sq k28:3730BBDDF0C54FA1 =k28:A78FBF5775107294 over ~dq3t:316d8b20 clear 3 here
+sq k28:4100058098965FCA =k28:A78FBF5775107294 over ~dq3t:316d8b20 clear 3 here
+sq k28:8559E49EC246BE37 ~dq3t:316d8b20 here # the great door (four squares)
+sq k28:F41F4BCCAA06367B ~dq3t:316d8b20 here
+sq k28:8AC25C106C5B6103 ~dq3t:316d8b20 here
+sq k28:2E1292A413D1779C ~dq3t:316d8b20 here
+sq k28:B5B4419A63FD7B01 =k28:A78FBF5775107294 over dq3v:ecf9c237.hi here # treasure chest
