@@ -294,7 +294,7 @@ sq k22:87623F73B66208B6 =k22:A97E99B0CA5681F4 over ~dq3w:efc08409 clear 3 gray 9
 sq k22:859EB207CAD73E9D =k22:A97E99B0CA5681F4 over ~dq3w:efc08409 clear 3 gray 90 here
 sq k22:B5C69927A95DA38C =k22:A97E99B0CA5681F4 over ~dq3w:efc08409 clear 3 gray 90 here
 sq k22:7E1935C0416CC1E8 =k22:A97E99B0CA5681F4 over ~dq3w:efc08409 clear 3 gray 90 here
-sq k22:C8E9D0D954110E54 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 tint 6:50 dark 76 here # the terraces: brick, dark red
+sq k22:C8E9D0D954110E54 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 tint 6:60 dark 72 here # the terraces: brick, dark red
 sq k22:A81792E3999AB0C4 ~dq3w:efc08409 gray 95 here # blocks of grey stone
 sq k22:C882A6AAB993D156 ~dq3w:efc08409 gray 95 here # the same over a band of lattice
 sq k22:E206AE8DF62D581F ~dq3w:efc08409 gray 95 here
@@ -311,3 +311,44 @@ sq k22:D0559285EA0460D8 ~dq3w:f6ff8c79 gray 95 here
 sq k22:A3F28D9883C525F8 ~dq3w:f6ff8c79 gray 95 here
 sq k22:4254192D06F8614F ~dq3w:f6ff8c79 gray 95 here
 sq k22:852F4F70CFD534ED dq3h:3290b79c gray 95 here # stairs down
+
+
+# the castle in the sky (place $3D): its outside (kind $20) is built as the terraces before its gate are; inside
+# (kind $21) brick floors ringed with balusters, golden winged figures, carpets, pools. The sky around it comes
+# in three blues, deep above, light below, and a band between that the NES dithers: one flat blue here.
+nes k20 ../../../generated/sfc/nes_k20.json
+nes k21 ../../../generated/sfc/nes_k21.json
+sq k20:BC3425B852C8C997 dq3h:4ec6fd25 tint 238:52 here # the sky, deep blue
+sq k20:5048EA82B122D1DF dq3h:4ec6fd25 tint 224:64 dark -14 here # the band between
+sq k20:68E0482A58AFF73F dq3h:4ec6fd25 tint 214:85 dark -40 here # the sky, light blue
+sq k21:68E0482A58AFF73F dq3h:4ec6fd25 tint 214:85 dark -40 here
+sq k20:C8E9D0D954110E54 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 tint 6:60 dark 72 here # brick, dark red
+sq k21:C8E9D0D954110E54 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 tint 6:60 dark 72 here
+sq k20:A81792E3999AB0C4 ~dq3w:efc08409 gray 95 here # blocks of grey stone, and the same over a band of lattice
+sq k20:C882A6AAB993D156 ~dq3w:efc08409 gray 95 here
+sq k20:E206AE8DF62D581F ~dq3w:efc08409 gray 95 here
+sq k20:F0350C517914FA1D ~dq3w:efc08409 gray 95 here
+sq k20:15D496E0E7D81EA7 ~dq3w:efc08409 gray 95 here # the columns in their dark recesses
+sq k20:70E93E0685DF985A ~dq3w:efc08409 gray 95 here
+sq k20:462A408C68117D87 ~dq3w:efc08409 gray 95 here
+sq k20:663B654F8C9EFCC8 ~dq3c:a4db257b gray 95 here # the long stair
+sq k20:B153ED804A118E13 ~dq3c:a4db257b gray 95 here
+sq k21:B153ED804A118E13 ~dq3c:a4db257b gray 95 here
+sq k20:7463EE3AE7F8F224 ~dq3w:efc08409 gray 95 here # the great round towers (six squares each): the NES's own drums, in the grey stone
+sq k20:9B883023A2AFB81C ~dq3w:efc08409 gray 95 here
+sq k20:024732AFF79ACFFA ~dq3w:efc08409 gray 95 here
+sq k20:BD8F770AEAF14200 ~dq3w:efc08409 gray 95 here
+sq k20:D27E6503011D8961 ~dq3w:efc08409 gray 95 here
+sq k20:FF7E8FB538B7AF0C ~dq3w:efc08409 gray 95 here
+sq k20:852F4F70CFD534ED dq3h:3290b79c gray 95 here # stairs down
+sq k21:852F4F70CFD534ED dq3h:3290b79c gray 95 here
+sq k21:3A8D1F5DA6CB2398 =k21:C8E9D0D954110E54 over ~dq3w:efc08409 clear 3,0e,outline gray 95 here # the balusters round the floors: their NES shapes in grey stone, on the brick
+sq k21:7C27CA323DCC334E =k21:C8E9D0D954110E54 over ~dq3w:efc08409 clear 3,0e,outline gray 95 here
+sq k21:F2427C4BFD3D372A =k21:C8E9D0D954110E54 over ~dq3w:efc08409 clear 3,0e,outline gray 95 here
+sq k21:F7C06EAC40B0F8C3 =k21:C8E9D0D954110E54 over ~dq3w:efc08409 clear 3,0e,outline gray 95 here
+sq k21:B37FEBA1A6A3FBA7 =k21:68E0482A58AFF73F over ~dq3w:efc08409 clear 3 gray 95 here # and against the sky
+sq k21:BC71D036BDBA85F5 =k21:C8E9D0D954110E54 over ~dq3t:316d8b20 clear 3 tint 44:58 dark -18 here # the golden winged figures
+sq k21:708358192C8B40EF dq3w:8ad4ae05 gray 100 dark -200 here # the walk of white stone across a pool: the tower's patterned floor, all but white
+sq k21:7F1661F4324A32DB =k21:C8E9D0D954110E54 over ~dq3c:a4db257b clear 3 gray 95 here # steps
+sq k20:B5B4419A63FD7B01 =k20:C8E9D0D954110E54 over dq3v:ecf9c237.hi here # treasure chest
+sq k21:B5B4419A63FD7B01 =k21:C8E9D0D954110E54 over dq3v:ecf9c237.hi here
