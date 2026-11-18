@@ -3,8 +3,8 @@
 Graphics > Textures > **SNES Remaster** draws the game's map squares and people with the art of the
 Super Famicom Dragon Quest games. That art is not in the packages: it is taken from your own
 cartridge dump into a pack, `sfc.pak`, that the game loads from its folder. Without the pack the
-choice is not offered. (This repository holds nineteen squares of it, locked to the ROM you supply: the
-supplement, below.)
+choice is not offered. (This repository holds nineteen squares and three figures of it, locked to the ROM
+you supply: the supplement, below.)
 
 You need one Super Famicom game, the Japanese **Dragon Quest III**, and your Dragon Warrior IV ROM
 in `rom/`.
@@ -17,13 +17,17 @@ python tools/sfc/extract.py --dq3 "Dragon Quest III - Soshite Densetsu e... (Jap
 Nearly all the art is Dragon Quest III's. Nine squares are Dragon Quest I & II's (its castle brick,
 its single tree, its barrier floor, its throne room's tiles), and the ship in Haville's harbour is
 Dragon Quest V's, the one its story opens on (ten squares: deck, rim, mast, barrel, wheel, cabin
-door). They come from the supplement, `tools/sfc/supplement.bin`: just those squares, combined with
+door). Three figures are Dragon Quest VI's: the party's wagon, the ox (its cow, turned brown) and
+the demon at the top of chapter 1's tower. They come from the supplement,
+`tools/sfc/supplement.bin`: just those pictures, combined with
 a stream made from the Dragon Quest III ROM's contents, so that the file opens only with that very
 ROM (`supplement.py`). If you would rather take them from your own cartridges, give those games
 too: `--dq12 "Dragon Quest I & II (Japan).sfc"`, `--dq5 "Dragon Quest V (Japan).sfc"` (Dragon Quest V
-is then played from power-on onto its ship's deck, 12,814 frames). Whoever changes the map files
-writes the supplement again with `--dq12 ... --dq5 ... --write-supplement`: it holds what the map
-files use of the other games' libraries and nothing else.
+is then played from power-on onto its ship's deck, 12,814 frames), `--dq6 "Dragon Quest VI
+(Japan).sfc"` (played to the cliff of its opening, 5,596 frames, where the game is asked to draw
+each wanted character in place of the man who waits there). Whoever changes the map files
+writes the supplement again with `--dq12 ... --dq5 ... --dq6 ... --write-supplement`: it holds what
+the map files use of the other games' libraries and nothing else.
 
 That writes `sfc.pak` next to the Makefile; copy it beside the game. It takes twenty minutes or
 more: most of it is Dragon Quest III being played, without a window, from power-on through its

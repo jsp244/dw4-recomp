@@ -30,6 +30,9 @@ usage:
     sfcfig.py buildn LIB.figs NAME=CAPTURE...           Dragon Quest III's people by number (NAME: nXX_a, nXX_b,
                                                         nXXR_a, nXXR_b: number XX in hex, the two steps, R =
                                                         the run that turns the one on the carpet right)
+    sfcfig.py buildn6 LIB.figs NAME=CAPTURE...          Dragon Quest VI's people by number (NAME: vXXU_a, vXXU_b,
+                                                        vXXR_.., vXXD_.., vXXL_..: the run that turns the one
+                                                        at the cliff up, right, down, left)
     sfcfig.py sheet LIB.figs OUT.png
 The library holds the games' art: it stays with your own copies (generated/ is git-ignored).
 """
@@ -201,10 +204,14 @@ def build3(lib_path, rom_path, named, party=False):
 # The hero himself stands at HERO_AT.
 SPOTS = {"": (((24, 112), 0), ((80, 96), 6), ((24, 192), 4)), "R": (((24, 192), 2),)}
 HERO_AT = (120, 96)
+# Dragon Quest VI (extract.py: DQ6_PEOPLE): one person, the man at the cliff's edge of the opening, in four runs that
+# turn him up, right, down and left; the hero has stopped below him.
+SPOTS6 = {"U": (((112, 64), 0),), "R": (((112, 64), 2),), "D": (((112, 64), 4),), "L": (((112, 64), 6),)}
+HERO_AT6 = (128, 96)
 OBJ_SIZES = {0: (8, 16), 1: (8, 32), 2: (8, 64), 3: (16, 32), 4: (16, 64), 5: (32, 64)}
 
 
-def buildn(lib_path, named):
+def buildn(lib_path, named, spots=SPOTS, hero_at=HERO_AT):
     figs, lacking = [], set()
     for item in named:
         name, path = item.split("=", 1)
@@ -220,10 +227,10 @@ def buildn(lib_path, named):
                 x -= 256
             if y >= 224 or x + size <= 0:
                 continue                        # not on the screen
-            if HERO_AT[0] <= x < HERO_AT[0] + 16 and HERO_AT[1] <= y < HERO_AT[1] + 24:
+            if hero_at[0] <= x < hero_at[0] + 16 and hero_at[1] <= y < hero_at[1] + 24:
                 continue                        # the hero
             spr.append((i, x, y, size, t | ((a & 1) << 8), (a >> 1) & 7, (a >> 6) & 1, a >> 7))
-        for (sx, sy), pose in SPOTS[run]:
+        for (sx, sy), pose in spots[run]:
             # the sprites of the one who stands there: those over the spot and those touching them
             mine = [s for s in spr if s[1] < sx + 16 and s[1] + s[3] > sx and s[2] < sy + 24 and s[2] + s[3] > sy]
             grew = bool(mine)
@@ -311,6 +318,8 @@ def main():
         build3(a[2], a[3], a[4:], party=True)
     elif len(a) >= 4 and a[1] == "buildn":
         buildn(a[2], a[3:])
+    elif len(a) >= 4 and a[1] == "buildn6":
+        buildn(a[2], a[3:], SPOTS6, HERO_AT6)
     elif len(a) == 4 and a[1] == "sheet":
         sheet(a[2], a[3])
     else:

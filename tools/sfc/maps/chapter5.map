@@ -11,6 +11,7 @@ nes k07 ../../../generated/sfc/nes_k07.json
 nes k0A ../../../generated/sfc/nes_k0A.json
 nes k0E ../../../generated/sfc/nes_k0E.json
 figs dq3n ../../../generated/sfc/dq3_people.figs
+figs dq6n ../../../generated/sfc/dq6_people.figs   # Dragon Quest VI's people, drawn by the game by number (extract.py: DQ6_PEOPLE)
 people ch5 ../../../generated/sfc/nes_people_ch5.json
 
 # ---- towns, castles and shrines ----
@@ -49,3 +50,4 @@ cast ch5:c5_04_0E:4 dq3n:g64 poses 0,1,2,3,4,5,6,7 hue 200-260>330
 cast ch5:c5_09_01:7 dq3n:g64 poses 0,1,2,3,4,5,6,7 hue 200-260>330
 cast ch5:c5_1B_03:5 dq3n:g64 poses 0,1,2,3,4,5,6,7 hue 200-260>330
 cast ch5:c5_26_00:5 dq3n:g112 poses 0,1,2,3,4,5,6,7 # Rosa: the elf
+cast ch5:c5_21_00:5 dq6n:g11 poses 0,1,2,3,4,5,6,7 # the wagon: Dragon Quest VI's

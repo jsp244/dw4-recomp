@@ -20,6 +20,7 @@ nes k17 ../../../generated/sfc/nes_k17.json
 figs dq3 ../../../generated/sfc/dq3.figs
 figs dq3p ../../../generated/sfc/dq3_party.figs
 figs dq3n ../../../generated/sfc/dq3_people.figs
+figs dq6n ../../../generated/sfc/dq6_people.figs   # Dragon Quest VI's people, drawn by the game by number (extract.py: DQ6_PEOPLE)
 people ch3 ../../../generated/sfc/nes_people_ch3.json
 
 # ---- fields, a stone bridge, a ruin's rock ----
@@ -128,3 +129,4 @@ cast ch3:c3_06_00:11 dq3n:g78 poses 0,1,2,3,4,5,6,7 # the sister: the nun
 cast ch3:c3_18_00:9 dq3n:g76 poses 0,1,2,3,4,5,6,7 # the bald old man with the staff
 cast ch3:c3_18_01:5 dq3n:g76 poses 0,1,2,3,4,5,6,7
 cast ch3:c3_14_01:4 dq3n:g76 poses 0,1,2,3,4,5,6,7
+cast ch3:c3_14_01:6 dq6n:g79 poses 0,1,2,3,4,5,6,7 colors EFEFEF>B4682C,BDB5A5>8C4A18,7B736B>6A340E,5A4A42>F0E8D8,EFBD21>F4F0E8,CE7B00>C8C0B0 # the ox: Dragon Quest VI's cow, brown with white patches and horns as the NES has it
