@@ -110,7 +110,8 @@ DQ6_CLIFF = 5596
 DQ6_RECORD = 0x3F0A10
 DQ6_FACINGS = (("U", 0), ("R", 1), ("D", 2), ("L", 3))
 # number: who (the map files name a set by the number in decimal: dq6n:g11 is the wagon)
-DQ6_PEOPLE = {0x0B: "the covered wagon", 0x12: "a clawed demon", 0x14: "a wild-haired ogre", 0x47: "a dog", 0x4F: "a cow"}
+DQ6_PEOPLE = {0x0B: "the covered wagon", 0x12: "a clawed demon", 0x14: "a wild-haired ogre", 0x1D: "a troll", 0x47: "a dog",
+              0x4F: "a cow", 0x5D: "a stone giant"}
 
 
 def dq3_sets(names):

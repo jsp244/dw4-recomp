@@ -22,6 +22,7 @@ nes k2F ../../../generated/sfc/nes_k2F.json
 nes k2E ../../../generated/sfc/nes_k2E.json
 nes rooms ../../../generated/sfc/nes_rooms.json
 figs dq3n ../../../generated/sfc/dq3_people.figs
+figs dq6n ../../../generated/sfc/dq6_people.figs   # Dragon Quest VI's people, drawn by the game by number (extract.py: DQ6_PEOPLE)
 people ch4 ../../../generated/sfc/nes_people_ch4.json
 
 # ---- Monbaraba's theater (kind $2C) ----
@@ -164,3 +165,4 @@ cast ch4:c4_11_01:4 dq3n:g95 poses 0,1,2,3,4,5,6,7
 cast ch4:c4_0A_00:5 dq3n:g92 poses 0,1,2,3,4,5,6,7 # the skeleton
 cast ch4:c4_00_00:5 dq3n:g117 poses 0,1,2,3,4,5,6,7 # the warrior in the horned helmet
 cast ch4:c4_00_01:5 dq3n:g49 poses 0,1,2,3,4,5,6,7 # the hooded man
+cast ch4:c4_00_01:7 dq6n:g29 poses 0,1,2,3,4,5,6,7 hue 55-80>24 # Keeleon on his throne: none of the games has a lion-beast; Dragon Quest VI's troll, its green fur turned the NES's brown over its salmon belly
