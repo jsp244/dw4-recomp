@@ -57,3 +57,65 @@ cast ch5:c5_03_01:5 dq6n:g20 poses 0,1,2,3,4,5,6,7 hue 110-230>285 # the wild-ha
 cast ch5:c5_27_02:4 dq3n:g35 poses 4,5,4,5,4,5,4,5 hue 230-290>318 # the demon on the throne of place $27 (it only ever faces the hall): Dragon Quest III's winged demon, pink as the NES has this one
 cast ch5:c5_29_01:4 dq3n:g35 poses 4,5,4,5,4,5,4,5 # the demon on the throne of place $29: the same, in its own purple
 cast ch5:c5_27_01:4 dq6n:g93 poses 4,5,4,5,4,5,4,5 # the stone guards in the hall below: Dragon Quest VI's stone giant
+
+# ---- chapter 5's caves ----
+# Every cave kind has its squares bound to it in its own tones (a square shared by kinds with other colors under
+# the same palette number is tinted wrongly by the game): the rock, the earth and the things of chapter 1's caves,
+# toned to each kind's NES colors (darker than the art: these places are dark).
+nes k12 ../../../generated/sfc/nes_k12.json
+nes k1D ../../../generated/sfc/nes_k1D.json
+nes k29 ../../../generated/sfc/nes_k29.json
+
+# the cave of standing stones (place $2E, kind $12): olive rock, a pool
+sq k12:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 61:55 dark 40 here # the floor
+sq k12:92655F065DFDFF53 dq3t:b5d04690 rows 0-11,2-5 tint 41:55 dark 44 here # the lower floor
+sq k12:B22BC0DF76ACB2E6 dq3t:52d321d7 tint 47:55 dark 42 here # rock
+sq k12:C5332899959654CE dq3t:b1728a08 tint 47:55 dark 41 here
+sq k12:FB0416D8C014C8E7 dq3t:253e4373 tint 47:55 dark 41 here
+sq k12:B32BF608448985D2 dq3t:33fcadf1 tint 47:55 dark 43 here
+sq k12:65DB5B29F249CA11 dq3t:30f34ccc tint 34:55 dark 62 here # rock, its face in shadow
+sq k12:5D4D19838C9BBD1F dq3ow:3ac67643 dark 28 here # the pool: the sea's water, darker in here
+sq k12:7B43CEF32D095AAE =k12:5D4D19838C9BBD1F over ~dq3t:3a4b6712 clear 3 gray 90 here # a standing stone in the pool (two squares)
+sq k12:5C2B6E48007DBE43 =k12:5D4D19838C9BBD1F over ~dq3t:3a4b6712 clear 3 gray 90 here
+sq k12:7B43CCF32D095748 ~dq3t:3a4b6712 tint 47:55 dark 34 here # and one on the ground
+sq k12:5C2B7048007DC1A9 ~dq3t:3a4b6712 tint 36:55 dark 45 here
+sq k12:B5B4419A63FD7B01 =k12:DE5FEDC9DD4DEAE6 over dq3v:ecf9c237.hi here # treasure chest
+sq k12:8DA17CE1D99E0580 =k12:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi here # stairs
+
+# the hermit's cave and the cave homes (places $30 level 0, $39, $3A; kind $1D): orange rock, a room with a floor
+sq k1D:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 31:55 dark 17 here # the floor
+sq k1D:7F87F1342CE25E55 dq3t:52d321d7 tint 31:46 dark 17 here # rock
+sq k1D:72F56AA04FBB3EF1 dq3t:b1728a08 tint 31:46 dark 16 here
+sq k1D:C5332899959654CE dq3t:b1728a08 tint 28:50 dark 24 here
+sq k1D:B22BC0DF76ACB2E6 dq3t:52d321d7 tint 28:50 dark 25 here
+sq k1D:FB0416D8C014C8E7 dq3t:253e4373 tint 28:50 dark 24 here
+sq k1D:B32BF608448985D2 dq3t:33fcadf1 tint 28:51 dark 26 here
+sq k1D:65DB5B29F249CA11 dq3t:30f34ccc tint 24:55 dark 57 here # rock, its face in shadow
+sq k1D:3E51A1A88427FA0E dq3c:37817fc5 tint 325:55 dark 11 here # the room's floor: a hall's, in this place's dark crimson
+sq k1D:53B1A40720510222 =k1D:3E51A1A88427FA0E over ~dq3h:6b0f9bc2 clear 3 here # bed
+sq k1D:2BCE976FBA9CAE7A =k1D:3E51A1A88427FA0E over ~dq3h:6b0f9bc2 clear 3 here
+sq k1D:8FE257204EC3BCCD =k1D:3E51A1A88427FA0E over dq3t:5fa25d75.hi here # pot
+sq k1D:398ABD1806F71CFF =k1D:3E51A1A88427FA0E over dq3c:a2de7dcd.hi here # stool
+sq k1D:38D895D557619CBB dq3c:601c59ec here # chest of drawers
+sq k1D:D860E276B08B4DEA =k1D:3E51A1A88427FA0E over dq3t:316d8b20.hi here # table
+sq k1D:8DA17CE1D99E0580 =k1D:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi here # stairs
+sq k1D:BDBDF96910A74A3F =k1D:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 gray 90 here # stones strewn on the floor
+
+# the mossy cave (place $33, kind $29): green rock, an olive floor strewn with stones
+sq k29:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 61:55 dark 40 here # the floor
+sq k29:BDBDF96910A74A3F =k29:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 gray 90 here # stones strewn on it
+sq k29:B22BC1DF76ACB499 dq3t:52d321d7 tint 127:43 dark 23 here # rock, green with moss
+sq k29:C533299995965681 dq3t:b1728a08 tint 127:43 dark 22 here
+sq k29:FB0415D8C014C734 dq3t:253e4373 tint 127:42 dark 22 here
+sq k29:B32BF70844898785 dq3t:33fcadf1 tint 128:45 dark 25 here
+sq k29:65DB5A29F249C85E dq3t:30f34ccc tint 127:54 dark 58 here # rock, its face in shadow
+sq k29:1D55392BF296EDAD ~dq3t:84d1bc46 gray 95 here # the patterned stone
+sq k29:B5B4419A63FD7B01 =k29:DE5FEDC9DD4DEAE6 over dq3v:ecf9c237.hi here # treasure chest
+sq k29:8DA17CE1D99E0580 =k29:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi here # stairs
+sq k29:1E7E2AFAE5836627 =k29:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi dark 30 here # stairs in the dark
+
+# two lone squares of kinds done before
+nes k2B ../../../generated/sfc/nes_k2B.json
+sq k05:708358192C8B40EF dq3w:8ad4ae05 gray 100 dark -85 here # the white stone at the bottom of the mine (place $2D level 9)
+sq k2B:7A3A9C1FBF4328CE =k2B:A3C180DA80659B9A over ~dq3t:316d8b20 clear 1,0e here # the torch on the wall of the tower of place $35 (two squares)
+sq k2B:53FC640DBCE19DDF =k2B:A3C180DA80659B9A over ~dq3t:316d8b20 clear 1,0e here
