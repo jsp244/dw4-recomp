@@ -83,6 +83,9 @@ left of C, the bottom right of D), for the corners the Super Famicom games have 
 =NES for SFC is the art the NES square NES is itself drawn with: the ground a thing stands on. Such a line is made
 once for any kind of map and once for every kind in which that ground has art of its own ("here"), so a stool laid
 over "=town:FLOOR" stands on the road in a town and on the castle's floor in a castle.
+"nes" for SFC, with something laid over it, leaves the pixels the overlay does not cover to the NES: its own pixels
+show there, in whatever color they have in that level ("nes over ~X clear 3": a statue's rim whose fourth color is
+the sky on one level, a pool on another and black on a third).
 A line of this sort written for one kind ("here") is made before those copies, wherever in the files it stands: it,
 and not another line's copy for its kind, is what that kind gets (a dark castle's trees, toned for its night).
 SFC.lo is a library square's ground layer alone, SFC.hi its upper layer alone (clear elsewhere); a library cut
@@ -117,6 +120,9 @@ def fnv(data, h=0xcbf29ce484222325):
 def art_hash(px):
     """8 hex digits naming a square's or figure's pixels"""
     return "%08x" % (fnv(b"".join(struct.pack("<I", p & 0xFFFFFFFF) for p in px)) & 0xFFFFFFFF)
+
+
+NES_PIXEL = -1      # in a square's pixels: left to the NES (the pack holds a clear pixel there)
 
 
 def solid(p):
@@ -439,7 +445,7 @@ def build(out, paths, quiet=False):
             frames = [tuple(px[y * 16 + c] for y in range(16) for c in order) for px in frames]
         base = {k[4:]: v for k, v in extra.items() if k.startswith("base")}
         if base:
-            frames = [tuple(toned(solid(p), base) for p in px) for px in frames]
+            frames = [tuple(p if p == NES_PIXEL else toned(solid(p), base) for p in px) for px in frames]
         if "over" in extra:             # (with something laid over, the tones are its own: the ground keeps its colors)
             if extra["over"].startswith("@"):
                 lib, _, rest = extra["over"][1:].partition(":g")
@@ -479,7 +485,7 @@ def build(out, paths, quiet=False):
                 over = tuple(None if o is None else toned(solid(o), extra) for o in over)
             frames = [tuple(o if o is not None else p for p, o in zip(px, over)) for px in frames]
         elif tone:
-            frames = [tuple(toned(solid(p), extra) for p in px) for px in frames]
+            frames = [tuple(p if p == NES_PIXEL else toned(solid(p), extra) for p in px) for px in frames]
         top = m.art(extra["top"], m.libs, where)["px"] if "top" in extra else None
         if top and tone:
             top = tuple(None if p is None else toned(solid(p), extra) for p in top)
@@ -494,7 +500,8 @@ def build(out, paths, quiet=False):
         if refs and refs[0].startswith("="):
             on_ground.append((where, nes, refs, ticks, extra, e))
             continue
-        frames = [recolored(e, m.art(r[1:], m.libs, where)["px"]) if r.startswith("~") else m.art(r, m.libs, where)["px"] for r in refs]
+        frames = [(NES_PIXEL,) * 256 if r == "nes" else
+                  recolored(e, m.art(r[1:], m.libs, where)["px"]) if r.startswith("~") else m.art(r, m.libs, where)["px"] for r in refs]
         key = int(e["key"], 16) ^ (OVERWORLD_MIX if e.get("scene") else 0) ^ (int(e["map"], 16) if extra.get("here") else 0)
         if key in squares:
             print("%s: square %s given again (the first stays)" % (where, nes))
@@ -603,7 +610,7 @@ def build(out, paths, quiet=False):
             f.write(struct.pack("<Q4sBBBB", key, ref, len(frames), max(1, min(255, ticks)), (1 if top else 0) | (w[2] << 4),
                                 w[0] | (w[1] << 4)))
             for px in frames:
-                f.write(struct.pack("<256I", *[solid(p) for p in px]))
+                f.write(struct.pack("<256I", *[0 if p == NES_PIXEL else solid(p) for p in px]))
             if top:
                 f.write(struct.pack("<256I", *[0 if p is None else solid(p) for p in top]))
         for key, ref, dx, dy, w, h, px in figures:

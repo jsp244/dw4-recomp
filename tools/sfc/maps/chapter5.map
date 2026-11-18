@@ -579,3 +579,54 @@ sq k24:7D373EC4C59E3468 ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:31
 sq k24:AFC31303BFBBFADE ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
 sq k24:56B155DE7242733F ~dq3t:316d8b20 basetint 44:75 basedark -10 over ~dq3t:316d8b20 clear 3 tint 37:76 dark 20 here
 sq k23:B5B4419A63FD7B01 =k23:557DD90CBA845094 over dq3v:ecf9c237.hi here # treasure chest, on the carved floor
+
+# the giant statue (place $48): from outside (kind $1B) its legs of bronze standing in a pool; inside (kind $1C)
+# its bronze against the sky or the dark, floors of pale cobble, golden figures, patterned tiles, pools. The bronze is
+# the NES's own pattern of two browns, in the grey rock's shades turned bronze; the stone as in the cave of waterfalls
+nes k1B ../../../generated/sfc/nes_k1B.json
+nes k1C ../../../generated/sfc/nes_k1C.json
+sq k1C:68E0472A58AFF58C dq3h:4ec6fd25 tint 214:85 dark -40 here # the sky, light blue
+sq k1C:D6118541CAC2F82C nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here # the statue's bronze: lit, in shadow, niches, a ladder; at its rims the NES's own pixels show (the sky, a pool, or the dark, by the level)
+sq k1C:F53502731ABE222C nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:337A83FEC5F3C8F0 nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:791896C976753124 nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:6CC25AB7EB90D19C nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:500FCF8A9D25C795 nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:30F6DE675E66D527 nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:4FE2FFA39EB39EDC nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:F86CA38F6C2EDB09 nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:2706B542637D966E nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:D74F1D957736E980 nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:005F28C18B1AC55F nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:663B654F8C9EFCC8 nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:4CF7FB6628F4661C nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:E07DA4F0C7FAA364 nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:3C7B17318A85ACCF nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:C9524A1554F34991 nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1C:BFA0D3C0655F06BB nes over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:F53502731ABE222C =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here # outside: its legs and feet, the pool round them
+sq k1B:D6118541CAC2F82C =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:791896C976753124 =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:337A83FEC5F3C8F0 =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:2706B542637D966E =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:005F28C18B1AC55F =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:663B654F8C9EFCC8 =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:3C7B17318A85ACCF =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:C9524A1554F34991 =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:BFA0D3C0655F06BB =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:500FCF8A9D25C795 =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:30F6DE675E66D527 =k1B:5D4D19838C9BBD1F over ~dq3t:52d321d7 clear 3 tint 33:80 dark 22 here
+sq k1B:1105B2085CAA27FA =k1B:173A98CBC7910EFD over ~dq3t:52d321d7 clear 3 gray 95 dark -20 here # the stone figures before it, on the grass (two squares)
+sq k1B:541A11890D731A63 =k1B:173A98CBC7910EFD over ~dq3t:52d321d7 clear 3 gray 95 dark -20 here
+sq k1C:90C1FB9BD6AE2A36 ~dq3t:52d321d7 clear 3 gray 95 dark -30 here # floors of pale cobble, their shaded edges, stairways
+sq k1C:3B5CB70C696C51A9 ~dq3t:52d321d7 clear 3 gray 95 dark -30 here
+sq k1C:AE93E4A665661427 ~dq3t:52d321d7 clear 3 gray 95 dark -30 here
+sq k1C:18D1E276AA3C5ABA ~dq3t:52d321d7 clear 3 gray 95 dark -30 here
+sq k1C:1BD5B3AE0488C34E ~dq3t:52d321d7 clear 3 gray 95 dark -30 here
+sq k1C:AC91CB39900422AD ~dq3t:52d321d7 clear 3 gray 95 dark -30 here
+sq k1C:852F4C70CFD52FD4 dq3h:3290b79c gray 95 here # stairs down
+sq k1C:1105B2085CAA27FA =k1C:90C1FB9BD6AE2A36 over ~dq3t:316d8b20 clear 3 tint 40:70 dark -10 here # the golden figures (two squares)
+sq k1C:541A11890D731A63 =k1C:90C1FB9BD6AE2A36 over ~dq3t:316d8b20 clear 3 tint 40:70 dark -10 here
+sq k1C:B5B4419A63FD7B01 =k1C:90C1FB9BD6AE2A36 over dq3v:ecf9c237.hi here # treasure chest
+sq k1C:8CD05FDC1823EA07 nes over ~dq1:b82e2b1d clear 2,3 here # patterned tiles: pink carpets on some levels, a path of blue round the pools on another; their two colors are left to the NES
+sq k1C:13CC3892CDBAF3E3 ~dq3t:316d8b20 tint 322:62 dark -85 here # two seats, pink

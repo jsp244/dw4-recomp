@@ -35,7 +35,9 @@
  * by channel, by how the two sets of colors compare: black when the game has faded to black,
  * dark and blue at night. A square's three colors count by how much of the NES square is drawn
  * in each (the pack says): a wall that is all grey stays as it is in a place whose third color,
- * which the wall does not use, is another one.
+ * which the wall does not use, is another one. Where one color of a square is another thing
+ * from level to level (the sky round a statue's rim, black where the same rim stands in the
+ * dark) no scaling can follow it: the pack leaves those pixels clear, and the NES's own stay.
  *
  * Tall art. A Super Famicom tree is taller than a map square: its crown lies over the square
  * above, and over anyone standing there. A square of the pack may therefore have a top, sixteen
@@ -47,7 +49,8 @@
  *     frames, the game frames each one lasts, a flags byte (bit 0: a top follows the frames; its
  *     high four bits: how much of the NES square is in its third color, 0 to 15), a byte with the
  *     same for the first color (low four bits) and the second (high; all three 0 in an older
- *     pack: they count alike), then the frames, each 256 pixels (ARGB, row by row), then the top
+ *     pack: they count alike), then the frames, each 256 pixels (ARGB, row by row; alpha 0
+ *     where the NES's own pixel stays), then the top
  *     (256 pixels, alpha 0 where it is clear);
  *   per figure: key, the twelve NES colors of its four quarters' palettes, where its picture
  *     starts from the NES figure's top left corner (two signed bytes), its width and height,
@@ -517,6 +520,7 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
             }
             unsigned f = sq->frames > 1 ? (unsigned)((ppu.frame / sq->ticks) % sq->frames) : 0;
             uint32_t px = sq->px[f * 256 + ((q >> 1) * 8 + HD_ROW(b)) * 16 + (q & 1) * 8 + HD_COL(b)];
+            if (!(px >> 24)) continue;      /* left to the NES: its own pixel, in whatever color it has there */
             o[x] = p->tinted == 1 ? (0xFF000000u | px) : tinted(px, p->tint);
         }
     }
