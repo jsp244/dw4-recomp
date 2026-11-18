@@ -542,13 +542,16 @@ def build(out, paths, quiet=False):
             continue
         named = opt["poses"].split(",") if "poses" in opt else None
         for e in who:
+            if e.get("turn"):
+                continue                # someone lying down, turned: made below from the upright picture
+            pose = 4 if "turn" in e else e["facing"] * 2 + e["step"]       # (lying down: the upright picture is the front view)
             mirror = False
             if named:
-                want = named[e["facing"] * 2 + e["step"]]
+                want = named[pose]
                 mirror = want.startswith("m")
                 a = poses.get(int(want.lstrip("m")))
             else:
-                want = POSE[e["facing"] * 2 + e["step"]]
+                want = POSE[pose]
                 a = poses.get(want) or poses.get(want & ~1) or poses.get(want | 1)
             if a is None:
                 continue
@@ -567,6 +570,29 @@ def build(out, paths, quiet=False):
             if "colors" in opt:
                 px = recast(px, a["w"], opt["colors"], where)
             figures.append((key, ref_colors, (16 - a["w"]) // 2, 16 - a["h"], a["w"], a["h"], px))
+    # People lying down (a sleeper in his bed, the wounded soldier of the tower, the bones in the mine): the NES has
+    # no pictures of its own for them, it turns the kind's upright picture, its front view standing, a quarter
+    # clockwise, a half, three quarters (nesmap.py marks those poses: "turn", "of"). The pack does as the NES does:
+    # the figure it draws for the upright picture, turned the same way about the middle of the NES figure's square
+    # (a figure taller than the square reaches past it at its head's end, as it does standing).
+    standing = {}
+    for fig in figures:
+        standing.setdefault((fig[0], fig[1]), fig)
+        standing.setdefault(fig[0], fig)
+    for inv in m.people.values():
+        for e in inv:
+            if not e.get("turn"):
+                continue
+            key, ref_colors = int(e["key"], 16), bytes(e["colors"])
+            fig = standing.get((int(e["of"], 16), ref_colors)) or standing.get(int(e["of"], 16))
+            if fig is None or (key, ref_colors) in done:
+                continue
+            done.add((key, ref_colors))
+            _, _, dx, dy, w, h, px = fig
+            for _ in range(e["turn"]):          # a quarter clockwise: the top goes to the right
+                px = tuple(px[(h - 1 - x) * w + y] for y in range(w) for x in range(h))
+                dx, dy, w, h = 16 - (dy + h), dx, h, w
+            figures.append((key, ref_colors, dx, dy, w, h, px))
     with open(out, "wb") as f:
         f.write(b"DW4S" + struct.pack("<III", 2, len(squares), len(figures)))
         for key, (ref, frames, ticks, top, w) in sorted(squares.items()):

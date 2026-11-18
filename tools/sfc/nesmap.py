@@ -179,6 +179,7 @@ def figures(prefix, dumps):
         d = MapDump(path)
         base = 256 if d.ctrl & 0x08 else 0
         for kind in range(16):
+            poses = {}
             for facing in range(4):
                 for step in range(2):
                     o = 0x1200 + kind * 64 + facing * 16 + step * 8
@@ -203,6 +204,19 @@ def figures(prefix, dumps):
                     found[k] = {"key": "%016X" % k[0], "colors": list(colors), "kind": kind, "facing": facing, "step": step,
                                 "dump": os.path.splitext(os.path.basename(path))[0], "_px": px}
                     order.append(k)
+                    poses[(facing, step)] = (pat, found[k])
+            # Someone lying down (a sleeper in his bed, the wounded soldier of the tower): the game has no pictures
+            # of its own for that, the kind's four views are one picture, its front view standing, turned: upright,
+            # a quarter clockwise, upside down, a quarter the other way, both steps alike. Marked for pack.py
+            # ("turn": the quarters, 0 for the upright one; "of": the upright picture's key).
+            if len(poses) == 8 and all(poses[(g, 0)][0] == poses[(g, 1)][0] for g in range(4)):
+                turned = [poses[(0, 0)][0]]
+                for _ in range(3):
+                    turned.append([turned[-1][(15 - x) * 16 + y] for y in range(16) for x in range(16)])
+                if turned[1] != turned[0] and turned[2] != turned[0] and all(poses[(g, 0)][0] == turned[g] for g in range(4)):
+                    for g in range(4):
+                        for step in range(2):
+                            poses[(g, step)][1].update({"turn": g, "of": poses[(0, 0)][1]["key"]})
     cols, cell = 8, 54
     im = Image.new("RGB", (cols * cell, ((len(order) + cols - 1) // cols) * (cell + 10)), (70, 70, 90))
     dr = ImageDraw.Draw(im)

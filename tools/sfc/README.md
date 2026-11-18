@@ -47,7 +47,7 @@ and people, which then get their art too.
 | 2 | `sfclib.py`, `sfcfig.py` | cut the captures into libraries of 16x16 map squares (Dragon Quest III's two layers kept apart as well, for things that stand on other ground or reach into the square above) and of people (16x16 in Dragon Quest I.II, 16x24 in III); Dragon Quest III's overworld squares are read straight from its ROM |
 | 2 | `supplement.py` | reads the pictures of the games other than Dragon Quest III from the supplement into the same libraries (only the entries the map files use), or writes the supplement from them |
 | 3 | `nesmap.py` | lists the squares and people of Dragon Warrior IV's maps, from `nes-headless --map-dump` (the game's own map code, asked for every square) |
-| 4 | `pack.py` | builds the pack from the map files in `maps/`: which Super Famicom art takes the place of which NES square or person |
+| 4 | `pack.py` | builds the pack from the map files in `maps/`: which Super Famicom art takes the place of which NES square or person. People lying down need no lines: the NES draws a sleeper or a wounded man by turning his standing front view a quarter, a half, three quarters (`nesmap.py` finds those kinds), and the pack turns the figure it has for that view the same way |
 
 The same ROMs and scripts give the same pack every time.
 
