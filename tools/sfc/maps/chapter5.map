@@ -630,3 +630,8 @@ sq k1C:541A11890D731A63 =k1C:90C1FB9BD6AE2A36 over ~dq3t:316d8b20 clear 3 tint 4
 sq k1C:B5B4419A63FD7B01 =k1C:90C1FB9BD6AE2A36 over dq3v:ecf9c237.hi here # treasure chest
 sq k1C:8CD05FDC1823EA07 nes over ~dq1:b82e2b1d clear 2,3 here # patterned tiles: pink carpets on some levels, a path of blue round the pools on another; their two colors are left to the NES
 sq k1C:13CC3892CDBAF3E3 ~dq3t:316d8b20 tint 322:62 dark -85 here # two seats, pink
+
+# the people of the dungeons (extract.py: nes_people_dng). Someone lying down there turns by itself from the upright
+# picture its kind has in the towns
+people dng ../../../generated/sfc/nes_people_dng.json
+cast dng:p46_00:6 dq6n:g24 poses 0,1,2,3,4,5,6,7 colors 394218>8A3A14,737B21>D0603A,A5B500>F88868,EFBD21>F8F0E0,CE7B00>D8B090 # the young dragons of the tower on the clouds: Dragon Quest VI's small dragon, its greens turned to their salmon, its belly to their white

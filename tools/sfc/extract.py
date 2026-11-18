@@ -110,8 +110,8 @@ DQ6_CLIFF = 5596
 DQ6_RECORD = 0x3F0A10
 DQ6_FACINGS = (("U", 0), ("R", 1), ("D", 2), ("L", 3))
 # number: who (the map files name a set by the number in decimal: dq6n:g11 is the wagon)
-DQ6_PEOPLE = {0x0B: "the covered wagon", 0x12: "a clawed demon", 0x14: "a wild-haired ogre", 0x1D: "a troll", 0x47: "a dog",
-              0x4F: "a cow", 0x5D: "a stone giant"}
+DQ6_PEOPLE = {0x0B: "the covered wagon", 0x12: "a clawed demon", 0x14: "a wild-haired ogre", 0x18: "a small dragon",
+              0x1D: "a troll", 0x47: "a dog", 0x4F: "a cow", 0x5D: "a stone giant"}
 
 
 def dq3_sets(names):
@@ -421,8 +421,10 @@ def main():
     for inv, names in NES_KINDS:
         py("nesmap.py", "squares", os.path.join(gen, "nes_" + inv), *[d for n in names for d in warped[n]])
     py("nesmap.py", "figures", os.path.join(gen, "nes_people_ch1"), *[warped[n][0] for n, _, _ in NES_WARPS])
-    # every place of the game and its levels (scenes/dw4_places.txt), one inventory for each kind of map: nes_kXX
-    kinds = {}
+    # every place of the game and its levels (scenes/dw4_places.txt), one inventory for each kind of map: nes_kXX;
+    # and the people of the places no chapter's own inventory has (the dungeons: the towns, castles and shrines are
+    # all among chapter 5's places): nes_people_dng
+    kinds, towns, dungeons = {}, set(place for place, _ in CH5_PLACES), []
     for ln in open(os.path.join(scenes, "dw4_places.txt")):
         t = ln.split("#")[0].split()
         if len(t) < 2:
@@ -433,8 +435,11 @@ def main():
                                 "--poke", "5-21:63:%02X" % place, "--poke", "9-21:64:%02X" % level], 260 if walk else 115,
                         os.path.join(gen, "p%02X_%02X%s" % (place, level, "b" if walk else "")))
         kinds.setdefault(open(dumps[0], "rb").read()[KIND_AT], []).extend(dumps)
+        if place not in towns and not walk:
+            dungeons.append(dumps[0])
     for kind in sorted(kinds):
         py("nesmap.py", "squares", os.path.join(gen, "nes_k%02X" % kind), *kinds[kind])
+    py("nesmap.py", "figures", os.path.join(gen, "nes_people_dng"), *dungeons)
     # chapter 2's people (CH2_STEPS): the maps of its places with its own party and townsfolk
     sav = os.path.join(gen, "newquest.sav")
     if os.path.exists(sav):

@@ -3,7 +3,7 @@
 Graphics > Textures > **SNES Remaster** draws the game's map squares and people with the art of the
 Super Famicom Dragon Quest games. That art is not in the packages: it is taken from your own
 cartridge dump into a pack, `sfc.pak`, that the game loads from its folder. Without the pack the
-choice is not offered. (This repository holds nineteen squares and seven figures of it, locked to the ROM
+choice is not offered. (This repository holds nineteen squares and eight figures of it, locked to the ROM
 you supply: the supplement, below.)
 
 You need one Super Famicom game, the Japanese **Dragon Quest III**, and your Dragon Warrior IV ROM
