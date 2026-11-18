@@ -33,6 +33,9 @@ usage:
     sfcfig.py buildn6 LIB.figs NAME=CAPTURE...          Dragon Quest VI's people by number (NAME: vXXU_a, vXXU_b,
                                                         vXXR_.., vXXD_.., vXXL_..: the run that turns the one
                                                         at the cliff up, right, down, left)
+    sfcfig.py buildall LIB.figs CAPTURE[@X0,Y0,X1,Y1]...  one figure of all the sprites of each capture (a
+                                                        creature alone on the screen; with a box: only the
+                                                        sprites that lie inside it)
     sfcfig.py sheet LIB.figs OUT.png
 The library holds the games' art: it stays with your own copies (generated/ is git-ignored).
 """
@@ -291,9 +294,12 @@ def buildn(lib_path, named, spots=SPOTS, hero_at=HERO_AT):
 
 def buildall(lib_path, paths):
     """one figure of everything the sprites draw in each capture (a creature alone on the screen, however many
-    sprites it is made of): set 0, its pictures in the order given"""
+    sprites it is made of): set 0, its pictures in the order given. "CAPTURE@X0,Y0,X1,Y1": only the sprites
+    that lie inside that box of the screen (a creature that others stand before)"""
     figs = []
     for pose, path in enumerate(paths):
+        path, at, box = path.rpartition("@") if "@" in os.path.basename(path) else (path, "", "")
+        box = tuple(int(v) for v in box.split(",")) if at else (-256, 0, 512, 256)
         d = Dump(path)
         small, big = OBJ_SIZES.get(d.regs.get("objSize", 0), (8, 16))
         spr = []
@@ -305,6 +311,8 @@ def buildall(lib_path, paths):
                 x -= 256
             if y >= 224 or x + size <= 0:
                 continue                        # not on the screen
+            if x < box[0] or y < box[1] or x + size > box[2] or y + size > box[3]:
+                continue                        # not in the box
             spr.append((i, x, y, size, t | ((a & 1) << 8), (a >> 1) & 7, (a >> 6) & 1, a >> 7))
         if not spr:
             raise SystemExit("%s: no sprite on the screen" % path)

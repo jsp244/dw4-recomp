@@ -3,7 +3,7 @@
 Graphics > Textures > **SNES Remaster** draws the game's map squares and people with the art of the
 Super Famicom Dragon Quest games. That art is not in the packages: it is taken from your own
 cartridge dump into a pack, `sfc.pak`, that the game loads from its folder. Without the pack the
-choice is not offered. (This repository holds nineteen squares and nine figures of it, locked to the ROM
+choice is not offered. (This repository holds nineteen squares and ten figures of it, locked to the ROM
 you supply: the supplement, below.)
 
 You need one Super Famicom game, the Japanese **Dragon Quest III**, and your Dragon Warrior IV ROM
@@ -17,10 +17,13 @@ python tools/sfc/extract.py --dq3 "Dragon Quest III - Soshite Densetsu e... (Jap
 Nearly all the art is Dragon Quest III's. Nine squares are Dragon Quest I & II's (its castle brick,
 its single tree, its barrier floor, its throne room's tiles), and the ship in Haville's harbour is
 Dragon Quest V's, the one its story opens on (ten squares: deck, rim, mast, barrel, wheel, cabin
-door). Seven figures are Dragon Quest VI's: the party's wagon, the ox (its cow, turned brown), the
+door). Ten figures are Dragon Quest VI's: the party's wagon, the ox (its cow, turned brown), the
 fox (none of the games has one: its dog, turned fox-red), the demon at the top of chapter 1's
 tower, the wild-haired brutes of chapter 5 (its ogre, turned purple), Keeleon (none of the games
-has a lion-beast: its troll, turned brown) and the stone guards of chapter 5 (its stone giant).
+has a lion-beast: its troll, turned brown), the stone guards of chapter 5 (its stone giant), the
+young dragons of the tower on the clouds (its small dragon, turned salmon), the great dragon they
+guard (the golden dragon of its opening) and the giant on his throne (the demon lord of that
+opening, who sits there in shadow: his greys turned to the giant's flesh).
 They come from the supplement,
 `tools/sfc/supplement.bin`: just those pictures, combined with
 a stream made from the Dragon Quest III ROM's contents, so that the file opens only with that very
@@ -28,7 +31,8 @@ ROM (`supplement.py`). If you would rather take them from your own cartridges, g
 too: `--dq12 "Dragon Quest I & II (Japan).sfc"`, `--dq5 "Dragon Quest V (Japan).sfc"` (Dragon Quest V
 is then played from power-on onto its ship's deck, 12,814 frames), `--dq6 "Dragon Quest VI
 (Japan).sfc"` (played to the cliff of its opening, 5,596 frames, where the game is asked to draw
-each wanted character in place of the man who waits there). Whoever changes the map files
+each wanted character in place of the man who waits there, and once on from there, 12,781 frames,
+past the great dragon to the demon lord on his throne). Whoever changes the map files
 writes the supplement again with `--dq12 ... --dq5 ... --dq6 ... --write-supplement`: it holds what
 the map files use of the other games' libraries and nothing else.
 

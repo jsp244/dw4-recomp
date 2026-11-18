@@ -42,7 +42,7 @@ KNOWN = {"dq12": "1c0c6d78bf2bc29160adf48b17ebf5a5bc46230e", "dq3": "b711341e4b1
 
 # the libraries cut from games other than Dragon Quest III: what the map files use of them goes into the supplement
 SUPPLEMENT_LIBRARIES = ("dq1_castle.sfclib", "dq1_ow.sfclib", "dq1.figs", "dq5_ship.sfclib", "dq6_people.figs",
-                        "dq6_dragon.figs")
+                        "dq6_dragon.figs", "dq6_lord.figs")
 # Dragon Quest V opens on a ship: its script (scenes/dq5.keys) starts a new game, lets the opening's words pass, walks
 # the boy out of his cabin, through the storeroom and up the stairs, opens the deckhouse's door and walks the deck
 # from bow to stern; scenes/dq5.captures names the 27 pictures the deck is cut from. That game keeps its map's
@@ -114,6 +114,12 @@ DQ6_FACINGS = (("U", 0), ("R", 1), ("D", 2), ("L", 3))
 # (scenes/dq6_dragon.keys, from the cliff's state) she calls it, and it hovers over the sea alone, beating its
 # wings, before it comes for them. Two captures there are two beats (frames after the state): dq6_dragon.figs.
 DQ6_DRAGON = (2444, 2468)
+# The script goes on: the dragon carries them to the demon lord's castle, they walk up through it (the left carpet
+# of the hall, the arch, the room above to the stairs at its left end, the great hall, his door) into his room,
+# and he shows himself on his throne, a great seated shape in shadow with lit eyes. One capture there, and of its
+# sprites only his (the three stand before him): dq6_lord.figs.
+DQ6_LORD = 12780
+DQ6_LORD_BOX = (100, 36, 156, 90)
 # number: who (the map files name a set by the number in decimal: dq6n:g11 is the wagon)
 DQ6_PEOPLE = {0x0B: "the covered wagon", 0x12: "a clawed demon", 0x14: "a wild-haired ogre", 0x18: "a small dragon",
               0x1D: "a troll", 0x47: "a dog", 0x4F: "a cow", 0x5D: "a stone giant"}
@@ -370,14 +376,15 @@ def main():
                     os.remove(copy)
 
     dragon6 = [os.path.join(cap, "dragon_%s" % step) for step in "ab"]
-    if a.dq6 and not all(os.path.exists(p + ".regs") for p in dragon6):
-        print("   Dragon Quest VI, its great dragon", flush=True)
+    lord6 = os.path.join(cap, "lord")
+    if a.dq6 and not all(os.path.exists(p + ".regs") for p in dragon6 + [lord6]):
+        print("   Dragon Quest VI, its great dragon and its demon lord", flush=True)
         cliff = os.path.join(cap, "dq6_cliff.state")
         if not os.path.exists(cliff):
             run([capture, a.dq6, "--keys", os.path.join(scenes, "dq6.keys"), "--frames", str(DQ6_CLIFF), "--state-save", cliff])
         run([capture, a.dq6, "--keys", os.path.join(scenes, "dq6_dragon.keys"), "--state-load", cliff,
-             "--frames", str(DQ6_DRAGON[1] + 1), "--capture", str(DQ6_DRAGON[0]), dragon6[0],
-             "--capture", str(DQ6_DRAGON[1]), dragon6[1]])
+             "--frames", str(DQ6_LORD + 1), "--capture", str(DQ6_DRAGON[0]), dragon6[0],
+             "--capture", str(DQ6_DRAGON[1]), dragon6[1], "--capture", str(DQ6_LORD), lord6])
 
     print("2. the libraries")
     if not others:                  # (the other games' libraries with only the pictures the map files use)
@@ -392,6 +399,7 @@ def main():
     if a.dq6:                       # a set for each number, as Dragon Quest III's
         py("sfcfig.py", "buildn6", os.path.join(gen, "dq6_people.figs"), *["%s=%s" % (n, os.path.join(cap, n)) for n in people6])
         py("sfcfig.py", "buildall", os.path.join(gen, "dq6_dragon.figs"), *dragon6)
+        py("sfcfig.py", "buildall", os.path.join(gen, "dq6_lord.figs"), "%s@%d,%d,%d,%d" % ((lord6,) + DQ6_LORD_BOX))
     py("sfclib.py", "dq3-overworld", os.path.join(gen, "dq3_ow.sfclib"), a.dq3, os.path.join(cap, "dq3_overworld"))
     town, castle, front, house, figures = dq3_sets(names)
     cave, cellar, tower = (sorted(n for n in names if n.startswith(p)) for p in ("v_", "w_", "x_"))

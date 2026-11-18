@@ -113,11 +113,11 @@ whole by a square of that art, chosen to fit the material and the colors the NES
 the place. The art is not in the packages. `tools/sfc` takes it from your own dump of
 Dragon Quest III (Japan, Super Famicom) into a pack, `sfc.pak`; the choice is offered when
 that file lies beside the program (`tools/sfc/README.md` has the two commands). Nineteen
-squares and nine figures are other games' (nine squares of Dragon Quest I & II, ten of
-Dragon Quest V's ship; Dragon Quest VI's wagon, its cow, its dog, five of its monsters and its great dragon): this
+squares and ten figures are other games' (nine squares of Dragon Quest I & II, ten of
+Dragon Quest V's ship; Dragon Quest VI's wagon, its cow, its dog, five of its monsters, its great dragon and its demon lord): this
 repository holds them in a supplement that opens only with the Dragon Quest III ROM, and
 nothing else of the games' art. The pack covers every place of the game.
-The few things those games have no picture of (the ship at its moorings, the giant on his throne, the balloon) are drawn as
+The few things those games have no picture of (the ship at its moorings, the balloon) are drawn as
 Pixel Remaster draws them, and so are the windows, the text and the battles.
 
 ## Widescreen

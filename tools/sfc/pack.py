@@ -51,8 +51,10 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           "outline": and a dark line drawn around what is left): a
                                           signpost the Super Famicom games have no picture of then stands
                                           on their real grass
-    fig NES SFC [dx DX] [dy DY] [in KK]   the NES figure NES drawn as the figure SFC, its picture starting
+    fig NES SFC [dx DX] [dy DY] [in KK] [colors FROM>TO,...]
+                                          the NES figure NES drawn as the figure SFC, its picture starting
                                           DX, DY pixels from the NES figure's corner (default: same feet).
+                                          "colors": as for cast, below.
                                           "in 09": only in maps of that kind (hex), for a picture another
                                           place uses for something else. SFC "none": nothing is drawn (the
                                           other parts of a creature the NES builds of several figures, when
@@ -360,7 +362,7 @@ class Maps:
                         opt = {"dx": None, "dy": None}
                         i = 3
                         while i < len(t):
-                            opt[t[i]] = int(t[i + 1], 16 if t[i] == "in" else 10); i += 2
+                            opt[t[i]] = t[i + 1] if t[i] == "colors" else int(t[i + 1], 16 if t[i] == "in" else 10); i += 2
                         self.fig.append((where, t[1], t[2], opt))
                     else:
                         raise SystemExit("%s: what is %r?" % (where, t[0]))
@@ -540,7 +542,8 @@ def build(out, paths, quiet=False):
         dx = opt["dx"] if opt["dx"] is not None else (16 - a["w"]) // 2
         dy = opt["dy"] if opt["dy"] is not None else 16 - a["h"]
         bound = ((opt["in"] + 1) * PLACE_MIX) & 0xFFFFFFFFFFFFFFFF if "in" in opt else 0
-        figures.append((int(e["key"], 16) ^ bound, bytes(e["colors"]), dx, dy, a["w"], a["h"], a["px"]))
+        px = recast(a["px"], a["w"], opt["colors"], where) if "colors" in opt else a["px"]
+        figures.append((int(e["key"], 16) ^ bound, bytes(e["colors"]), dx, dy, a["w"], a["h"], px))
     # NES facings: up, right, down, left; the Super Famicom sets: up, down, left, right (two steps each)
     POSE = [0, 1, 6, 7, 2, 3, 4, 5]
     done = set((f[0], f[1]) for f in figures)

@@ -648,3 +648,17 @@ fig dng:91874A64BCF19B12 none in 09
 fig dng:14C4618BDF202AD4 none in 09
 fig dng:9D63A33ABC31D148 none in 09
 fig dng:A8A6B294DCCD8778 none in 09
+
+# the giant on his throne (place $3C): the NES builds him of four figures (four kinds, a quarter each, two steps
+# of his breathing). Dragon Quest VI's demon lord stands for him, as he sits on his own throne in that game's
+# opening: a shape in shadow there, so his greys are turned to the giant's flesh, the lightest to his white. The
+# upper left quarter carries the whole picture, the other three draw nothing.
+figs dq6l ../../../generated/sfc/dq6_lord.figs
+fig dng:7131501B912EDC09 dq6l:9ebc911b dx -2 dy -10 colors 101010>4A2006,181818>794901,212121>A85C28,292929>C8704C,313131>D87C64,4A4A4A>E2867A,5A5A5A>F4B4A4,7B7B7B>FFFFFF
+fig dng:C020D6B1C5581E99 dq6l:9ebc911b dx -2 dy -10 colors 101010>4A2006,181818>794901,212121>A85C28,292929>C8704C,313131>D87C64,4A4A4A>E2867A,5A5A5A>F4B4A4,7B7B7B>FFFFFF
+fig dng:851E37F16D243939 none
+fig dng:7BD0975BE1D70F25 none
+fig dng:EB1EB8B22D66F69C none
+fig dng:ABC41CA32BB5D6D7 none
+fig dng:705B95ED8AC7EC57 none
+fig dng:89F76BC6D48A884E none
