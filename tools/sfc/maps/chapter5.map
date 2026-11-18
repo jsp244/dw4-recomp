@@ -409,3 +409,54 @@ sq k1F:2F1EBB6674B4B80F dq3t:a1e452fd tint 20:55 dark 79 here # and where they l
 sq k1F:C0975F8F33DF8FB0 ~dq3t:316d8b20 basetint 20:70 basedark 50 over ~dq1:991fffb5 clear 0,3 here # the ruins' tall windows (three squares): the NES's shapes in the wall's colors, dark within, their sills brown
 sq k1F:A25F5476CC0274AC ~dq3t:316d8b20 basetint 20:70 basedark 50 over ~dq1:991fffb5 clear 0,3 here
 sq k1F:2EA284678ACCD376 ~dq3t:316d8b20 basetint 20:70 basedark 50 over ~dq1:991fffb5 clear 0,3 here
+
+# the last castle (place $45): outside (kind $31) rough grey stone, round towers, ramparts paved in violet brick,
+# stepped roofs of violet with the skull over their doors; inside (kind $30) the same brick floors between walls
+# of pale cobble, pillars, gratings, gargoyles. Its stone is the NES's own shapes in the grey of Dragon Quest III's
+# rubble; the violet the NES gives its roofs, panes and floors is one violet here too
+nes k31 ../../../generated/sfc/nes_k31.json
+nes k30 ../../../generated/sfc/nes_k30.json
+sq k31:AA15A68D504C2AE4 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 tint 261:45 dark 62 here # the ramparts' paving: brick, violet
+sq k30:AA15A68D504C2AE4 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 tint 261:45 dark 62 here
+sq k31:CBD486074B215039 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # the walls: rough stone
+sq k31:BE32B81EE6E63CE4 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # the same on a round tower's shaded sides
+sq k31:B047E6B91C563D4E ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:86B39478361013C2 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # a wall's foot
+sq k31:E923DDB4DCA75802 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # the ramparts' edge: pale cobble
+sq k31:0CA66C6A84C0AECD ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # the ramparts' parapet
+sq k31:FE7C4ED63D133A85 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:F4E66E777F1D06BB ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:523D1325B2907284 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:4C00E4867EF88076 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # its ends
+sq k31:5405E01821E3C27B ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:266D7BCC3E2947F8 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # the roofs: violet in steps
+sq k31:A05514E0EC998BE0 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:F0B680E6EC94F541 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:33A47B058E418CD5 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:7C833BCC2F97C36C ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:8A298A9729CDF202 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:A1532A4F0CF3504E ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:993776F9287B09EF ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:761AE16DB4907C6D ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:E7B7071E6CE8E0D6 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:E99BF65A14612911 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:5C14AA85A942FD6D ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # where a roof meets the wall
+sq k31:7F44333225B3CAC0 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:687F127C7A566C56 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # a window, its panes violet
+sq k31:BFA0D3C0655F06BB ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # an arched doorway
+sq k31:CC2FD939122D5079 ~dq3t:316d8b20 basetint 52:60 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # the skull over a door, gold on the roof's violet
+sq k30:CC2FD939122D5079 ~dq3t:316d8b20 basetint 52:60 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k30:D7DE6B4EBA376A1F ~dq3t:316d8b20 basetint 52:60 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k31:173A98CBC7910EFD dq3c:e911c8dc tint 184:55 dark 64 here # the ground around the castle, dark
+sq k31:4837C70D8A6B1AF4 =k31:173A98CBC7910EFD over dq1:6ae91c01 cutting dq1:89e24835 hue 60-140>128 dark 72 here # and its trees, dark too
+sq k30:1D681E21549165E3 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # inside: the walls' tops, pale cobble
+sq k30:D49D35817D6E15B5 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # a wall: its top, then its face
+sq k30:D676378C144255D4 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # the lattice around the rooms
+sq k30:6153C91F7AEC5D2C ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # an iron grating
+sq k30:A1C8DC1163B8348C ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # its foot
+sq k30:270251CE7E34B415 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # a pillar (two squares)
+sq k30:EDA82CB8CC177AAB ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here
+sq k30:913405741C9C1D59 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # a wall's end beside the floor
+sq k30:62344A007D2CD6C4 ~dq3t:52d321d7 basegray 95 basedark 12 over ~dq3t:316d8b20 clear 0,1,2 tint 261:62 dark -150 here # a gargoyle on the wall
+sq k30:518553623B9DDE60 dq3w:8ad4ae05 tint 261:45 dark -15 here # a hall's floor: the tower's patterned floor, violet
+sq k30:852F4F70CFD534ED dq3h:3290b79c gray 95 here # stairs down, grey here

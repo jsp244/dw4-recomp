@@ -83,6 +83,8 @@ left of C, the bottom right of D), for the corners the Super Famicom games have 
 =NES for SFC is the art the NES square NES is itself drawn with: the ground a thing stands on. Such a line is made
 once for any kind of map and once for every kind in which that ground has art of its own ("here"), so a stool laid
 over "=town:FLOOR" stands on the road in a town and on the castle's floor in a castle.
+A line of this sort written for one kind ("here") is made before those copies, wherever in the files it stands: it,
+and not another line's copy for its kind, is what that kind gets (a dark castle's trees, toned for its night).
 SFC.lo is a library square's ground layer alone, SFC.hi its upper layer alone (clear elsewhere); a library cut
 from a game with one layer has neither.
 NES is NAME:#NUMBER as the inventory's sheet numbers it or NAME:KEY (the square's 16-digit key); SFC is NAME:#NUMBER
@@ -500,7 +502,9 @@ def build(out, paths, quiet=False):
         squares[key] = made(e, frames, ticks, extra, where)
     # a thing on another square's ground ("=NES"): for any kind of map, and for every kind that ground has art of its own for
     kinds = sorted(set(int(x["map"], 16) for inv in m.nes.values() for x in inv if "map" in x))
-    for where, nes, refs, ticks, extra, e in on_ground:
+    # (a line written for one kind, "here", comes before the copies the other lines get for every kind: it is the
+    # one meant for that kind, wherever in the files it stands)
+    for where, nes, refs, ticks, extra, e in sorted(on_ground, key=lambda t: not t[4].get("here")):
         g = m.nes_entry(refs[0][1:], m.nes, where)
         if g is None:
             skipped += 1
