@@ -9,7 +9,7 @@
 
 One Super Famicom game is needed: Dragon Quest III, where nearly all the art comes from. The few pictures of other
 games of the series (Dragon Quest I.II's castle brick and a handful more, the ship of Dragon Quest V, the wagon and
-a few creatures of Dragon Quest VI) are read from the supplement (tools/sfc/supplement.bin, locked to the Dragon
+a few animals and creatures of Dragon Quest VI) are read from the supplement (tools/sfc/supplement.bin, locked to the Dragon
 Quest III ROM: supplement.py). With --dq12, --dq5 and --dq6 those games are run as well and their pictures are cut
 from them instead; with all three, --write-supplement writes the supplement again from what the map files use:
 that is for whoever changes the map files.
@@ -110,7 +110,7 @@ DQ6_CLIFF = 5596
 DQ6_RECORD = 0x3F0A10
 DQ6_FACINGS = (("U", 0), ("R", 1), ("D", 2), ("L", 3))
 # number: who (the map files name a set by the number in decimal: dq6n:g11 is the wagon)
-DQ6_PEOPLE = {0x0B: "the covered wagon", 0x12: "a clawed demon", 0x4F: "a cow"}
+DQ6_PEOPLE = {0x0B: "the covered wagon", 0x12: "a clawed demon", 0x47: "a dog", 0x4F: "a cow"}
 
 
 def dq3_sets(names):

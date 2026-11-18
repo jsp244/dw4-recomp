@@ -130,3 +130,4 @@ cast ch3:c3_18_00:9 dq3n:g76 poses 0,1,2,3,4,5,6,7 # the bald old man with the s
 cast ch3:c3_18_01:5 dq3n:g76 poses 0,1,2,3,4,5,6,7
 cast ch3:c3_14_01:4 dq3n:g76 poses 0,1,2,3,4,5,6,7
 cast ch3:c3_14_01:6 dq6n:g79 poses 0,1,2,3,4,5,6,7 colors EFEFEF>B4682C,BDB5A5>8C4A18,7B736B>6A340E,5A4A42>F0E8D8,EFBD21>F4F0E8,CE7B00>C8C0B0 # the ox: Dragon Quest VI's cow, brown with white patches and horns as the NES has it
+cast ch3:c3_18_01:4 dq6n:g71 poses 0,1,2,3,4,5,6,7 colors BD7B5A>C8601C,EFAD9C>EC9448,632918>6E2C08 # the fox: none of the games has one; Dragon Quest VI's dog, its coat turned fox-red
