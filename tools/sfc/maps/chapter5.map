@@ -242,3 +242,36 @@ sq k19:AFE6797A5A227A4D ~dq3t:f3543fd3 tint 215:30 dark -70 here
 sq k19:B5B4419A63FD7B01 =k19:DE5FECC9DD4DE933 over dq3v:ecf9c237.hi here # treasure chest
 sq k19:8DA17CE1D99E0580 =k19:DE5FECC9DD4DE933 over dq3t:aa6b8d51.hi here # stairs
 sq k19:1E7E2AFAE5836627 =k19:DE5FECC9DD4DE933 over dq3t:aa6b8d51.hi dark 30 here # stairs down, in shadow
+
+# the terraced cave below the hermit's (place $30 levels 1-2, kind $11): brown rock in terraces, their faces in
+# shadow, their slopes, rock green with moss, pools with stones in them
+nes k11 ../../../generated/sfc/nes_k11.json
+sq k11:5DCB784C4BCE7245 dq3t:a1e452fd tint 27:52 dark 38 here # the terraces' rocky ground: Dragon Quest III's cobble, rust brown
+sq k11:A255ABF8D03687FC dq3t:a1e452fd basetint 27:52 basedark 38 over ~dq3t:52d321d7 clear 3 tint 27:50 dark 25 here # a terrace's edge: stones on that ground
+sq k11:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 31:55 dark 17 here # the earth floor
+sq k11:BDBDFB6910A74DA5 =k11:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 27:45 dark 5 here # boulders strewn on it
+sq k11:D55927F7386F538C dq3t:30f34ccc tint 37:55 dark 60 here # a terrace's face, in shadow
+sq k11:D55929F7386F56F2 dq3t:30f34ccc tint 30:55 dark 55 here
+sq k11:65DB5929F249C6AB dq3t:30f34ccc tint 35:55 dark 60 here
+sq k11:65DB5B29F249CA11 dq3t:30f34ccc tint 24:55 dark 57 here
+sq k11:7234E4D673C0D33C dq3t:30f34ccc tint 23:55 dark 66 here
+sq k11:C533269995965168 dq3t:b1728a08 tint 42:50 dark 42 here # rock green with moss
+sq k11:B22BBEDF76ACAF80 dq3t:52d321d7 tint 42:50 dark 42 here
+sq k11:FB0418D8C014CC4D dq3t:253e4373 tint 42:50 dark 42 here
+sq k11:B32BF4084489826C dq3t:33fcadf1 tint 42:50 dark 42 here
+sq k11:5C051AB594A2B08E ~dq3t:3a4b6712 tint 29:50 dark 12 here # the slopes between the terraces: the NES's own slants, in the rock's colors
+sq k11:5DCD0AD4CA1D06CE ~dq3t:3a4b6712 tint 29:50 dark 12 here
+sq k11:D9E2227908988B3E ~dq3t:3a4b6712 tint 29:50 dark 12 here
+sq k11:E4F463D4B192B0B5 ~dq3t:3a4b6712 tint 29:50 dark 16 here
+sq k11:D68821920250DAFA ~dq3t:3a4b6712 tint 29:50 dark 22 here
+sq k11:D60BE354B86821FD ~dq3t:3a4b6712 tint 26:55 dark 30 here # and their shadowed sides
+sq k11:E0CB514EFA5335DF ~dq3t:3a4b6712 tint 26:55 dark 30 here
+sq k11:528096A89415C569 ~dq3t:3a4b6712 tint 24:55 dark 40 here
+sq k11:91E1263A4DE1C541 ~dq3t:3a4b6712 tint 24:55 dark 40 here
+sq k11:91E1243A4DE1C1DB ~dq3t:3a4b6712 tint 24:55 dark 42 here
+sq k11:5D4D19838C9BBD1F dq3ow:3ac67643 dark 28 here # the pools
+sq k11:D5340A8D91335F5A dq3ow:3ac67643 basedark 28 over ~dq3t:30f34ccc clear 2,3 gray 60 dark 40 here # and the stones in them
+sq k11:663B674F8C9F002E =k11:5DCB784C4BCE7245 over ~dq3t:316d8b20 clear 0e here # a ladder up a terrace
+sq k11:B5B4419A63FD7B01 =k11:5DCB784C4BCE7245 over dq3v:ecf9c237.hi here # treasure chest
+sq k11:491CEBABFC679B86 =k11:5DCB784C4BCE7245 over dq3t:aa6b8d51.hi here # stairs
+sq k11:1E7E2AFAE5836627 =k11:DE5FEDC9DD4DEAE6 over dq3t:aa6b8d51.hi dark 30 here # stairs down, in shadow
