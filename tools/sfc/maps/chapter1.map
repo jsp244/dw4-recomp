@@ -62,7 +62,7 @@ sq castle:53B1A507205103D5 ~dq3h:6b0f9bc2 here # bed: no lying bed in Dragon Que
 sq castle:2BCE986FBA9CB02D ~dq3h:6b0f9bc2 here
 
 # ---- the town ----
-sq town:3E51A0A88427F85B dq3t:a1e452fd gray 60 # road
+sq town:3E51A0A88427F85B dq3t:a1e452fd tint 322:36 dark 22 # road: Dragon Quest III's paving with the purple cast the NES gives every paved way
 sq town:4837C70D8A6B1AF4 =town:173A98CBC7910EFD over dq1:6ae91c01 cutting dq1:89e24835 dark 22 # tree: Dragon Quest I's, a square as the NES tree is, on the grass the place has
 sq town:173A98CBC7910EFD dq3t:e911c8dc # grass
 sq town:5D4D19838C9BBD1F dq3ow:3ac67643 # water
@@ -92,8 +92,8 @@ sq town:E5E7F78A15291006 dq3f:c137bdfe gray 92 dark 18 # gate: the opening
 sq town:1A5A66A1BF69111F dq3f:60f62397 gray 92 dark 18
 sq town:317E8C8E2CF7DEA0 dq3f:3699f474 gray 92 dark 18 # tower, left half
 sq town:51B6C2F63CCBA608 dq3f:c8d4e334 gray 92 dark 18 # tower, right half
-sq town:60ED14E64E57EE4A dq3t:a1e452fd basegray 60 over dq3f:2709e28b.hi gray 92 dark 18 # tower's foot, on the road
-sq town:490C9C0F0EB97094 dq3t:a1e452fd basegray 60 over dq3f:20766aa2.hi gray 92 dark 18
+sq town:60ED14E64E57EE4A dq3t:a1e452fd basetint 322:36 basedark 22 over dq3f:2709e28b.hi gray 92 dark 18 # tower's foot, on the road
+sq town:490C9C0F0EB97094 dq3t:a1e452fd basetint 322:36 basedark 22 over dq3f:20766aa2.hi gray 92 dark 18
 
 # ---- the castle's squares in other kinds of place (a square the town has too keeps the town's line) ----
 sq castle:3E51A0A88427F85B dq3c:37817fc5 # floor

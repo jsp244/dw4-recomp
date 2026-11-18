@@ -53,8 +53,8 @@ sq k0B:6134B0EC16921172 ~dq3t:316d8b20 # the plank bridge
 
 # ---- Tempe ($02) ----
 sq k02:2A888DE4163EB74F dq3t:e911c8dc over dq3t:01b3e1de.hi # a grave, on the grass
-sq k02:2F1EBB6674B4B80F dq3t:a1e452fd gray 60 dark 32 # the altar's blackened ground
-sq k02:8296C08F5BCA8625 dq3t:84d1bc46 gray 60 # the altar's paving
+sq k02:2F1EBB6674B4B80F dq3t:a1e452fd tint 322:36 dark 48 # the altar's blackened ground
+sq k02:8296C08F5BCA8625 dq3t:84d1bc46 tint 322:36 dark 22 # the altar's paving
 # the altar's stepped rim, in stone, over the road
 sq k02:1447CFE9A1F6415E =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80
 sq k02:88C714F4D0FF591B =town:3E51A0A88427F85B over ~dq3c:a4db257b clear 3 gray 80
@@ -91,8 +91,8 @@ sq k25:8833C233808D4CE9 ~dq3t:316d8b20 # the great golden door (four squares)
 sq k25:DA2DE12AF37DB04B ~dq3t:316d8b20
 sq k25:49E3C51E2C42BDFC ~dq3t:316d8b20
 sq k25:640CC0452A02AEED ~dq3t:316d8b20
-sq k27:A78FBF5775107294 dq3t:a1e452fd gray 60 # the paving at the tower's foot
-sq k27:5880E2775F1BA537 dq3t:a1e452fd basegray 60 over dq3t:aa6b8d51.hi # stairs
+sq k27:A78FBF5775107294 dq3t:a1e452fd tint 322:36 dark 22 # the paving at the tower's foot
+sq k27:5880E2775F1BA537 dq3t:a1e452fd basetint 322:36 basedark 22 over dq3t:aa6b8d51.hi # stairs
 
 # ---- the shrine of the travel door ($08) ----
 sq k08:74F3EA8951EFE951 ~dq3ow:3ac67643 dark -25 # the travel door: its own swirl in the water's blues

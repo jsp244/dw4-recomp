@@ -25,8 +25,8 @@ people ch3 ../../../generated/sfc/nes_people_ch3.json
 # ---- fields, a stone bridge, a ruin's rock ----
 sq k04:7C3177D00A5275DD dq3t:b5d04690 rows 0-11,2-5 over ~dq3t:e911c8dc clear 2 dark 22 # a vegetable plot: the NES's plants in the grass's greens, on earth
 sq k07:7C3177D00A5275DD dq3t:b5d04690 rows 0-11,2-5 over ~dq3t:e911c8dc clear 2 dark 22
-sq k05:DF6FCE00417F10BF dq3t:a1e452fd basegray 60 over ~dq3t:a1e452fd clear 1,2,3 gray 60 # a stone bridge: the road's cobble, the NES's shadow under its edge
-sq k07:DF6FCE00417F10BF dq3t:a1e452fd basegray 60 over ~dq3t:a1e452fd clear 1,2,3 gray 60
+sq k05:DF6FCE00417F10BF dq3t:a1e452fd basetint 322:36 basedark 22 over ~dq3t:a1e452fd clear 1,2,3 tint 322:36 dark 22 # a stone bridge: the road's cobble, the NES's shadow under its edge
+sq k07:DF6FCE00417F10BF dq3t:a1e452fd basetint 322:36 basedark 22 over ~dq3t:a1e452fd clear 1,2,3 tint 322:36 dark 22
 sq k07:E04D5D809C9C26E1 dq3t:52d321d7 # a ruin's walls of rough rock: the boulder wall of Dragon Quest III's town
 sq k07:34421D9B8D4F3D79 dq3t:b1728a08
 

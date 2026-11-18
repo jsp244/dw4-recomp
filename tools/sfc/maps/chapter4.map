@@ -27,6 +27,7 @@ people ch4 ../../../generated/sfc/nes_people_ch4.json
 # ---- Monbaraba's theater (kind $2C) ----
 # The audience: the NES draws a square per head, from behind or from the front, in two colors, and has them sway
 # (two squares each). Here they are Dragon Quest III's townswomen from the shoulders up, on the theater's floor.
+sq k2C:3E51A0A88427F85B dq3c:37817fc5 here # the theater's floor: a hall's, the castles' red-violet
 sq k2C:34C5C365B9A6622E =town:3E51A0A88427F85B over @dq3n:g45:0 here # from behind, in red
 sq k2C:7B5106ECB297C50B =town:3E51A0A88427F85B over @dq3n:g45:1 here
 sq k2C:6AE4DBCE8933289D =town:3E51A0A88427F85B over @dq3n:g45:4 here # from the front
@@ -85,7 +86,7 @@ sq k10:E70AE1749FF8DFD6 =k10:DE5FEDC9DD4DEAE6 over ~dq3c:75608358 clear 1e here 
 sq k2F:D758A26F452DEB92 dq5:f8538595 here # the deck
 sq k2E:D758A26F452DEB92 dq5:f8538595 here # and the floors below it
 sq k2F:7289C731FF7B58F2 dq5:94badb41 here # the ship's rim
-sq k2F:F31955FBBFE4CE6B ~dq3ow:3ac67643 gray 55 dark -55 here # the sails
+sq k2F:F31955FBBFE4CE6B ~dq5:f8538595 over ~dq3ow:3ac67643 clear 3 tint 178:36 dark -50 here # the sails, in the pale sea-green the NES gives them, on their yards of wood
 sq k2F:A236C8BB35C46DBC dq5:24dbeafe here # the mast: its top,
 sq k2F:0EDB9B58F95F3852 dq5:81df2b45 here # its pole
 sq k2F:0B0CC85923999440 dq5:81df2b45 here
