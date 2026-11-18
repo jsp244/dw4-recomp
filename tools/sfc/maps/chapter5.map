@@ -352,3 +352,60 @@ sq k21:708358192C8B40EF dq3w:8ad4ae05 gray 100 dark -200 here # the walk of whit
 sq k21:7F1661F4324A32DB =k21:C8E9D0D954110E54 over ~dq3c:a4db257b clear 3 gray 95 here # steps
 sq k20:B5B4419A63FD7B01 =k20:C8E9D0D954110E54 over dq3v:ecf9c237.hi here # treasure chest
 sq k21:B5B4419A63FD7B01 =k21:C8E9D0D954110E54 over dq3v:ecf9c237.hi here
+
+# the grey tower on the clouds (place $46, its outside: kind $32): Burland's castle walls and round towers as they
+# are, on a court paved in dark teal, the cloud it stands on, steps, small doorways and the great door in gold
+nes k32 ../../../generated/sfc/nes_k32.json
+sq k32:68E0482A58AFF73F dq3h:4ec6fd25 tint 214:85 dark -40 here # the sky, light blue
+sq k32:A97E9AB0CA5683A7 =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here # the cloud the tower stands on, and its edges against the sky
+sq k32:3C29968363767A68 =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
+sq k32:DD2D1989CDF8F377 =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
+sq k32:C1B735609D17A4DF =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
+sq k32:A086B4579FB1CD55 =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
+sq k32:4783E1339E801F30 =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
+sq k32:900E5F106220015E =k32:68E0482A58AFF73F over ~dq1:b82e2b1d clear 3 tint 195:50 dark -95 here
+sq k32:B6A317C9F269451C dq3w:f17493a2 tint 190:32 dark 45 here # the court: the tower's flagstones, in dark teal
+sq k32:329350D37F49E5B4 =k32:B6A317C9F269451C over dq3f:20766aa2.hi gray 92 dark 18 here # a round tower's foot on the court (two squares)
+sq k32:D8FFD69163EE426F =k32:B6A317C9F269451C over dq3f:2709e28b.hi gray 92 dark 18 here
+sq k32:BFCC277A7ABA0650 ~dq3h:3290b79c gray 95 here # the wide steps, a post at either end
+sq k32:529750150039CB0C ~dq3h:3290b79c gray 95 here
+sq k32:13FB61ECFDD8E8CC ~dq3h:3290b79c gray 95 here
+sq k32:CD7E5A8C72DCF219 dq1:991fffb5 basedark 100 over ~dq3w:efc08409 clear 0 gray 95 here # a small doorway, dark within
+sq k32:2369398A20EF1260 ~dq3t:316d8b20 hue 300-340>190 here # the great door (four squares): gold on a ground of dark teal, as the NES has it
+sq k32:399E89D15600E9F4 ~dq3t:316d8b20 hue 300-340>190 here
+sq k32:37AF959407505AC6 ~dq3t:316d8b20 hue 300-340>190 here
+sq k32:13F644D9E72FA72F ~dq3t:316d8b20 hue 300-340>190 here
+
+# the mine's deepest level (place $2D level 8, kind $1F): a cave of olive rock hung with stalactites, and the grey
+# ruins standing in it. The rock, the stalactites and their points are the NES's own shapes in the grey rock's
+# colors turned olive, on the cave's earth floor
+nes k1F ../../../generated/sfc/nes_k1F.json
+sq k1F:DE5FEDC9DD4DEAE6 dq3t:b5d04690 rows 0-11,2-5 tint 61:55 dark 43 here # the floor: earth, olive
+sq k1F:9C7025C7881B7DC7 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here # rock
+sq k1F:6B0EA13A017E4389 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here # a stalactite
+sq k1F:70D588DEDD165C28 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here # its taper
+sq k1F:479620DC7875877F =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here # its point
+sq k1F:B5FDB62EC6E6C4C3 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here # the foot of a column of rock
+sq k1F:0787D088B0ACD4C3 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:BC03CBF2E330D168 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:915816C5EA5E4866 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:3AB1C31DE13E0FE7 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here # the rock's edges against the floor
+sq k1F:4E0219E5971CC424 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:852D13ACB92E84E5 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:FBEEAFE37815AEC0 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:1B22393BAFF52041 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:2E471865BBF89298 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:DE81D37DBE44A28E =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:66882D6D31BB3923 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:F786E3D41D90DBA0 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:DDDF856D5FC62A7D =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:077D726337F5F015 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:3CBB46BEF9BE97ED =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here
+sq k1F:690629413EC51166 =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here # rock in deep shadow
+sq k1F:9BEFA4C68A6F34AE =k1F:DE5FEDC9DD4DEAE6 over ~dq3t:52d321d7 clear 3 tint 61:50 dark 46 here # the floor's far edge, fading into the dark
+sq k1F:5598ED42178C6F2A ~dq3t:52d321d7 tint 61:50 dark 46 here # the dark around: the rock's own darkest shade, so that no stalactite shows its square
+sq k1F:3E51A0A88427F85B dq3c:37817fc5 tint 20:55 dark 30 here # the ruins' floors, dark brown
+sq k1F:2F1EBB6674B4B80F dq3t:a1e452fd tint 20:55 dark 79 here # and where they lie in shadow
+sq k1F:C0975F8F33DF8FB0 ~dq3t:316d8b20 basetint 20:70 basedark 50 over ~dq1:991fffb5 clear 0,3 here # the ruins' tall windows (three squares): the NES's shapes in the wall's colors, dark within, their sills brown
+sq k1F:A25F5476CC0274AC ~dq3t:316d8b20 basetint 20:70 basedark 50 over ~dq1:991fffb5 clear 0,3 here
+sq k1F:2EA284678ACCD376 ~dq3t:316d8b20 basetint 20:70 basedark 50 over ~dq1:991fffb5 clear 0,3 here
