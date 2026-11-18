@@ -131,10 +131,10 @@ sq k15:FA8C23275540D346 =k15:8C66B3DFC61DD01C over dq3w:1154c159.hi here # the d
 sq k15:E2FCF50BB9B6553D =k15:8C66B3DFC61DD01C over dq3w:bae87c5b.hi here
 sq k15:5B54E41B75934585 =k15:8C66B3DFC61DD01C over dq3w:c8e82613.hi here
 sq k15:D0F6E8E80AB7C7D4 =k15:8C66B3DFC61DD01C over dq3w:6e105f36.hi here
-sq k15:AAC86EF7C9243DE0 dq3t:52d321d7 gray 95 here # the wall fallen in: grey rock (four squares)
-sq k15:E83FB38F1895B302 dq3t:b1728a08 gray 95 here
-sq k15:856EF6CE404994B5 dq3t:253e4373 gray 95 here
-sq k15:64DD3E5C42BA0B93 dq3t:33fcadf1 gray 95 here
+sq k15:AAC86EF7C9243DE0 ~dq3t:52d321d7 gray 95 dark 18 here # the doorway blocked by fallen rock (four squares): the NES's own rocks, each with its outline, in the grey rock's colors, darker than the wall
+sq k15:E83FB38F1895B302 ~dq3t:b1728a08 gray 95 dark 18 here
+sq k15:856EF6CE404994B5 ~dq3t:253e4373 gray 95 dark 18 here
+sq k15:64DD3E5C42BA0B93 ~dq3t:33fcadf1 gray 95 dark 18 here
 sq k15:3918F2F6760F8206 ~dq3h:3290b79c gray 95 here # steps
 sq k15:01962FACAA921033 ~dq3w:1154c159 here # the statue on the dais and its foot
 sq k15:F1CEEE471CEDE576 ~dq3w:1154c159 here
@@ -171,3 +171,20 @@ sq k28:F41F4BCCAA06367B ~dq3t:316d8b20 here
 sq k28:8AC25C106C5B6103 ~dq3t:316d8b20 here
 sq k28:2E1292A413D1779C ~dq3t:316d8b20 here
 sq k28:B5B4419A63FD7B01 =k28:A78FBF5775107294 over dq3v:ecf9c237.hi here # treasure chest
+
+# the brick dungeon of place $3B (kind $10, the mine's kind, with squares of its own): olive brick, a patterned
+# floor of dark brown, grey pillars and statues, and floors that carry whoever steps on them
+sq k10:569AB97830F1DDC0 dq1:b68350b8 rows 4,1-3,4,5-7,4,1-3,4,5-7 tint 61:42 dark 54 here # walls: Dragon Quest I's brick, olive here
+sq k10:1445B78ED3C57140 dq1:7fe8dc4d rows 4,1-15 tint 61:48 dark 58 here
+sq k10:8C66B6DFC61DD535 dq3w:8ad4ae05 tint 20:35 dark 20 here # the floor: the tower's patterned floor, dark brown here
+sq k10:70FE11720343F796 ~dq3t:84d1bc46 gray 95 here # the dais: the patterned stone
+sq k10:9F31F61FD6151B79 =k10:8C66B6DFC61DD535 over dq3w:90858dec.hi gray 100 dark -160 here # pillar, its head
+sq k10:A4EE403C5D73E679 =k10:8C66B6DFC61DD535 over dq3w:e7991b51.hi gray 100 dark -160 here # pillar, its foot
+sq k10:019630ACAA9211E6 ~dq3w:1154c159 here # the statue and its foot
+sq k10:F1CEED471CEDE3C3 ~dq3w:1154c159 here
+sq k10:3918F1F6760F8053 ~dq3h:3290b79c gray 95 here # steps
+sq k10:852F4C70CFD52FD4 dq3h:3290b79c here # stairs down
+sq k10:854A430F1AD8B5C0 ~dq3t:316d8b20 here # the moving floors: their arrows as the NES draws them, in gold (up, right, left, down)
+sq k10:6432872DD3231CB3 ~dq3t:316d8b20 here
+sq k10:058CAC601A4291D9 ~dq3t:316d8b20 here
+sq k10:D1DFC6FA673A7945 ~dq3t:316d8b20 here
