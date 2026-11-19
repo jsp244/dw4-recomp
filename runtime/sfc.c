@@ -58,6 +58,13 @@
  * from level to level (the sky round a statue's rim, black where the same rim stands in the
  * dark) no scaling can follow it: the pack leaves those pixels clear, and the NES's own stay.
  *
+ * Black. The Super Famicom art's black is pure black: the dark round a room, an empty screen
+ * (the squares of nothing but backdrop are art too). Whatever the pack does not draw comes from
+ * the Pixel Remaster's colors, whose black is a cool near-black; side by side the two show as
+ * blocks and bands (round a battle's monsters, round letters that stand free, at the canvas's
+ * sides). So here black is one: where the backdrop shows and the game has it black, and where a
+ * square of the pack leaves a pixel to the NES that the NES draws black, it is pure black.
+ *
  * Pictures laid over the map. A cloud one walks on is not a square repeated: the Super Famicom
  * games paint clouds as one wide picture. A square of the pack may therefore hand pixels to a
  * picture that is thought laid over the whole map, repeating: such a pixel shows the picture's
@@ -625,6 +632,20 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
                            spr_kept + (size_t)y * w, w, emph + y, w, 1);
     }
 
+    /* black is one black: the backdrop's, wherever it shows (under a figure of the pack's as well) */
+    for (int y = 0; y < h; y++) {
+        const uint8_t *ir = idx + (size_t)y * src_stride;
+        const uint32_t *br = bg + (size_t)y * src_stride, *sr = spr_kept + (size_t)y * w;
+        uint32_t *o = out + (size_t)y * stride;
+        uint8_t gray = (emph[y] & 1) ? 0x30 : 0x3F;
+        for (int x = 0; x < w; x++) {
+            uint32_t b = br[x];
+            if ((sr[x] & HD_PRESENT) || ((b & HD_PRESENT) && HD_VALUE(b))) continue;
+            uint8_t c = (b & HD_PRESENT) ? ppu.hd_palettes[HD_PALSET(b)][0] & gray : ir[x];
+            if (!(nes_rgb[c & 0x3F] & 0xFFFFFF)) o[x] = 0xFF000000u;
+        }
+    }
+
     /* the map squares */
     int wx = 0, wy = 0, laid = n_pictures && widescreen_origin(&wx, &wy);       /* where the pictures lie */
     for (int y = 0; y < h; y++) {
@@ -656,7 +677,11 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
                 int mx = (wx + x + org_x) % (int)pc->w, my = (wy + y + org_y) % (int)pc->h;
                 px = pc->px[(size_t)(my < 0 ? my + (int)pc->h : my) * pc->w + (mx < 0 ? mx + (int)pc->w : mx)];
             }
-            if (!(px >> 24)) continue;      /* left to the NES: its own pixel, in whatever color it has there */
+            if (!(px >> 24)) {              /* left to the NES: its own pixel, in whatever color it has there */
+                uint8_t c = ppu.hd_palettes[HD_PALSET(b)][HD_VALUE(b) ? HD_PAL(b) * 4 + HD_VALUE(b) : 0] & gray;
+                if (!(nes_rgb[c & 0x3F] & 0xFFFFFF)) o[x] = 0xFF000000u;       /* (black: the art's black) */
+                continue;
+            }
             o[x] = p->tinted == 1 ? (0xFF000000u | px) : tinted(px, p->tint);
         }
     }
