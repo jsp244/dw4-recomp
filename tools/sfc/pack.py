@@ -11,6 +11,10 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                   a picture laid over the whole map, repeating (an entry of a figure
                                   library, of any size: sfcfig.py buildscroll) under a short name;
                                   "colors" as for cast, below
+    window FIGS:ART frame KEY     the game's windows drawn as the Super Famicom window ART (an entry of a figure
+                                  library, 24x24: sfcfig.py buildwindow): their inside in its fill, their letters
+                                  in the colour of its line, their frame from its pieces. KEY (nesmap.py frame)
+                                  is how the runtime knows the game's own frame is loaded where it expects it
 
     sq NES SFC [SFC...] [ticks N] [over SFC] [top SFC] [here] [hue A-B>C] [tint H:S] [gray P] [dark P]
                         [basegray P] [basetint H:S] [basedark P] [basehue A-B>C] [rows LIST] [cols LIST] [clear V]
@@ -369,6 +373,7 @@ class Maps:
         self.files, self.used = {}, set()       # library file -> its entries; the entries a line has taken (supplement.py)
         self.sq, self.fig, self.cast = [], [], []
         self.pictures = {}                      # name -> (where, the figure library's entry, its options)
+        self.window = None                      # (where, the figure library's entry, its options)
         self.lines = []
         for path in paths:
             base = os.path.dirname(os.path.abspath(path))
@@ -390,6 +395,8 @@ class Maps:
                         self.people[t[1]] = self.inventory(os.path.join(base, t[2]))
                     elif t[0] == "picture":
                         self.pictures[t[1]] = (where, t[2], dict(zip(t[3::2], t[4::2])))
+                    elif t[0] == "window":
+                        self.window = (where, t[1], dict(zip(t[2::2], t[3::2])))
                     elif t[0] == "sq":
                         ticks, refs, i, extra = 16, [], 2, {}
                         while i < len(t):
@@ -682,8 +689,18 @@ def build(out, paths, quiet=False):
                 px = tuple(px[(h - 1 - x) * w + y] for y in range(w) for x in range(h))
                 dx, dy, w, h = 16 - (dy + h), dx, h, w
             figures.append((key, ref_colors, dx, dy, w, h, px))
+    window = None                           # (the frame's key, the letters' colour, 24x24 pixels)
+    if m.window:
+        at, ref, opt = m.window
+        a = m.art(ref, m.figs, at)
+        if (a.get("w"), a.get("h")) != (24, 24) or "frame" not in opt:
+            raise SystemExit("%s: a window takes a picture of 24x24 (sfcfig.py buildwindow) and \"frame KEY\"" % at)
+        line = set(a["px"]) - {a["px"][12 * 24 + 12]}
+        if len(line) != 1:
+            raise SystemExit("%s: a window is two colours, its fill's and its line's" % at)
+        window = (int(opt["frame"], 16), line.pop(), a["px"])
     with open(out, "wb") as f:
-        f.write(b"DW4S" + struct.pack("<III", 3 if pictures else 2, len(squares), len(figures)))
+        f.write(b"DW4S" + struct.pack("<III", 4 if window else 3 if pictures else 2, len(squares), len(figures)))
         for key, (ref, frames, ticks, top, w) in sorted(squares.items()):
             f.write(struct.pack("<Q4sBBBB", key, ref, len(frames), max(1, min(255, ticks)), (1 if top else 0) | (w[2] << 4),
                                 w[0] | (w[1] << 4)))
@@ -695,11 +712,13 @@ def build(out, paths, quiet=False):
         for key, ref, dx, dy, w, h, px in figures:
             f.write(struct.pack("<Q12sbbBB", key, ref, dx, dy, w, h))
             f.write(struct.pack("<%dI" % (w * h), *px))
-        if pictures:                    # (a pack without them is version 2, as before)
+        if pictures or window:          # (a pack without them is version 2, as before)
             f.write(struct.pack("<I", len(pictures)))
             for w, h, px in pictures:
                 f.write(struct.pack("<HH", w, h))
                 f.write(struct.pack("<%dI" % (w * h), *px))
+        if window:                      # (and one without a window version 3)
+            f.write(struct.pack("<QI576I", window[0], window[1], *window[2]))
     if not quiet:
         print("%s: %d map squares, %d figures%s" % (out, len(squares), len(figures),
               "; %d lines left out (their NES squares or people are in no inventory given)" % skipped if skipped else ""))
@@ -711,7 +730,7 @@ def freeze(path):
     out = []
     for _, raw in m.lines:
         t = raw.split()
-        if t and t[0] in ("sq", "fig", "picture"):
+        if t and t[0] in ("sq", "fig", "picture", "window"):
             words = raw.rstrip("\n").split(" ")
             for i, w in enumerate(words):
                 if w == "#":

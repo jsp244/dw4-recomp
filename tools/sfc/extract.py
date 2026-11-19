@@ -66,6 +66,10 @@ DQ1_OVERWORLD = ["w1_%03d" % i for i in (34, 35, 36, 40, 41, 42, 43, 44)]
 # the game does not live through that walk's battles, so its .holds file keeps his hit points up (sfc-capture
 # --holds) and the battles are fought by pressing A; from the cave's east end on it also keeps the game's count of
 # steps to the next battle up, and there are none.
+# a window of Dragon Quest III as the screen shows it: the frame of scenes/dq3.keys at which the opening's first
+# message stands, and where on the picture (sfcfig.py buildwindow)
+DQ3_WINDOW = 1500
+DQ3_WINDOW_BOX = "8,8,248,80"
 DQ3_SKIP = {"c_000", "c_047", "h_015"}          # (pictures between two maps: black)
 # Dragon Quest III's people by their numbers. The towns the scripts walk through show only some thirty of the game's
 # characters. But the game has a record of twelve bytes for every person of every map (in the ROM from $0808D4, the
@@ -315,6 +319,10 @@ def main():
             print("   Dragon Quest V: %d frames" % (int(lines[-1][0]) + 1), flush=True)
             run([capture, a.dq5, "--frames", str(int(lines[-1][0]) + 1), "--keys", os.path.join(scenes, "dq5.keys"),
                  "--captures", os.path.join(scenes, "dq5.captures"), cap])
+    window3 = os.path.join(cap, "dq3_window.ppm")       # (a short run: also played when its picture is not there yet)
+    if not a.keep_captures or not os.path.exists(window3):
+        run([capture, a.dq3, "--keys", os.path.join(scenes, "dq3.keys"), "--frames", str(DQ3_WINDOW + 1),
+             "--ppm", str(DQ3_WINDOW), window3])
     names = []
     upstairs = os.path.join(cap, "dq3_upstairs.state")
     for scene in ("dq3", "dq3_front", "dq3_cave"):
@@ -410,6 +418,7 @@ def main():
         py("sfcfig.py", "buildall", os.path.join(gen, "dq6_lord.figs"), "%s@%d,%d,%d,%d" % ((lord6,) + DQ6_LORD_BOX))
         py("sfcfig.py", "buildscroll", os.path.join(gen, "dq6_sky.figs"), "2", "256", DQ6_SKY_ROWS, *sky6)
     py("sfclib.py", "dq3-overworld", os.path.join(gen, "dq3_ow.sfclib"), a.dq3, os.path.join(cap, "dq3_overworld"))
+    py("sfcfig.py", "buildwindow", os.path.join(gen, "dq3_window.figs"), window3, DQ3_WINDOW_BOX)
     town, castle, front, house, figures = dq3_sets(names)
     cave, cellar, tower = (sorted(n for n in names if n.startswith(p)) for p in ("v_", "w_", "x_"))
     for lib, group in (("dq3_town", town), ("dq3_castle", castle), ("dq3_front", front), ("dq3_house", house), ("dq3_cave", cave),

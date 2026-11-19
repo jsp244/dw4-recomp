@@ -40,6 +40,8 @@ usage:
                                                         (BG 1-4), put together from what each capture shows of
                                                         it: WIDTH is its repeat, the rows are counted from the
                                                         first capture's scroll
+    sfcfig.py buildwindow LIB.figs PICTURE.ppm X0,Y0,X1,Y1  a window's frame and colours, from a picture of the
+                                                        screen on which it stands in that box
     sfcfig.py sheet LIB.figs OUT.png
 The library holds the games' art: it stays with your own copies (generated/ is git-ignored).
 """
@@ -400,6 +402,43 @@ def buildscroll(lib_path, layer, width, rows, paths):
     print("%s: %dx%d" % (lib_path, width, row1 - row0 + 1))
 
 
+def buildwindow(lib_path, picture, box):
+    """a window's frame and its two colours, cut from a picture of the screen (capture.c --ppm: these games set their
+    text layer up for part of the frame only, so a capture's memory does not show a window as the screen does). BOX
+    is the window on the picture: X0,Y0,X1,Y1 (the pixel past it), on the 8-pixel grid its tiles lie on. One figure
+    of 24x24, set 0: the four corners and the four edges, 8x8 each, round a piece of the fill. Each edge must be
+    one piece all along, and the whole of it two colours: the fill's and the line's."""
+    from PIL import Image
+    x0, y0, x1, y1 = (int(v) for v in box.split(","))
+    px = Image.open(picture).convert("RGB").load()
+
+    def piece(x, y):
+        return tuple(0xFF000000 | (px[x + i, y + j][0] << 16) | (px[x + i, y + j][1] << 8) | px[x + i, y + j][2]
+                     for j in range(8) for i in range(8))
+
+    def edge(cells, name):
+        got = set(piece(x, y) for x, y in cells)
+        if len(got) != 1:
+            raise SystemExit("%s: the %s edge of %s is not one piece all along (is that the window?)" % (picture, name, box))
+        return got.pop()
+
+    top = edge([(x, y0) for x in range(x0 + 8, x1 - 8, 8)], "top")
+    bottom = edge([(x, y1 - 8) for x in range(x0 + 8, x1 - 8, 8)], "bottom")
+    left = edge([(x0, y) for y in range(y0 + 8, y1 - 8, 8)], "left")
+    right = edge([(x1 - 8, y) for y in range(y0 + 8, y1 - 8, 8)], "right")
+    corner = piece(x0, y0)
+    fill = corner[63]                   # (the corner's inmost pixel)
+    rows = ((corner, top, piece(x1 - 8, y0)), (left, (fill,) * 64, right), (piece(x0, y1 - 8), bottom, piece(x1 - 8, y1 - 8)))
+    out = tuple(rows[y // 8][x // 8][(y % 8) * 8 + x % 8] for y in range(24) for x in range(24))
+    line = set(out) - {fill}
+    if len(line) != 1:
+        raise SystemExit("%s: the frame of %s has %d colours beside its fill's" % (picture, box, len(line)))
+    figs = [{"px": out, "w": 24, "h": 24, "from": os.path.basename(picture), "group": 0, "pose": 0}]
+    with open(lib_path, "wb") as f:
+        pickle.dump(figs, f)
+    print("%s: a window, its fill %06X, its line %06X" % (lib_path, fill & 0xFFFFFF, line.pop() & 0xFFFFFF))
+
+
 def sheet(lib_path, out):
     from PIL import Image, ImageDraw
     figs = pickle.load(open(lib_path, "rb"))
@@ -435,6 +474,8 @@ def main():
         buildall(a[2], a[3:])
     elif len(a) >= 7 and a[1] == "buildscroll":
         buildscroll(a[2], int(a[3]) - 1, int(a[4]), a[5], a[6:])
+    elif len(a) == 5 and a[1] == "buildwindow":
+        buildwindow(a[2], a[3], a[4])
     elif len(a) == 4 and a[1] == "sheet":
         sheet(a[2], a[3])
     else:

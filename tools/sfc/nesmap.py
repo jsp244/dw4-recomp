@@ -15,6 +15,8 @@ usage:
                                              pack.py's "here")
     nesmap.py figures OUT_PREFIX DUMP...     the same for the people of the dumps' maps: every kind's four facings
                                              and two steps, from the game's own sprite definitions
+    nesmap.py frame DUMP...                  the key of the windows' frame as the dumps have it loaded (pack.py:
+                                             window ... frame KEY)
 """
 import json
 import os
@@ -46,6 +48,15 @@ def square_key(tiles, pal):
     left, bottom right; each 8 bytes, low first), then the palette's number"""
     import struct as _s
     return fnv(bytes([pal]), fnv(b"".join(_s.pack("<Q", tile_hash(t)) for t in tiles))) or 1
+
+
+FRAME_TILES = range(0x83, 0x8D)     # where the game keeps its windows' frame: the edges, the corners, two marks
+
+
+def frame_key(tiles):
+    """the key of the windows' frame (runtime/sfc.c): the hash of the hashes of its ten tiles"""
+    import struct as _s
+    return fnv(b"".join(_s.pack("<Q", tile_hash(t)) for t in tiles)) or 1
 
 
 class MapDump:
@@ -246,6 +257,13 @@ def main():
         render(a[2], a[3])
     elif len(a) >= 4 and a[1] == "squares":
         squares(a[2], a[3:])
+    elif len(a) >= 3 and a[1] == "frame":
+        keys = {}
+        for path in a[2:]:
+            d = MapDump(path)
+            keys.setdefault(frame_key([d.tile(n) for n in FRAME_TILES]), []).append(path)
+        for key, paths in sorted(keys.items(), key=lambda kv: -len(kv[1])):
+            print("%016X: %d dumps (%s)" % (key, len(paths), paths[0]))
     else:
         sys.stdout.write(__doc__)
         sys.exit(2)

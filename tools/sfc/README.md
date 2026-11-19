@@ -88,6 +88,18 @@ games have no picture of keeps its NES shape in their colors, laid over their re
 (`over ~... clear ...`), until it is redrawn: signposts, the stepped rim of Tempe's altar, the great
 doors, the casino's slot machines.
 
+The windows are Dragon Quest III's too. `extract.py` takes a picture of its screen while the
+opening's first message stands there (these games set their text layer up for part of the frame
+only, so a capture's memory does not show a window as the screen does); `sfcfig.py buildwindow`
+cuts the frame's corners and edges and the two colors from it, and one line of
+`maps/chapter1.map` (`window`) puts them into the pack. The game then draws every window with
+them: the frame (the same two-pixel line in the same place on both machines), the inside in
+Dragon Quest III's grey, and the letters, which stay Dragon Warrior IV's own (the Super Famicom
+games have capitals and digits but no lowercase), in the frame's white. The line's `frame KEY`
+is the hash of the ten tiles the NES game keeps its frame in (`nesmap.py frame`): the title and
+a few other screens load other pictures there, and windows are drawn this way only while those
+tiles hold the frame.
+
 `maps/chapter1.map` pairs Burland, Izmit and the places between them; `maps/chapter2.map` what
 Santeem, Surene, Tempe, Frenor, the Birdsong Tower, the shrine of the travel door and Endor add;
 `maps/chapter3.map` Lakanaba, Foxville, Bonmalmo and the two caves near them; `maps/chapter4.map`

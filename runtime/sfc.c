@@ -28,6 +28,19 @@
  * An empty square shows nothing but the backdrop color: the art the pack has for it is drawn only
  * while the backdrop is the color that art was made for (black), not on the title's pale sky.
  *
+ * The windows themselves. The pack may bring a Super Famicom window: its fill, the color of its
+ * line and the eight pieces of its frame. The game's windows are then drawn as that one: the
+ * frame's tiles from the pieces (the game keeps its frame in ten tiles, $83-$8C: the edges, the
+ * corners, the left edge with the mark of a thing worn and the top's end before a title, and the
+ * Super Famicom frame is the same line in the same place), the inside in the fill, and the
+ * letters, which stay the game's own, in the line's color. A tile belongs to a window when it is
+ * one of the frame's or lies inside one, as above; letters that stand free on the screen are
+ * left alone. The title and a few other screens load other tiles where the frame is kept: the
+ * pack says what the frame's ten tiles hash to, and nothing of this is done while they do not.
+ * The letters' color follows the game's (it fades them, and writes them in blue in a few dark
+ * places): it is scaled as a square's colors are, and the fill by as much as the brightest
+ * channel, so it fades with them and keeps its tone.
+ *
  * People. Everyone on a map is four 8x8 sprites in a square. The frame's sprites are taken from
  * the PPU's sprite memory and put together again: four that form a 16x16 square are one figure,
  * known by the picture they make (the hash of its 256 two-bit pixels) and, where several people
@@ -57,7 +70,7 @@
  * rows of pixels that belong above it (clear where the square above shows through). After the
  * squares and the figures are drawn, every pixel asks the square below its own for a top.
  *
- * Pack: "DW4S", version 3 (1: no tops; 2: no pictures), the number of squares, the number of
+ * Pack: "DW4S", version 4 (1: no tops; 2: no pictures; 3: no window), the number of squares, the number of
  * figures, then
  *   per square: key (64 bits), the four NES colors it was made for, the number of animation
  *     frames, the game frames each one lasts, a flags byte (bit 0: a top follows the frames; its
@@ -70,7 +83,10 @@
  *     starts from the NES figure's top left corner (two signed bytes), its width and height,
  *     then the pixels (ARGB; alpha 0 where it is clear);
  *   from version 3: the number of pictures, and per picture its width and height (16 bits
- *     each) and its pixels (ARGB; alpha 0 where the NES's own pixel stays).
+ *     each) and its pixels (ARGB; alpha 0 where the NES's own pixel stays);
+ *   from version 4: the window: the key of the game's frame (64 bits: the hash of the hashes of
+ *     its ten tiles), the color of its line and letters, and 24x24 pixels: the frame's corners
+ *     and edges, 8x8 each, round a piece of the fill.
  * All little-endian.
  */
 #include "sfc.h"
@@ -97,6 +113,9 @@ static square_t *squares;
 static figure_t *figures;
 static picture_t *pictures;             /* laid over the whole map */
 static uint32_t n_squares, n_figures, n_pictures, sq_cap, fig_cap;
+static uint64_t win_key;                /* the pack's window: 0 when it has none */
+static uint32_t win_ink, win_fill, win_px[24 * 24];
+static int win_on;                      /* and whether the game's frame is loaded on this frame */
 static int32_t *sq_table, *fig_table;   /* open-addressed: index + 1, 0 = empty (figures: the first of a key's chain) */
 static uint32_t *pixels;                /* every square's and figure's, one block */
 static int ready;
@@ -171,6 +190,7 @@ void sfc_forget(void) {
     free(squares); free(figures); free(pictures); free(sq_table); free(fig_table); free(pixels);
     squares = NULL; figures = NULL; pictures = NULL; sq_table = fig_table = NULL; pixels = NULL;
     n_squares = n_figures = n_pictures = sq_cap = fig_cap = 0;
+    win_key = 0; win_on = 0;
     ready = 0;
     any_tops = 0;
 }
@@ -189,7 +209,7 @@ int sfc_init(const char *pack_path) {
     long len = ftell(f);
     fseek(f, 0, SEEK_SET);
     uint8_t *d = len >= 16 && len < (64L << 20) ? malloc((size_t)len) : NULL;
-    if (!d || fread(d, 1, (size_t)len, f) != (size_t)len || memcmp(d, "DW4S", 4) || rd32(d + 4) < 1 || rd32(d + 4) > 3) { free(d); fclose(f); return 0; }
+    if (!d || fread(d, 1, (size_t)len, f) != (size_t)len || memcmp(d, "DW4S", 4) || rd32(d + 4) < 1 || rd32(d + 4) > 4) { free(d); fclose(f); return 0; }
     fclose(f);
     uint32_t ns = rd32(d + 8), nf = rd32(d + 12);
     if (ns > 65536 || nf > 65536) { free(d); return 0; }
@@ -268,10 +288,18 @@ int sfc_init(const char *pack_path) {
             n_pictures++;
         }
     }
+    if (!bad && rd32(d + 4) >= 4) {
+        if (o + 12 + sizeof win_px > (size_t)len) bad = 1;
+        else {
+            win_key = rd64(d + o); win_ink = rd32(d + o + 8);
+            for (int k = 0; k < 24 * 24; k++) win_px[k] = rd32(d + o + 12 + k * 4);
+            win_fill = win_px[12 * 24 + 12];
+        }
+    }
     free(d);
     if (bad || !(n_squares + n_figures)) { sfc_forget(); return 0; }
     ready = 1;
-    printf("16-bit textures: %u map squares and %u figures from %s\n", n_squares, n_figures, pack_path);
+    printf("16-bit textures: %u map squares and %u figures%s from %s\n", n_squares, n_figures, win_key ? ", the windows" : "", pack_path);
     return (int)(n_squares + n_figures);
 }
 
@@ -316,6 +344,7 @@ static uint8_t nt_tile(int x, int y) {
    tiles (all below $83) and the frame's top and bottom ($85 $8A, $8C before a title). The map's own tiles
    and another window's far edge end the search. */
 static int in_window(int x, int y) {
+    if (win_key && !win_on) return 0;   /* (the pack knows the frame, and these tiles are not it) */
     for (int dir = -1; dir <= 1; dir += 2)
         for (int k = 1; k < 32; k++) {
             uint8_t t = nt_tile(x + dir * k, y);
@@ -324,6 +353,39 @@ static int in_window(int x, int y) {
             break;
         }
     return 0;
+}
+
+/* Are the ten tiles of the game's frame loaded where it keeps them? */
+static int frame_loaded(void) {
+    uint64_t h = FNV_OFFSET;
+    for (int t = 0x83; t <= 0x8C; t++) {
+        int s = slot_of(t, 0);
+        if (s >= SLOTS) return 0;
+        for (int k = 0; k < 8; k++) { h ^= (slot_hash[s] >> (8 * k)) & 0xFF; h *= FNV_PRIME; }
+    }
+    return (h ? h : 1) == win_key;
+}
+
+/* a tile of the name tables on this frame, as part of a window: what it is (0: none of one; 1: a letter or the
+   empty inside; else the frame's tile), and the window's two colors as the game's palette has them now */
+typedef struct { uint32_t gen, ink, fill; uint8_t tile, pal, tinted, cols; } wtile_t;
+static wtile_t win_tile[4 * 960];
+/* the frame's tiles $83-$8C: which of the nine pieces (three rows of three) each is drawn from */
+static const uint8_t frame_piece[10] = { 3, 3, 1, 0, 6, 5, 2, 7, 8, 1 };
+
+static void resolve_window(wtile_t *w, int nt, int row, int col) {
+    const uint8_t *t = ppu.vram + ppu.nt_offset[nt];
+    uint8_t n = t[row * 32 + col];
+    w->gen = gen; w->tile = 0; w->tinted = 0;
+    if (n > 0x8C) return;
+    if (n < 0x83 && !in_window((nt & 1) * 32 + col, (nt >> 1) * 30 + row)) return;
+    w->tile = n < 0x83 ? 1 : n;
+    w->pal = (t[0x3C0 + (row >> 2) * 8 + (col >> 2)] >> (((row & 2) ? 4 : 0) + ((col & 2) ? 2 : 0))) & 3;
+    w->cols = 0;
+    if (n == 0x8C) {                    /* the top's end: its line goes as far as the game draws it */
+        int s = slot_of(n, 0);
+        for (int k = 0; k < 16 && s < SLOTS; k++) w->cols |= slot_tile[s][k];
+    }
 }
 
 /* (tx, ty): where the square's first tile lies in the name tables; tx < 0 for a square of the canvas's map */
@@ -538,6 +600,7 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
     map_mix = (uint64_t)(ram[0x28] + 1) * PLACE_MIX;
     stat_known = stat_unknown = stat_people = stat_people_unknown = 0;
     n_missed_sq = n_missed_fig = 0;
+    win_on = win_key && frame_loaded();
     gather();
 
     /* the NES pixels of the figures that are drawn from the pack are left out */
@@ -595,6 +658,48 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
             }
             if (!(px >> 24)) continue;      /* left to the NES: its own pixel, in whatever color it has there */
             o[x] = p->tinted == 1 ? (0xFF000000u | px) : tinted(px, p->tint);
+        }
+    }
+
+    /* the windows */
+    for (int y = 0; y < h && win_on; y++) {
+        const uint32_t *br = bg + (size_t)y * src_stride, *sr = spr_kept + (size_t)y * w;
+        const uint16_t *cr = cell + (size_t)y * src_stride;
+        uint32_t *o = out + (size_t)y * stride;
+        for (int x = 0; x < w; x++) {
+            uint16_t c = cr[x];
+            uint32_t b = br[x], s = sr[x];
+            if (!(c & HD_CELL) || !(b & HD_PRESENT) || ((c >> 5) & 31) >= 30) continue;
+            if ((s & HD_PRESENT) && (HD_VALUE(b) == 0 || !(s & HD_BEHIND))) continue;     /* a sprite of the NES's own */
+            wtile_t *wt = &win_tile[((c >> 10) & 3) * 960 + ((c >> 5) & 31) * 32 + (c & 31)];
+            if (wt->gen != gen) resolve_window(wt, (c >> 10) & 3, (c >> 5) & 31, c & 31);
+            if (!wt->tile) continue;
+            if (!wt->tinted) {              /* the letters' color now, against the white they are at rest */
+                uint8_t gray = (emph[y] & 1) ? 0x30 : 0x3F, white = 0x30;
+                uint8_t now = ppu.hd_palettes[HD_PALSET(b)][wt->pal * 4 + 1] & gray & 0x3F;
+                int em = (emph[y] >> 5) & 7;
+                uint16_t t[3] = { 256, 256, 256 }, f[3];
+                wt->tinted = 1;
+                wt->ink = 0xFF000000u | win_ink; wt->fill = 0xFF000000u | win_fill;
+                /* (the game has two whites, $30 and $20: one color) */
+                if (nes_rgb[em * 64 + now] != nes_rgb[white] && !tint_of(&white, &now, NULL, 1, em, gray, t)) {
+                    f[0] = t[0] > t[1] ? t[0] : t[1];
+                    if (t[2] > f[0]) f[0] = t[2];
+                    if (f[0] > 256) f[0] = 256;
+                    f[1] = f[2] = f[0];
+                    wt->ink = tinted(win_ink, t); wt->fill = tinted(win_fill, f);
+                }
+            }
+            int row = HD_ROW(b), col = HD_COL(b);
+            uint32_t px = HD_VALUE(b) ? win_ink : win_fill;
+            if (wt->tile > 1) {             /* the frame: its piece */
+                int piece = frame_piece[wt->tile - 0x83];
+                uint32_t own = px;
+                px = win_px[((piece / 3) * 8 + row) * 24 + (piece % 3) * 8 + col];
+                if (wt->tile == 0x8C && !((wt->cols >> (7 - col)) & 1)) px = win_fill;
+                if (wt->tile == 0x83 && col >= 4) px = own;                         /* the mark beside the edge */
+            }
+            o[x] = px == win_fill ? wt->fill : wt->ink;
         }
     }
 

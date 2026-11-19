@@ -24,6 +24,10 @@ figs dq1 ../../../generated/sfc/dq1.figs
 figs dq3p ../../../generated/sfc/dq3_party.figs
 figs dq3n ../../../generated/sfc/dq3_people.figs
 figs dq6n ../../../generated/sfc/dq6_people.figs   # Dragon Quest VI's people, drawn by the game by number (extract.py: DQ6_PEOPLE)
+figs dq3win ../../../generated/sfc/dq3_window.figs   # Dragon Quest III's message window, cut from a picture of its opening (extract.py: DQ3_WINDOW)
+# The windows (commands, messages, battles, shops, the name's letters): Dragon Quest III's grey inside and its frame.
+# The letters stay the game's own, in that frame's white. "frame": the key of the NES frame's tiles (nesmap.py frame).
+window dq3win:e2d62425 frame CF25BC8515BCAFC1
 nes castle ../../../generated/sfc/nes_castle.json
 nes town ../../../generated/sfc/nes_town.json
 nes ow ../../../generated/sfc/nes_overworld.json

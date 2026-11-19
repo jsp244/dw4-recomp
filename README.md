@@ -117,8 +117,10 @@ squares, ten figures and one painting are other games' (nine squares of Dragon Q
 Dragon Quest V's ship; Dragon Quest VI's wagon, its cow, its dog, five of its monsters, its great dragon, its demon lord and the clouds its dragon flies through): this
 repository holds them in a supplement that opens only with the Dragon Quest III ROM, and
 nothing else of the games' art. The pack covers every place of the game.
-The few things those games have no picture of (the ship at its moorings, the balloon) are drawn as
-Pixel Remaster draws them, and so are the windows, the text and the battles.
+The windows (the commands, the messages, the battles, the shops) are Dragon Quest III's as
+well: its grey inside and its frame, with the game's own English letters in that frame's
+white. The few things those games have no picture of (the ship at its moorings, the balloon)
+are drawn as Pixel Remaster draws them, and so are the monsters of the battles and the title.
 
 ## Widescreen
 
