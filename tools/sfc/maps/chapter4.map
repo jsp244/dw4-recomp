@@ -169,4 +169,4 @@ cast ch4:c4_11_01:4 dq3n:g95 poses 0,1,2,3,4,5,6,7
 cast ch4:c4_0A_00:5 dq3n:g92 poses 0,1,2,3,4,5,6,7 # the skeleton
 cast ch4:c4_00_00:5 dq3n:g117 poses 0,1,2,3,4,5,6,7 # the warrior in the horned helmet
 cast ch4:c4_00_01:5 dq3n:g49 poses 0,1,2,3,4,5,6,7 # the hooded man
-cast ch4:c4_00_01:7 dq6n:g29 poses 0,1,2,3,4,5,6,7 hue 55-80>24 # Keeleon on his throne: none of the games has a lion-beast; Dragon Quest VI's troll, its green fur turned the NES's brown over its salmon belly
+cast ch4:c4_00_01:7 dq5n:g56 poses 0,1,2,3,4,5,6,7 colors 0084EF>B06428,5252CE>8A4A12,0031B5>5E3200,EFAD00>E2867A,B57300>B85C48 # Keeleon on his throne: Dragon Quest V's lion-headed beast, its blue mane turned the NES's brown and its gold the NES's salmon

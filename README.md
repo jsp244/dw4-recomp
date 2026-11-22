@@ -114,7 +114,7 @@ the place. The art is not in the packages. `tools/sfc` takes it from your own du
 Dragon Quest III (Japan, Super Famicom) into a pack, `sfc.pak`; the choice is offered when
 that file lies beside the program (`tools/sfc/README.md` has the two commands). Nineteen
 squares, thirteen figures and one painting are other games' (nine squares of Dragon Quest I & II, ten of
-Dragon Quest V's ship, with that game's little ship for the sea and its sky people; Dragon Quest VI's wagon, its cow, its dog, five of its monsters, its great dragon, its demon lord and the clouds its dragon flies through): this
+Dragon Quest V's ship, with that game's little ship for the sea, its sky people and its lion beast; Dragon Quest VI's wagon, its cow, its dog, four of its monsters, its great dragon, its demon lord and the clouds its dragon flies through): this
 repository holds them in a supplement that opens only with the Dragon Quest III ROM, and
 nothing else of the games' art. The pack covers every place of the game.
 The windows (the commands, the messages, the battles, the shops) are Dragon Quest III's as

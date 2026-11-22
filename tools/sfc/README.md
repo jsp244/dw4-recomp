@@ -17,12 +17,13 @@ python tools/sfc/extract.py --dq3 "Dragon Quest III - Soshite Densetsu e... (Jap
 Nearly all the art is Dragon Quest III's. Nine squares are Dragon Quest I & II's (its castle brick,
 its single tree, its barrier floor, its throne room's tiles), and the ship in Haville's harbour is
 Dragon Quest V's, the one its story opens on (ten squares: deck, rim, mast, barrel, wheel, cabin
-door). Three figures are Dragon Quest V's as well: the little ship its sea shows (at its moorings
-in every port, and under sail), and the sky people of the tower on the clouds, in robes and in
-tunics, who wear their wings at their heads there as they do here. Ten figures are Dragon Quest VI's: the party's wagon, the ox (its cow, turned brown), the
+door). Four figures are Dragon Quest V's as well: the little ship its sea shows (at its moorings
+in every port, and under sail), the sky people of the tower on the clouds, in robes and in
+tunics, who wear their wings at their heads there as they do here, and Keeleon (its lion-headed
+beast, the blue mane turned brown and the gold salmon, as the NES colors him). Nine figures are Dragon Quest VI's: the party's wagon, the ox (its cow, turned brown), the
 fox (none of the games has one: its dog, turned fox-red), the demon at the top of chapter 1's
-tower, the wild-haired brutes of chapter 5 (its ogre, turned purple), Keeleon (none of the games
-has a lion-beast: its troll, turned brown), the stone guards of chapter 5 (its stone giant), the
+tower, the wild-haired brutes of chapter 5 (its ogre, turned purple), the stone guards of chapter 5
+(its stone giant), the
 young dragons of the tower on the clouds (its small dragon, turned salmon), the great dragon they
 guard (the golden dragon of its opening) and the giant on his throne (the demon lord of that
 opening, who sits there in shadow: his greys turned to the giant's flesh). The clouds one walks on

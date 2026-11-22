@@ -127,7 +127,8 @@ DQ5_GRAPHIC = 0x128708
 DQ5_FACING = 0x31EC
 DQ5_FACINGS = (("U", 0x80), ("R", 0x10), ("D", 0x40), ("L", 0x20))
 # number: who (the map files name a set by the number in decimal: dq5n:g104 is the ship)
-DQ5_PEOPLE = {0x68: "the ship as the sea shows it", 0x92: "the sky people in robes", 0x96: "the sky people in tunics"}
+DQ5_PEOPLE = {0x38: "a lion-headed beast", 0x68: "the ship as the sea shows it", 0x92: "the sky people in robes",
+              0x96: "the sky people in tunics"}
 # The same opening has a great golden dragon: when the hero walks up to the companion who stands at the cliff's edge
 # (scenes/dq6_dragon.keys, from the cliff's state) she calls it, and it hovers over the sea alone, beating its
 # wings, before it comes for them. Two captures there are two beats (frames after the state): dq6_dragon.figs.
@@ -146,7 +147,7 @@ DQ6_SKY_ROWS = "291-528"              # counted from the first capture's scroll
 DQ6_LORD_BOX = (100, 36, 156, 90)
 # number: who (the map files name a set by the number in decimal: dq6n:g11 is the wagon)
 DQ6_PEOPLE = {0x0B: "the covered wagon", 0x12: "a clawed demon", 0x14: "a wild-haired ogre", 0x18: "a small dragon",
-              0x1D: "a troll", 0x47: "a dog", 0x4F: "a cow", 0x5D: "a stone giant"}
+              0x47: "a dog", 0x4F: "a cow", 0x5D: "a stone giant"}
 
 
 def dq3_sets(names):
