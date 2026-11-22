@@ -1411,6 +1411,17 @@ static int find_pack(const char *name, char *path, size_t size) {
     return 0;
 }
 
+/* The Audio tab's rows after Volume and Latency: Music when the art pack holds music (the game's notes on
+   Super Famicom instruments), then the note. */
+static void audio_rows(void) {
+    int n = 2;
+    if (sfcmusic_ready())
+        aud_items[n++] = (ui_item){ "Music", UI_CHOICE, MUSIC_CHANGED, &cfg.music, music_names, 2, 0, 0, 0, NULL, "", NULL };
+    aud_items[n++] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL,
+                                "48 kHz with the NES mixer and output filters; use Safe latency if sound stutters.", NULL };
+    tabs[TAB_AUDIO].nitems = n;
+}
+
 /* The same folders hold sfc.pak, the 16-bit textures' art (tools/sfc makes it from the player's own
    Super Famicom cartridges). Without it the third choice is not offered, and a setting that asks for
    it shows the Pixel Remaster. */
@@ -1420,7 +1431,7 @@ static void setup_textures(void) {
     /* the pack may hold music as well (Audio > Music): whichever textures are chosen */
     if (sfc_pack_found && !sfcmusic_ready()) sfcmusic_init(path);
     sfcmusic_enable(cfg.music == 1);
-    tabs[TAB_AUDIO].nitems = sfcmusic_ready() ? 4 : 3;
+    audio_rows();
     if (cfg.textures == 2 && !sfc_pack_found) cfg.textures = 1;
     if (cfg.textures == 2 && !sfc_ready() && !sfc_init(path)) { sfc_pack_found = 0; cfg.textures = 1; }
     gfx_all[5].nchoices = sfc_pack_found ? 3 : 2;
@@ -2273,10 +2284,6 @@ static void build_menu(void) {
     ui_item *a = aud_items;
     a[0] = (ui_item){ "Volume", UI_INT, AUD_CHANGED, &cfg.volume, NULL, 0, 0, 100, 5, "%", "", NULL };
     a[1] = (ui_item){ "Latency", UI_CHOICE, LAT_CHANGED, &cfg.audio_latency, latency_names, 3, 0, 0, 0, NULL, "", NULL };
-    a[2] = (ui_item){ "", UI_INFO, 0, NULL, NULL, 0, 0, 0, 0, NULL,
-                      "48 kHz with the NES mixer and output filters; use Safe latency if sound stutters.", NULL };
-    /* shown only when the art pack holds music (setup_textures): the game's notes on Super Famicom instruments */
-    a[3] = (ui_item){ "Music", UI_CHOICE, MUSIC_CHANGED, &cfg.music, music_names, 2, 0, 0, 0, NULL, "", NULL };
 
     static const char *const ctl_labels[K_TOTAL] = { "A (confirm)", "B (cancel)", "Select", "Start", "Up", "Down", "Left", "Right",
                                                      "Rewind (hold)", "Fast-forward (hold)" };
@@ -2324,7 +2331,8 @@ static void build_menu(void) {
 
     tabs[TAB_PLAY] = (ui_tab){ "Play", play_items, 8, 0 };
     tabs[TAB_GFX] = (ui_tab){ "Graphics", gfx_items, GFX_ROWS, 0 };
-    tabs[TAB_AUDIO] = (ui_tab){ "Audio", aud_items, sfcmusic_ready() ? 4 : 3, 0 };
+    tabs[TAB_AUDIO] = (ui_tab){ "Audio", aud_items, 3, 0 };
+    audio_rows();
     tabs[TAB_CONTROLS] = (ui_tab){ "Controls", ctl_items, K_TOTAL + 3, 0 };
     tabs[TAB_RA] = (ui_tab){ "Achievements", ra_items, ach_available() ? 7 : 1, 0 };
     tabs[TAB_ROM] = (ui_tab){ "ROM", rom_items, 3, 1 };
