@@ -69,6 +69,12 @@ DQ1_OVERWORLD = ["w1_%03d" % i for i in (34, 35, 36, 40, 41, 42, 43, 44)]
 # a window of Dragon Quest III as the screen shows it: the frame of scenes/dq3.keys at which the opening's first
 # message stands, and where on the picture (sfcfig.py buildwindow)
 DQ3_WINDOW = 1500
+# The music's instruments: Dragon Quest III loads a tune's instruments into its sound memory as the tune starts.
+# Its town tune (Aliahan, where the hero wakes) has eleven of them: the three string sections, flute, oboe,
+# clarinet, bassoon, trumpet, harp, timpani, a snare. The same script is played to a frame at which that tune
+# sounds and the sound memory is dumped (sfc-capture --apu-dump); music.py cuts the samples (tools/sfc/music/dw4.arr
+# names them and says which plays what).
+DQ3_MUSIC = {"town": 25000}
 DQ3_WINDOW_BOX = "8,8,248,80"
 DQ3_SKIP = {"c_000", "c_047", "h_015"}          # (pictures between two maps: black)
 # Dragon Quest III's people by their numbers. The towns the scripts walk through show only some thirty of the game's
@@ -338,6 +344,10 @@ def main():
     if not a.keep_captures or not os.path.exists(window3):
         run([capture, a.dq3, "--keys", os.path.join(scenes, "dq3.keys"), "--frames", str(DQ3_WINDOW + 1),
              "--ppm", str(DQ3_WINDOW), window3])
+    for tune, frame in sorted(DQ3_MUSIC.items()):          # (short runs: also played when their dumps are not there yet)
+        if not a.keep_captures or not os.path.exists(os.path.join(cap, tune + ".spcram")):
+            run([capture, a.dq3, "--keys", os.path.join(scenes, "dq3.keys"), "--frames", str(frame + 1),
+                 "--apu-dump", str(frame), os.path.join(cap, tune)])
     names = []
     upstairs = os.path.join(cap, "dq3_upstairs.state")
     for scene in ("dq3", "dq3_front", "dq3_cave"):
@@ -563,7 +573,9 @@ def main():
 
     print("4. the pack")
     maps = sorted(glob.glob(os.path.join(HERE, "maps", "*.map")))
-    py("pack.py", "build", a.out, *maps)
+    music = os.path.join(gen, "music.bin")               # the instruments and the tunes' arrangements
+    py("music.py", "build", music, os.path.join(HERE, "music", "dw4.arr"), cap)
+    py("pack.py", "build", a.out, "--music", music, *maps)
     if a.write_supplement:
         py("supplement.py", "pack", a.supplement, a.dq3, *[os.path.join(gen, n) for n in SUPPLEMENT_LIBRARIES], "--", *maps)
 

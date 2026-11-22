@@ -11,6 +11,9 @@ static int16_t apu_ring[APU_RING_SIZE];   /* output samples; indices in apu_t */
 void (*apu_write_hook)(uint16_t addr, uint8_t v);
 uint8_t apu_mute_mask;
 bool apu_mute_output;
+uint8_t apu_struck[4];
+bool apu_struck_hold;
+uint8_t (*apu_mask_hook)(void);
 /* the output with apu_mute_mask's channels left out: its own averaging and output filters,
    outside apu_t, which keeps filtering the whole mix so the state is the same either way */
 static double mo_acc;
@@ -321,6 +324,9 @@ uint8_t apu_read_status(void) {
 void apu_write(uint16_t a, uint8_t v) {
     apu_run_to(cpu.cycles);
     if (apu_write_hook) apu_write_hook(a, v);
+    if (!apu_struck_hold && (a == 0x4003 || a == 0x4007 || a == 0x400B || a == 0x400F) && apu_struck[(a - 0x4003) >> 2] < 255)
+        apu_struck[(a - 0x4003) >> 2]++;
+    if (apu_mask_hook) apu_mute_mask = apu_mask_hook();
     switch (a) {
     case 0x4000: case 0x4004: {
         apu_pulse_t *p = &apu.pulse[(a >> 2) & 1];

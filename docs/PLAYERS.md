@@ -38,7 +38,8 @@ Graphics      Display mode (windowed / fullscreen / fullscreen exclusive),
               The line under the rows says what the settings produce (for example
               "Picture 1792x1344 in the 2560x1600 display mode") and why there are
               borders when there are.
-Audio         Volume, latency preset (Low / Normal / Safe)
+Audio         Volume, latency preset (Low / Normal / Safe); Music (Original or SNES
+              Remaster: the row is there when a pack with music is, see below)
 Controls      Rebind the eight NES buttons and the rewind and fast-forward keys
               (select a row, press Enter, press the key or pad button)
 Achievements  RetroAchievements: log in, hardcore mode, progress (below)
@@ -186,12 +187,21 @@ the source shows how to make one.
 SNES Remaster textures
 ----------------------
 Textures: SNES Remaster draws the map and the people on it with the art of the Super
-Famicom Dragon Quest games. That art does not come with the program: the choice appears
-when a pack of it, sfc.pak, lies in the program's folder (Android:
-Android/data/<package>/files). The pack is built from your own dump of Dragon Quest III
-(Japan, Super Famicom) with the tools in the source (tools/sfc/README.md). It covers the places of chapters 1 to 4 and chapter 5's towns and castles so far; whatever it has
-no art for, and the windows, the text and the battles, look as they do with Pixel
-Remaster.
+Famicom Dragon Quest games, and the windows as Dragon Quest III draws its own. That art
+does not come with the program: the choice appears when a pack of it, sfc.pak, lies in
+the program's folder (Android: Android/data/<package>/files). The pack is built from your
+own dump of Dragon Quest III (Japan, Super Famicom) with the tools in the source
+(tools/sfc/README.md). It covers every place of the game; the monsters of the battles,
+the title and the few things it has no art for look as they do with Pixel Remaster.
+
+SNES Remaster music
+-------------------
+The same pack holds Dragon Quest III's instruments. Audio > Music: SNES Remaster plays
+the game's music on them: the same notes the game plays, on strings, flute, harp, oboe,
+clarinet and brass instead of the NES's three voices, with the Super Famicom's echo.
+Sound effects stay as they are. The choice is separate from the textures and is
+Original until you change it. The sound chip that plays the samples is LakeSnes's
+(MIT licence, see LICENSE-lakesnes.txt).
 
 RetroAchievements
 -----------------
@@ -228,7 +238,8 @@ screenshots/               F12 screenshots
 dw4.ini                    settings and the remembered ROM path
 retroachievements.txt      RetroAchievements session (user name + token), if logged in
 remaster.pak               your own hand-made tiles for Textures: Pixel Remaster (optional)
-sfc.pak                    the Super Famicom games' art for Textures: SNES Remaster (optional)
+sfc.pak                    the Super Famicom games' art for Textures: SNES Remaster and their
+                           instruments for Music: SNES Remaster (optional)
 dw4.old                    the previous version, after an update (dw4.exe.old)
 
 These live next to the program when that folder is writable. If it is not (Program

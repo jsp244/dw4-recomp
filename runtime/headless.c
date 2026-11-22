@@ -9,6 +9,7 @@
 #include "remaster.h"
 #include "widescreen.h"
 #include "sfc.h"
+#include "sfcmusic.h"
 #include "patch.h"
 #include "title.h"
 #include <stdio.h>
@@ -111,15 +112,17 @@ static uint8_t fuzz_pad(void) {
 static unsigned long apu_writes[0x18], apu_4015[32], apu_4017[4], apu_heard[5], apu_log_frames;
 static int apu_log_on;
 
-/* --apu-trace FILE: 20 bytes a frame: for each pulse its period (2 bytes, low first), the volume it sounds at (0 =
+/* --apu-trace FILE: 24 bytes a frame: for each pulse its period (2 bytes, low first), the volume it sounds at (0 =
    silent), its duty and how often its fourth register was written (a note struck); the triangle's period, whether
-   it sounds, writes to its fourth register; the noise's period, volume, mode, writes to its fourth register; and
-   whether the sample channel plays */
+   it sounds, writes to its fourth register; the noise's period, volume, mode, writes to its fourth register;
+   whether the sample channel plays; then the game's own account: the tune it plays ($BF: twice its number, bit 0
+   set while it plays), whether a sound effect runs ($0628), its flags ($BB: bit 5 = the effect has the noise
+   channel, not the second pulse), and a zero */
 static FILE *apu_trace;
-static uint8_t apu_struck[4];
+static uint8_t trace_struck[4];
 
 static void apu_log_hook(uint16_t a, uint8_t v) {
-    if (a == 0x4003 || a == 0x4007 || a == 0x400B || a == 0x400F) apu_struck[(a - 0x4003) >> 2]++;
+    if (a == 0x4003 || a == 0x4007 || a == 0x400B || a == 0x400F) trace_struck[(a - 0x4003) >> 2]++;
     if (a >= 0x4000 && a < 0x4018) apu_writes[a - 0x4000]++;
     if (a == 0x4015) apu_4015[v & 31]++;
     if (a == 0x4017) apu_4017[v >> 6]++;
@@ -127,21 +130,22 @@ static void apu_log_hook(uint16_t a, uint8_t v) {
 
 static void apu_log_frame(void) {
     if (apu_trace) {
-        uint8_t r[20], *q = r;
+        uint8_t r[24], *q = r;
         for (int i = 0; i < 2; i++) {
             const apu_pulse_t *p = &apu.pulse[i];
             *q++ = (uint8_t)p->timer_period; *q++ = (uint8_t)(p->timer_period >> 8);
             *q++ = p->length > 0 && p->timer_period >= 8 ? (p->const_volume ? p->volume : p->env_decay) : 0;
-            *q++ = p->duty; *q++ = apu_struck[i];
+            *q++ = p->duty; *q++ = trace_struck[i];
         }
         *q++ = (uint8_t)apu.tri.timer_period; *q++ = (uint8_t)(apu.tri.timer_period >> 8);
-        *q++ = apu.tri.length > 0 && apu.tri.linear > 0 && apu.tri.timer_period >= 2; *q++ = apu_struck[2];
+        *q++ = apu.tri.length > 0 && apu.tri.linear > 0 && apu.tri.timer_period >= 2; *q++ = trace_struck[2];
         *q++ = (uint8_t)apu.noise.timer_period; *q++ = (uint8_t)(apu.noise.timer_period >> 8);
         *q++ = apu.noise.length > 0 ? (apu.noise.const_volume ? apu.noise.volume : apu.noise.env_decay) : 0;
-        *q++ = apu.noise.mode; *q++ = apu_struck[3];
+        *q++ = apu.noise.mode; *q++ = trace_struck[3];
         *q++ = apu.dmc.bytes_remaining > 0;
+        *q++ = ram[0xBF]; *q++ = ram[0x0628]; *q++ = ram[0xBB]; *q++ = 0;
         fwrite(r, 1, sizeof r, apu_trace);
-        memset(apu_struck, 0, sizeof apu_struck);
+        memset(trace_struck, 0, sizeof trace_struck);
     }
     apu_log_frames++;
     for (int i = 0; i < 2; i++) {
@@ -333,7 +337,11 @@ static void usage(void) {
         "                      masks, pixels and each layer's source tile per pixel\n"
         "  --wav FILE          write audio to a 48 kHz WAV\n"
         "  --apu-log           print what the game wrote to the sound chip and how much each channel sounded\n"
-        "  --apu-trace FILE    write what each sound channel does, frame by frame (20 bytes a frame)\n"
+        "  --apu-trace FILE    write what each sound channel does, frame by frame (24 bytes a frame)\n"
+        "  --sfc-music         the music on the pack's Super Famicom instruments (--sfc-pack FILE): --wav is then\n"
+        "                      stereo, the instruments with what is left of the NES's sound (its effects)\n"
+        "  --sfc-music-wav FILE  the same music as the sound chip alone gives it, 32,000 Hz (--wav then holds\n"
+        "                      only what is left of the NES's sound)\n"
         "  --mute MASK         leave channels out of the WAV: 1 pulse 1, 2 pulse 2, 4 triangle, 8 noise (hex, sum)\n"
         "  --trace FILE        write a per-instruction trace (interpreter)\n"
         "  --nestest N         nestest mode: start at $C000 and run N instructions\n"
@@ -352,7 +360,8 @@ static void usage(void) {
 int main(int argc, char **argv) {
     const char *rom = NULL, *png = NULL, *wav = NULL, *trace = NULL, *cov = NULL, *hash = NULL, *sav = NULL, *input = NULL, *debug_log = NULL, *ram_dump = NULL;
     const char *state_save = NULL, *state_load = NULL, *remaster = NULL, *remaster_pack = NULL, *hd_dump = NULL, *ppu_dump = NULL, *map_dump = NULL;
-    const char *sfc_png = NULL, *sfc_wide = NULL, *sfc_pack = NULL;
+    const char *sfc_png = NULL, *sfc_wide = NULL, *sfc_pack = NULL, *sfc_music_wav = NULL;
+    int sfc_music = 0;
     int sfc_check = 0;
     long sfc_frames = 0, sfc_map_frames = 0, sfc_sq[2] = { 0, 0 }, sfc_fig[2] = { 0, 0 };
     static struct { uint64_t key; long n; int first, scene; } sfc_miss[2][512];
@@ -393,6 +402,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--sfc-wide") && i + 1 < argc) sfc_wide = argv[++i];
         else if (!strcmp(argv[i], "--sfc-pack") && i + 1 < argc) sfc_pack = argv[++i];
         else if (!strcmp(argv[i], "--sfc-check")) sfc_check = 1;
+        else if (!strcmp(argv[i], "--sfc-music")) sfc_music = 1;
+        else if (!strcmp(argv[i], "--sfc-music-wav") && i + 1 < argc) sfc_music_wav = argv[++i];
         else if (!strcmp(argv[i], "--title-quest")) title_quest = TITLE_LOGO;
         else if (!strcmp(argv[i], "--title-warrior")) title_quest = TITLE_PLAQUE;
         else if (!strcmp(argv[i], "--wav") && i + 1 < argc) wav = argv[++i];
@@ -471,6 +482,10 @@ int main(int argc, char **argv) {
         if (!remaster) remaster_init(remaster_pack);
         if (!sfc_init(sfc_pack)) { fprintf(stderr, "no 16-bit texture pack (--sfc-pack FILE)\n"); return 1; }
     }
+    if (sfc_music || sfc_music_wav) {
+        if (!sfc_pack || !sfcmusic_init(sfc_pack)) { fprintf(stderr, "no 16-bit music in the pack (--sfc-pack FILE)\n"); return 1; }
+        sfcmusic_enable(1);
+    }
 
     if (recomp) {
         if (!recomp_rom_sha1) { fprintf(stderr, "this build has no recompiled code\n"); return 1; }
@@ -505,7 +520,10 @@ int main(int argc, char **argv) {
     }
 
     FILE *hash_file = hash ? fopen(hash, "w") : NULL;
-    int channels = 1;
+    int channels = sfc_music && !sfc_music_wav ? 2 : 1;      /* (with the instruments the WAV is stereo) */
+    int16_t *chip_audio = sfc_music_wav ? malloc(sizeof(int16_t) * 2 * 32000u * (size_t)(frames / 60 + 2)) : NULL;
+    uint32_t chip_n = 0, chip_cap = 32000u * (uint32_t)(frames / 60 + 2);
+    double chip_acc = 0;
     int16_t *audio = wav ? malloc(sizeof(int16_t) * 48000u * (size_t)channels * (size_t)(frames / 60 + 2)) : NULL;
     uint32_t audio_n = 0, audio_cap = wav ? 48000u * (uint32_t)(frames / 60 + 2) : 0;
     uint8_t *rgb = malloc(256 * 240 * 3);
@@ -541,7 +559,26 @@ int main(int argc, char **argv) {
         }
         if (apu_log_on) apu_log_frame();
         if (hash_file) fprintf(hash_file, "%d %016llx\n", frame, (unsigned long long)frame_hash());
-        if (audio) {
+        if (sfcmusic_enabled()) sfcmusic_frame();
+        if (chip_audio) {                       /* the chip's own samples for this frame, nothing added */
+            chip_acc += 32000.0 / 60.0988;
+            uint32_t n = (uint32_t)chip_acc;
+            chip_acc -= n;
+            if (chip_n + n > chip_cap) n = chip_cap - chip_n;
+            sfcmusic_render(chip_audio + (size_t)chip_n * 2, n);
+            chip_n += n;
+        }
+        if (audio && channels == 2) {
+            static int16_t mono[8192];
+            uint32_t avail = apu_samples_available();
+            if (audio_n + avail > audio_cap) avail = audio_cap - audio_n;
+            if (avail > 8192) avail = 8192;
+            uint32_t got = apu_read_samples(mono, avail);
+            int16_t *st = audio + (size_t)audio_n * 2;
+            for (uint32_t k = 0; k < got; k++) st[2 * k] = st[2 * k + 1] = mono[k];
+            sfcmusic_mix(st, got, 48000);
+            audio_n += got;
+        } else if (audio) {
             uint32_t avail = apu_samples_available();
             if (audio_n + avail > audio_cap) avail = audio_cap - audio_n;
             audio_n += apu_read_samples(audio + audio_n, avail);
@@ -723,6 +760,7 @@ int main(int argc, char **argv) {
         }
     }
     if (wav) { write_wav(wav, audio, audio_n, 48000, channels); free(audio); }
+    if (sfc_music_wav) { write_wav(sfc_music_wav, chip_audio, chip_n, 32000, 2); free(chip_audio); }
     if (apu_log_on & 1) apu_log_print();
     if (apu_trace) fclose(apu_trace);
     if (title_quest) printf("title: the pictures %s; the other title was on the screen, and drawn over, in %ld frames\n", title_available() ? "are built in" : "are NOT built in", title_frames);

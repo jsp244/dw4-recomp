@@ -16,6 +16,7 @@
 | CPU | `runtime/nes.h`, `recomp_rt.h`, `cpu.c` | instruction semantics shared by the translated code and the interpreter |
 | PPU | `runtime/ppu.c` | dot-by-dot picture, sprite evaluation, per-pixel source capture for the remaster |
 | APU | `runtime/apu.c` | the five sound channels, 48 kHz output |
+| 16-bit music | `runtime/sfcmusic.c`, `sfcdsp.c` | the game's notes on the art pack's Super Famicom instruments (the S-DSP is LakeSnes's) |
 | Cartridge | `runtime/cart.c`, `mapper.c` | iNES loader, hashes, MMC1 (SUROM), battery RAM |
 | System | `runtime/sys.c`, `mem.c` | bus, controllers, frame loop, save states |
 | Remaster | `runtime/remaster.c` | the recolored, shaded picture |

@@ -496,7 +496,7 @@ class Maps:
         return found
 
 
-def build(out, paths, quiet=False):
+def build(out, paths, quiet=False, music=None):
     m = Maps(paths)
     squares, figures = {}, []
     pictures, picture_of = [], {}           # (width, height, pixels) in the pack's order; name -> its number
@@ -724,8 +724,13 @@ def build(out, paths, quiet=False):
                 f.write(struct.pack("<%dI" % (w * h), *px))
         if window:                      # (and one without a window version 3)
             f.write(struct.pack("<QI576I", window[0], window[1], *window[2]))
+        if music:                       # the music (music.py), last, with its length and name after it: found from the file's end
+            blob = open(music, "rb").read()
+            if blob[:4] != b"DW4M":
+                raise SystemExit("%s: not music made by music.py" % music)
+            f.write(blob + struct.pack("<I", len(blob)) + b"DW4M")
     if not quiet:
-        print("%s: %d map squares, %d figures%s" % (out, len(squares), len(figures),
+        print("%s: %d map squares, %d figures%s%s" % (out, len(squares), len(figures), ", the music" if music else "",
               "; %d lines left out (their NES squares or people are in no inventory given)" % skipped if skipped else ""))
     return m
 
@@ -764,8 +769,13 @@ def freeze(path):
 
 def main():
     a = sys.argv
+    music = None
+    if "--music" in a:                 # build OUT [--music MUSIC.bin] MAP...
+        k = a.index("--music")
+        music = a[k + 1]
+        a = a[:k] + a[k + 2:]
     if len(a) >= 4 and a[1] == "build":
-        build(a[2], a[3:])
+        build(a[2], a[3:], music=music)
     elif len(a) == 3 and a[1] == "freeze":
         freeze(a[2])
     else:

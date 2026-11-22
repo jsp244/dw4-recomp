@@ -95,6 +95,8 @@
  *     its ten tiles), the color of its line and letters, and 24x24 pixels: the frame's corners
  *     and edges, 8x8 each, round a piece of the fill.
  * All little-endian.
+ * After all that a pack may hold the music (runtime/sfcmusic.c reads it from the file's end); this
+ * file does not look at it.
  */
 #include "sfc.h"
 #include "nes.h"

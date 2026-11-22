@@ -29,8 +29,13 @@ BUILD   ?= build
 GEN     := generated
 
 RUNTIME_SRC := runtime/cpu.c runtime/mem.c runtime/cart.c runtime/mapper.c runtime/ppu.c \
-               runtime/apu.c runtime/sys.c runtime/png.c runtime/palette.c runtime/remaster.c runtime/sfc.c runtime/widescreen.c runtime/patch.c runtime/title.c runtime/hacks.c
-RUNTIME_OBJ := $(patsubst runtime/%.c,$(BUILD)/%.o,$(RUNTIME_SRC))
+               runtime/apu.c runtime/sys.c runtime/png.c runtime/palette.c runtime/remaster.c runtime/sfc.c runtime/widescreen.c runtime/patch.c runtime/title.c runtime/hacks.c \
+               runtime/sfcmusic.c
+# the Super Famicom's sound chip for the 16-bit music: LakeSnes's S-DSP (third_party/lakesnes, MIT) and the
+# file its save-state function leans on, compiled with their own flags
+SFCDSP_OBJ := $(BUILD)/sfcdsp.o $(BUILD)/lakesnes_dsp.o $(BUILD)/lakesnes_statehandler.o
+RUNTIME_OBJ := $(patsubst runtime/%.c,$(BUILD)/%.o,$(RUNTIME_SRC)) $(SFCDSP_OBJ)
+$(BUILD)/sfcmusic.o: runtime/sfcmusic.h runtime/sfcdsp.h
 
 GEN_SRC := $(wildcard $(GEN)/*.c)
 GEN_OBJ := $(patsubst $(GEN)/%.c,$(BUILD)/gen/%.o,$(GEN_SRC))
@@ -123,6 +128,13 @@ $(BUILD)/gen/%.o: $(GEN)/%.c runtime/nes.h runtime/recomp_rt.h
 	@mkdir -p $(BUILD)/gen
 	$(CC) $(CFLAGS) $(GEN_CFLAGS) $(RECOMP_DEFS) -Iruntime -c $< -o $@
 
+$(BUILD)/sfcdsp.o: runtime/sfcdsp.c runtime/sfcdsp.h
+	@mkdir -p $(BUILD)
+	$(CC) -O2 -std=gnu11 -w -Iruntime -c $< -o $@
+$(BUILD)/lakesnes_%.o: third_party/lakesnes/snes/%.c
+	@mkdir -p $(BUILD)
+	$(CC) -O2 -std=gnu11 -w -Ithird_party/lakesnes/snes -c $< -o $@
+
 # ---- headless harness (interpreter only) ----
 # sfc-capture (tools/sfc): a Super Famicom game run without a window, for cutting the 16-bit textures' art
 # from the player's own cartridges. LakeSnes (third_party/lakesnes) is the emulation.
@@ -198,6 +210,7 @@ dist: $(BUILD)/dw4$(EXE)
 	cp $(BUILD)/dw4$(EXE) dist/dw4/
 	cp docs/PLAYERS.md dist/dw4/README.txt
 	@test -z "$(RCHEEVOS_SRC)" || cp third_party/rcheevos/LICENSE dist/dw4/LICENSE-rcheevos.txt
+	cp third_party/lakesnes/LICENSE.txt dist/dw4/LICENSE-lakesnes.txt
 	@test "$(DECK_EDITION)" != 1 || cp docs/STEAMDECK.md dist/dw4/STEAMDECK.txt
 	@test "$(DECK_EDITION)" != 1 || install -m 755 tools/steamdeck/add-to-steam.py dist/dw4/
 	@test "$(WINDOWS)" = 1 || cp frontend/icon_preview.png dist/dw4/dw4.png

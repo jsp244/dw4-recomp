@@ -350,6 +350,12 @@ extern bool ppu_hd_capture;        /* option: record ppu.hd_bg / hd_spr for the 
 extern void (*apu_write_hook)(uint16_t addr, uint8_t v);
 extern uint8_t apu_mute_mask;
 extern bool apu_mute_output;
+/* also outside the machine's state: how often each channel's fourth register was written (pulse 1, pulse 2,
+   triangle, noise: a note struck) since whoever reads the counts cleared them, not counted while
+   apu_struck_hold is set; and a function asked for apu_mute_mask at every register write, if there is one */
+extern uint8_t apu_struck[4];
+extern bool apu_struck_hold;
+extern uint8_t (*apu_mask_hook)(void);
 uint32_t ppu_hd_tile_of(uint16_t addr);   /* the tile (CHR RAM slot) and row (bits 14-16) behind a pattern address now */
 
 /* apu.c */

@@ -5,7 +5,7 @@
  *
  *   sfc-capture ROM [--frames N] [--keys FILE] [--captures FILE DIR] [--capture FRAME PREFIX]...
  *               [--ppm FRAME FILE]... [--ppm-every N PREFIX] [--state-load FILE] [--state-save FILE]
- *               [--holds FILE]
+ *               [--holds FILE] [--apu-dump FRAME PREFIX]...
  *
  *   --keys FILE          lines "frame buttons": the buttons held from that frame until the next
  *                        line (A B X Y L R, s = Select, S = Start, u d l r; "-" = none)
@@ -15,6 +15,9 @@
  *                        PPU's layer registers as text); tools/sfc/snesdump.py reads the set
  *   --ppm FRAME FILE     write that frame's picture (256x224) as a PPM file
  *   --state-save FILE    write the machine's state after the last frame; --state-load starts from one
+ *   --apu-dump FRAME P   write the sound side's memory after frame FRAME: P.spcram (the sound CPU's 64 KiB:
+ *                        the samples a tune has loaded) and P.dsp (the sound chip's 128 registers);
+ *                        tools/sfc/music.py cuts the instruments from them
  *   --holds FILE         lines "frame address value" (address and value in hex): from that frame on
  *                        the byte at that work RAM address is set to the value before every frame.
  *                        A script that walks through a cave keeps its hero's hit points that way:
@@ -24,6 +27,8 @@
  * of button presses stand for "walk to the castle and look around".
  */
 #include "snes.h"
+#include "apu.h"
+#include "dsp.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,6 +61,15 @@ static void write_ppm(const char *path) {
             fputc(q[2], f); fputc(q[1], f); fputc(q[0], f);
         }
     fclose(f);
+}
+
+static void write_sound(const char *prefix) {
+    char p[1200];
+    FILE *f;
+    snprintf(p, sizeof p, "%s.spcram", prefix);
+    if ((f = fopen(p, "wb"))) { fwrite(sn->apu->ram, 1, 0x10000, f); fclose(f); } else perror(p);
+    snprintf(p, sizeof p, "%s.dsp", prefix);
+    if ((f = fopen(p, "wb"))) { fwrite(sn->apu->dsp->ram, 1, 0x80, f); fclose(f); } else perror(p);
 }
 
 static void write_memory(const char *prefix) {
@@ -141,8 +155,8 @@ int main(int argc, char **argv) {
             }
             fclose(k);
             i += 2;
-        } else if ((!strcmp(argv[i], "--ppm") || !strcmp(argv[i], "--capture") || !strcmp(argv[i], "--ram-dump")) && i + 2 < argc && nev < MAX_EVENTS) {
-            ev[nev].kind = strcmp(argv[i], "--ppm") != 0;
+        } else if ((!strcmp(argv[i], "--ppm") || !strcmp(argv[i], "--capture") || !strcmp(argv[i], "--ram-dump") || !strcmp(argv[i], "--apu-dump")) && i + 2 < argc && nev < MAX_EVENTS) {
+            ev[nev].kind = !strcmp(argv[i], "--apu-dump") ? 2 : strcmp(argv[i], "--ppm") != 0;
             ev[nev].f = (unsigned)atoi(argv[i + 1]);
             snprintf(ev[nev].path, sizeof ev[nev].path, "%s", argv[i + 2]);
             nev++; i += 2;
@@ -169,7 +183,7 @@ int main(int argc, char **argv) {
         if (every && frame % every == 0) { char p[1100]; snprintf(p, sizeof p, "%s.%06u.ppm", every_prefix, frame); write_ppm(p); }
         for (int e = 0; e < nev; e++) {
             if (ev[e].f != frame) continue;
-            if (ev[e].kind) write_memory(ev[e].path); else write_ppm(ev[e].path);
+            if (ev[e].kind == 2) write_sound(ev[e].path); else if (ev[e].kind) write_memory(ev[e].path); else write_ppm(ev[e].path);
         }
     }
     if (state_save) {

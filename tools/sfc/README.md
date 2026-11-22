@@ -115,6 +115,34 @@ lists every place of the game; `extract.py` dumps them all and writes one invent
 of map (`generated/sfc/nes_kXX.json`). (A level can be two maps side by side, the second loaded as the
 player walks into it: a direction after the level's number has it dumped again from there.)
 
+## The music
+
+The pack also holds music: Dragon Quest III's instruments and, for each of the game's 54 tunes,
+which of them plays which of the NES's three melodic channels (`runtime/sfcmusic.c` is the
+player; the game is not changed, its own notes are followed frame by frame).
+
+- **Instruments.** Dragon Quest III loads a tune's instruments into its sound memory when the
+  tune starts. `extract.py` plays the game to a frame at which its town tune sounds and dumps
+  that memory (`sfc-capture --apu-dump FRAME PREFIX`: the sound CPU's 64 KiB and the sound
+  chip's registers; `DQ3_MUSIC`). `music.py samples DUMP` lists what a dump holds.
+- **Arrangements.** `tools/sfc/music/dw4.arr` names the instruments (a dump, a sample number,
+  the pitch the sample sounds at, a checksum of its bytes) and scores the tunes: a line per
+  part (channel, instrument, envelope, volume left and right, and how much of the game's own
+  volume envelope the instrument follows). The head of `music.py` describes every word.
+  `music.py build` compiles it; `pack.py build OUT --music MUSIC.bin MAPS...` puts it at the
+  pack's end.
+- **Which tune is which.** The game's sound driver keeps twice the tune's number at `$BF`.
+  `nes-headless --apu-trace FILE` writes it for every frame (byte 20 of each 24) beside what
+  the channels do, so a tune's number and its parts can be read from a run of the place it
+  plays in.
+- **Listening.** `nes-headless --sfc-pack PACK --sfc-music --wav OUT.wav` writes what the game
+  would sound like (stereo: the instruments, and what is left of the NES's sound);
+  `--sfc-music-wav FILE` writes the sound chip's output alone.
+
+Sound effects are not re-voiced. The game makes a few of them as tunes (a rumble, a thud):
+those are marked `nes` in the file and left alone, as are the noise channel and whatever a
+sound effect takes of the second pulse channel while it runs.
+
 ## Adding a map
 
 1. Get the game to the map and dump it: `nes-headless --rom ... --input SCRIPT --frames N --map-dump x.map`,

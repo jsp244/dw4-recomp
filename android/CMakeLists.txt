@@ -30,7 +30,9 @@ file(GLOB RC_SRC
   ${ROOT}/third_party/rcheevos/src/hash/*.c ${ROOT}/third_party/rcheevos/src/runtime/*.c
   ${ROOT}/third_party/rcheevos/src/util/*.c)
 
-add_library(main SHARED ${RUNTIME_SRC} ${GEN_SRC} ${FRONTEND_SRC} ${RC_SRC})
+# the Super Famicom's sound chip for the 16-bit music (runtime/sfcdsp.c): LakeSnes's S-DSP
+set(SFCDSP_SRC ${ROOT}/third_party/lakesnes/snes/dsp.c ${ROOT}/third_party/lakesnes/snes/statehandler.c)
+add_library(main SHARED ${RUNTIME_SRC} ${SFCDSP_SRC} ${GEN_SRC} ${FRONTEND_SRC} ${RC_SRC})
 target_include_directories(main PRIVATE ${ROOT}/runtime ${ROOT}/frontend ${ROOT}/generated
   ${ROOT}/third_party/rcheevos/include ${ROOT}/third_party/rcheevos/src)
 target_compile_definitions(main PRIVATE RC_CLIENT_SUPPORTS_HASH RC_HASH_NO_DISC RC_HASH_NO_ENCRYPTED RC_HASH_NO_ZIP)

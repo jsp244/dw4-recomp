@@ -6,11 +6,14 @@
  * instead of drifting to a large buffer (which the player feels as input lag,
  * since every sound effect arrives late) or running dry.
  *
- * The output is stereo: the NES's sound in both channels.
+ * The output is stereo: the NES's sound in both channels and, when the music plays on the art pack's
+ * Super Famicom instruments (runtime/sfcmusic.c), those added, placed left and right as their
+ * arrangement says.
  */
 #include "audio_out.h"
 #include <SDL.h>
 #include "nes.h"
+#include "sfcmusic.h"
 
 static const struct { int target_ms, max_ms, prime_ms, device_samples; } presets[3] = {
     { 16, 60, 16, 256 },     /* low: ~25 ms including the device buffer */
@@ -131,6 +134,7 @@ void audio_out_pump(int muted, int volume) {
     if (!rate_lo || cur_rate < rate_lo) rate_lo = cur_rate;
     if (cur_rate > rate_hi) rate_hi = cur_rate;
 
+    sfcmusic_frame();                /* the frame just run is one that is heard: its notes */
     uint32_t n = apu_samples_available();
     while (n > 0) {
         uint32_t got = apu_read_samples(buf, n < 4096 ? n : 4096);
@@ -138,6 +142,7 @@ void audio_out_pump(int muted, int volume) {
         n -= got;
         for (uint32_t i = 0; i < got; i++) st[2 * i] = st[2 * i + 1] = buf[i];
         if (muted) continue;
+        sfcmusic_mix(st, got, (uint32_t)cur_rate);
         if (volume != 100) for (uint32_t i = 0; i < 2 * got; i++) st[i] = (int16_t)(st[i] * volume / 100);
         if (dump) { SDL_RWwrite(dump, st, 1, got * 2 * sizeof(int16_t)); dump_bytes += got * 2 * (Uint32)sizeof(int16_t); }
         if (!dev) continue;

@@ -122,6 +122,15 @@ well: its grey inside and its frame, with the game's own English letters in that
 white. The few things those games have no picture of (the balloon, a white hen, a stone idol)
 are drawn as Pixel Remaster draws them, and so are the monsters of the battles and the title.
 
+The same pack brings music: **Audio > Music: SNES Remaster** plays the game's own notes on
+Dragon Quest III's instruments (there is no Super Famicom Dragon Quest IV to take a
+soundtrack from). The samples are cut from your cartridge with the art and sound through an
+emulation of the Super Famicom's sound chip (LakeSnes's, MIT licence), with its echo. The
+scoring follows Dragon Quest III's own: castles for strings alone, as it plays its castle,
+towns for flute, harp and clarinet; `tools/sfc/music/dw4.arr` says which instrument takes
+which of the NES's channels in every tune. Sound effects stay the NES's. The choice is
+Original until you make it.
+
 ## Widescreen
 
 Graphics > Aspect ratio > 16:9 or 16:10 keeps the pixels' shape and adds picture at the
