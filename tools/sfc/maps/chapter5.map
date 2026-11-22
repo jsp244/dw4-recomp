@@ -12,6 +12,7 @@ nes k0A ../../../generated/sfc/nes_k0A.json
 nes k0E ../../../generated/sfc/nes_k0E.json
 figs dq3n ../../../generated/sfc/dq3_people.figs
 figs dq6n ../../../generated/sfc/dq6_people.figs   # Dragon Quest VI's people, drawn by the game by number (extract.py: DQ6_PEOPLE)
+figs dq5n ../../../generated/sfc/dq5_people.figs   # Dragon Quest V's, drawn by the game by number (extract.py: DQ5_PEOPLE)
 people ch5 ../../../generated/sfc/nes_people_ch5.json
 
 # ---- towns, castles and shrines ----
@@ -640,6 +641,12 @@ sq k1C:13CC3892CDBAF3E3 ~dq3t:316d8b20 tint 322:62 dark -85 here # two seats, pi
 # picture its kind has in the towns
 people dng ../../../generated/sfc/nes_people_dng.json
 cast dng:p46_00:6 dq6n:g24 poses 0,1,2,3,4,5,6,7 colors 394218>8A3A14,737B21>D0603A,A5B500>F88868,EFBD21>F8F0E0,CE7B00>D8B090 # the young dragons of the tower on the clouds: Dragon Quest VI's small dragon, its greens turned to their salmon, its belly to their white
+# The people of the sky (the tower on the clouds, the castle above it): Dragon Quest V's own sky people, who wear
+# their wings at their heads as the NES's do. The ones in tunics (one of them lies in a cell of place $1A):
+cast dng:p46_00:5 dq5n:g150 poses 0,1,2,3,4,5,6,7
+# The ones in robes, only in the sky's kinds of place and at the World Tree (Lucia): the NES draws Rosa the elf
+# with the same figure, and she stays Dragon Quest III's elf.
+cast dng:p46_00:4 dq5n:g146 poses 0,1,2,3,4,5,6,7 in 32,05,09,23
 
 # the great dragon of the tower on the clouds: the NES builds it of four figures (one kind, each facing shows a
 # quarter). Dragon Quest VI's great golden dragon stands for it: the first quarter carries the whole picture, the

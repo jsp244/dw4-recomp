@@ -75,7 +75,7 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           place uses for something else. SFC "none": nothing is drawn (the
                                           other parts of a creature the NES builds of several figures, when
                                           one of them carries the whole picture)
-    cast INV:DUMP:KIND LIB:gSET poses U,U,R,R,D,D,L,L [hue A-B>C] [colors FROM>TO[@A-B[/C-D]],...]
+    cast INV:DUMP:KIND LIB:gSET poses U,U,R,R,D,D,L,L [hue A-B>C] [colors FROM>TO[@A-B[/C-D]],...] [in KK,KK...]
                                           the same for a set whose pictures are in no fixed order (Dragon Quest
                                           III's): the set's picture numbers for up, right, down and left, two
                                           steps each; "m" before a number mirrors it (m4 = picture 4 mirrored).
@@ -96,6 +96,8 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           of the spear beside it); a rule ending in "+": only pixels with
                                           one of the rules' old colors to their left or right (a cap's cloth,
                                           not a thin pole of the same white)
+                                          "in 32,09": only in maps of those kinds (hex), as for fig: the NES
+                                          draws the sky's people and an elf of the woods with one figure
 
 ~SFC for SFC draws the NES square's own shapes in the colors of the square SFC (its darkest, its two middle
 and its lightest color for the NES square's four, dark to light): for the few things the Super Famicom games
@@ -651,10 +653,12 @@ def build(out, paths, quiet=False):
                 a = poses.get(want) or poses.get(want & ~1) or poses.get(want | 1)
             if a is None:
                 continue
-            key, ref_colors = int(e["key"], 16), bytes(e["colors"])
-            if (key, ref_colors) in done:
+            ref_colors = bytes(e["colors"])
+            bounds = [((int(k, 16) + 1) * PLACE_MIX) & 0xFFFFFFFFFFFFFFFF for k in opt["in"].split(",")] if "in" in opt else [0]
+            keys = [k for k in (int(e["key"], 16) ^ b for b in bounds) if (k, ref_colors) not in done]
+            if not keys:
                 continue
-            done.add((key, ref_colors))
+            done.update((k, ref_colors) for k in keys)
             px = a["px"]
             if mirror:
                 w = a["w"]
@@ -665,7 +669,8 @@ def build(out, paths, quiet=False):
                 px = tuple(turn_hue(p, lo, hi, float(to)) for p in px)
             if "colors" in opt:
                 px = recast(px, a["w"], opt["colors"], where)
-            figures.append((key, ref_colors, (16 - a["w"]) // 2, 16 - a["h"], a["w"], a["h"], px))
+            for key in keys:
+                figures.append((key, ref_colors, (16 - a["w"]) // 2, 16 - a["h"], a["w"], a["h"], px))
     # People lying down (a sleeper in his bed, the wounded soldier of the tower, the bones in the mine): the NES has
     # no pictures of its own for them, it turns the kind's upright picture, its front view standing, a quarter
     # clockwise, a half, three quarters (nesmap.py marks those poses: "turn", "of"). The pack does as the NES does:

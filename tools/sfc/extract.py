@@ -8,7 +8,7 @@
                                 [--write-supplement]
 
 One Super Famicom game is needed: Dragon Quest III, where nearly all the art comes from. The few pictures of other
-games of the series (Dragon Quest I.II's castle brick and a handful more, the ship of Dragon Quest V, the wagon and
+games of the series (Dragon Quest I.II's castle brick and a handful more, the ship and the sky people of Dragon Quest V, the wagon and
 a few animals and creatures of Dragon Quest VI) are read from the supplement (tools/sfc/supplement.bin, locked to the Dragon
 Quest III ROM: supplement.py). With --dq12, --dq5 and --dq6 those games are run as well and their pictures are cut
 from them instead; with all three, --write-supplement writes the supplement again from what the map files use:
@@ -42,7 +42,7 @@ KNOWN = {"dq12": "1c0c6d78bf2bc29160adf48b17ebf5a5bc46230e", "dq3": "b711341e4b1
 
 # the libraries cut from games other than Dragon Quest III: what the map files use of them goes into the supplement
 SUPPLEMENT_LIBRARIES = ("dq1_castle.sfclib", "dq1_ow.sfclib", "dq1.figs", "dq5_ship.sfclib", "dq6_people.figs",
-                        "dq6_dragon.figs", "dq6_lord.figs", "dq6_sky.figs")
+                        "dq6_dragon.figs", "dq6_lord.figs", "dq6_sky.figs", "dq5_people.figs")
 # Dragon Quest V opens on a ship: its script (scenes/dq5.keys) starts a new game, lets the opening's words pass, walks
 # the boy out of his cabin, through the storeroom and up the stairs, opens the deckhouse's door and walks the deck
 # from bow to stern; scenes/dq5.captures names the 27 pictures the deck is cut from. That game keeps its map's
@@ -114,6 +114,20 @@ DQ3_PEOPLE = {
 DQ6_CLIFF = 5596
 DQ6_RECORD = 0x3F0A10
 DQ6_FACINGS = (("U", 0), ("R", 1), ("D", 2), ("L", 3))
+# Dragon Quest V draws any of its characters too. What a kind of person looks like is one byte of a table in its
+# ROM; DQ5_GRAPHIC is the byte of the sailors on the deck its story opens on. Numbers $00-$6F are the game's
+# creatures and things (the monsters that walk its maps, its wagon, its ship as the sea shows it), $80-$A1 its
+# people. scenes/dq5.keys is played to DQ5_DECKHOUSE frames, where the boy has opened the deckhouse's door (the
+# state is kept). In a copy of the ROM the sailors are given a wanted number, the state is loaded and the boy walks
+# out on deck (scenes/dq5_people.keys): the character stands beside the barrels in the sailor's place, stepping
+# on the spot. Which way it looks is a byte of work RAM (DQ5_FACING: one bit for each way), held at the wanted
+# value (sfc-capture --holds); two captures sixteen frames apart are its two steps. Four runs for a character.
+DQ5_DECKHOUSE = 10766
+DQ5_GRAPHIC = 0x128708
+DQ5_FACING = 0x31EC
+DQ5_FACINGS = (("U", 0x80), ("R", 0x10), ("D", 0x40), ("L", 0x20))
+# number: who (the map files name a set by the number in decimal: dq5n:g104 is the ship)
+DQ5_PEOPLE = {0x68: "the ship as the sea shows it", 0x92: "the sky people in robes", 0x96: "the sky people in tunics"}
 # The same opening has a great golden dragon: when the hero walks up to the companion who stands at the cliff's edge
 # (scenes/dq6_dragon.keys, from the cliff's state) she calls it, and it hovers over the sea alone, beating its
 # wings, before it comes for them. Two captures there are two beats (frames after the state): dq6_dragon.figs.
@@ -363,6 +377,33 @@ def main():
                          "--capture", "339", os.path.join(cap, "n%02X%s_b" % (n, tag))])
                 finally:
                     os.remove(copy)
+    # Dragon Quest V's people by number (DQ5_PEOPLE): the sailor on the deck is given the number
+    people5 = ["q%02X%s_%s" % (n, tag, step) for n in sorted(DQ5_PEOPLE) for tag, _ in DQ5_FACINGS for step in "ab"]
+    todo = [n for n in sorted(DQ5_PEOPLE) if not all(os.path.exists(os.path.join(cap, "q%02X%s_%s.regs" % (n, tag, step)))
+                                                     for tag, _ in DQ5_FACINGS for step in "ab")] if a.dq5 else []
+    if todo:
+        print("   Dragon Quest V, %d of its people by number" % len(todo), flush=True)
+        deckhouse = os.path.join(cap, "dq5_deckhouse.state")
+        run([capture, a.dq5, "--keys", os.path.join(scenes, "dq5.keys"), "--frames", str(DQ5_DECKHOUSE), "--state-save", deckhouse])
+        rom5 = open(a.dq5, "rb").read()
+        head = 512 if len(rom5) % 0x8000 == 512 else 0
+        copy, holds = os.path.join(cap, "people.sfc"), os.path.join(cap, "people.holds")
+        for n in todo:
+            changed = bytearray(rom5)
+            changed[head + DQ5_GRAPHIC] = n
+            open(copy, "wb").write(changed)
+            try:
+                for tag, facing in DQ5_FACINGS:
+                    with open(holds, "w") as f:
+                        f.write("150 %04X %02X\n" % (DQ5_FACING, facing))
+                    run([capture, copy, "--keys", os.path.join(scenes, "dq5_people.keys"), "--state-load", deckhouse,
+                         "--holds", holds, "--frames", "249",
+                         "--capture", "232", os.path.join(cap, "q%02X%s_a" % (n, tag)),
+                         "--capture", "248", os.path.join(cap, "q%02X%s_b" % (n, tag))])
+            finally:
+                os.remove(copy)
+                if os.path.exists(holds):
+                    os.remove(holds)
     # Dragon Quest VI's people by number (DQ6_PEOPLE), the same way
     people6 = ["v%02X%s_%s" % (n, tag, step) for n in sorted(DQ6_PEOPLE) for tag, _ in DQ6_FACINGS for step in "ab"]
     todo = [n for n in sorted(DQ6_PEOPLE) if not all(os.path.exists(os.path.join(cap, "v%02X%s_%s.regs" % (n, tag, step)))
@@ -412,6 +453,7 @@ def main():
     if a.dq5:
         ship = [ln.split()[1] for ln in open(os.path.join(scenes, "dq5.captures")) if ln.strip()]
         py("sfclib.py", "build", os.path.join(gen, "dq5_ship.sfclib"), "parity=1,1", *["%s=%s" % (n, os.path.join(cap, n)) for n in ship])
+        py("sfcfig.py", "buildn5", os.path.join(gen, "dq5_people.figs"), *["%s=%s" % (n, os.path.join(cap, n)) for n in people5])
     if a.dq6:                       # a set for each number, as Dragon Quest III's
         py("sfcfig.py", "buildn6", os.path.join(gen, "dq6_people.figs"), *["%s=%s" % (n, os.path.join(cap, n)) for n in people6])
         py("sfcfig.py", "buildall", os.path.join(gen, "dq6_dragon.figs"), *dragon6)

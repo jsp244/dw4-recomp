@@ -33,6 +33,8 @@ usage:
     sfcfig.py buildn6 LIB.figs NAME=CAPTURE...          Dragon Quest VI's people by number (NAME: vXXU_a, vXXU_b,
                                                         vXXR_.., vXXD_.., vXXL_..: the run that turns the one
                                                         at the cliff up, right, down, left)
+    sfcfig.py buildn5 LIB.figs NAME=CAPTURE...          Dragon Quest V's people by number (NAME: qXXU_a, ..., as
+                                                        buildn6: the one in the sailor's place on the deck)
     sfcfig.py buildall LIB.figs CAPTURE[@X0,Y0,X1,Y1]...  one figure of all the sprites of each capture (a
                                                         creature alone on the screen; with a box: only the
                                                         sprites that lie inside it)
@@ -217,6 +219,10 @@ HERO_AT = (120, 96)
 # turn him up, right, down and left; the hero has stopped below him.
 SPOTS6 = {"U": (((112, 64), 0),), "R": (((112, 64), 2),), "D": (((112, 64), 4),), "L": (((112, 64), 6),)}
 HERO_AT6 = (128, 96)
+# Dragon Quest V (extract.py: DQ5_PEOPLE): one person, the sailor beside the barrels of the ship's deck, in four runs;
+# the boy has stopped outside the deckhouse's door.
+SPOTS5 = {"U": (((176, 47), 0),), "R": (((176, 47), 2),), "D": (((176, 47), 4),), "L": (((176, 47), 6),)}
+HERO_AT5 = (120, 103)
 OBJ_SIZES = {0: (8, 16), 1: (8, 32), 2: (8, 64), 3: (16, 32), 4: (16, 64), 5: (32, 64)}
 
 
@@ -470,6 +476,8 @@ def main():
         buildn(a[2], a[3:])
     elif len(a) >= 4 and a[1] == "buildn6":
         buildn(a[2], a[3:], SPOTS6, HERO_AT6)
+    elif len(a) >= 4 and a[1] == "buildn5":
+        buildn(a[2], a[3:], SPOTS5, HERO_AT5)
     elif len(a) >= 4 and a[1] == "buildall":
         buildall(a[2], a[3:])
     elif len(a) >= 7 and a[1] == "buildscroll":

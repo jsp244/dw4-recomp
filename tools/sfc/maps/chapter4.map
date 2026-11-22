@@ -23,6 +23,7 @@ nes k2E ../../../generated/sfc/nes_k2E.json
 nes rooms ../../../generated/sfc/nes_rooms.json
 figs dq3n ../../../generated/sfc/dq3_people.figs
 figs dq6n ../../../generated/sfc/dq6_people.figs   # Dragon Quest VI's people, drawn by the game by number (extract.py: DQ6_PEOPLE)
+figs dq5n ../../../generated/sfc/dq5_people.figs   # Dragon Quest V's, drawn by the game by number (extract.py: DQ5_PEOPLE)
 people ch4 ../../../generated/sfc/nes_people_ch4.json
 
 # ---- Monbaraba's theater (kind $2C) ----
@@ -84,6 +85,9 @@ sq k10:E70AE1749FF8DFD6 =k10:DE5FEDC9DD4DEAE6 over ~dq3c:75608358 clear 1e here 
 # pale rim, its mast (top, pole and foot), its barrels, its wheel, the planks of its raised deck for the cabin's
 # roof, its cabin door. The sails (Dragon Quest V shows none from above), the roof's edges, the gangway and the
 # gratings keep their NES shapes, in that ship's wood.
+# The ship as a figure (at its moorings in Haville and every later port, under sail on the sea): Dragon Quest V's
+# own little ship, the one its sea shows, in its four views.
+cast ch4:c4_11_00:4 dq5n:g104 poses 0,1,2,3,4,5,6,7
 sq k2F:D758A26F452DEB92 dq5:f8538595 here # the deck
 sq k2E:D758A26F452DEB92 dq5:f8538595 here # and the floors below it
 sq k2F:7289C731FF7B58F2 dq5:94badb41 here # the ship's rim

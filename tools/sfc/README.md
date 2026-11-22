@@ -17,7 +17,9 @@ python tools/sfc/extract.py --dq3 "Dragon Quest III - Soshite Densetsu e... (Jap
 Nearly all the art is Dragon Quest III's. Nine squares are Dragon Quest I & II's (its castle brick,
 its single tree, its barrier floor, its throne room's tiles), and the ship in Haville's harbour is
 Dragon Quest V's, the one its story opens on (ten squares: deck, rim, mast, barrel, wheel, cabin
-door). Ten figures are Dragon Quest VI's: the party's wagon, the ox (its cow, turned brown), the
+door). Three figures are Dragon Quest V's as well: the little ship its sea shows (at its moorings
+in every port, and under sail), and the sky people of the tower on the clouds, in robes and in
+tunics, who wear their wings at their heads there as they do here. Ten figures are Dragon Quest VI's: the party's wagon, the ox (its cow, turned brown), the
 fox (none of the games has one: its dog, turned fox-red), the demon at the top of chapter 1's
 tower, the wild-haired brutes of chapter 5 (its ogre, turned purple), Keeleon (none of the games
 has a lion-beast: its troll, turned brown), the stone guards of chapter 5 (its stone giant), the
@@ -32,7 +34,9 @@ They come from the supplement,
 a stream made from the Dragon Quest III ROM's contents, so that the file opens only with that very
 ROM (`supplement.py`). If you would rather take them from your own cartridges, give those games
 too: `--dq12 "Dragon Quest I & II (Japan).sfc"`, `--dq5 "Dragon Quest V (Japan).sfc"` (Dragon Quest V
-is then played from power-on onto its ship's deck, 12,814 frames), `--dq6 "Dragon Quest VI
+is then played from power-on onto its ship's deck, 12,814 frames, and once to its deckhouse door,
+10,766 frames, from where the game is asked to draw each wanted character in the place of a sailor
+on deck), `--dq6 "Dragon Quest VI
 (Japan).sfc"` (played to the cliff of its opening, 5,596 frames, where the game is asked to draw
 each wanted character in place of the man who waits there, and once on from there, 12,781 frames,
 past the great dragon and through the clouds to the demon lord on his throne). Whoever changes the map files
