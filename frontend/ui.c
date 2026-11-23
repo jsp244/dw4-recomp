@@ -15,6 +15,7 @@ static const SDL_Color C_ROWHOV = { 26, 35, 43, 255 };
 static const SDL_Color C_ACCENT = { 53, 196, 162, 255 };
 static const SDL_Color C_TEXT   = { 232, 238, 242, 255 };
 static const SDL_Color C_DIM    = { 138, 151, 163, 255 };
+static const SDL_Color C_WARN   = { 240, 190, 84, 255 };
 static const SDL_Color C_LINE   = { 46, 58, 68, 255 };
 
 static void fill(SDL_Renderer *r, SDL_Rect rc, SDL_Color c) {
@@ -53,6 +54,10 @@ static int item_value_text(const ui_item *it, int capture, char *buf, size_t n) 
         if (capture) strncat(buf, "_", n - strlen(buf) - 1);
         else if (!len) snprintf(buf, n, "%s", it->placeholder ? it->placeholder : "(none)");
         return 1; }
+    case UI_ACTION:
+        if (it->suffix && it->suffix[0]) { snprintf(buf, n, "%s", it->suffix); return 1; }
+        buf[0] = 0;
+        return 0;
     default:
         buf[0] = 0;
         return 0;
@@ -177,7 +182,7 @@ void ui_draw(SDL_Renderer *r, ui_menu *m, int ww, int wh) {
         int whole = iy >= right.y && iy + h <= right.y + right.h;
         if (iy + h < right.y || iy > right.y + right.h) { iy += h + s; continue; }
         if (it->kind == UI_INFO) {
-            wrap_text(r, right.x + mg, iy + s, maxw, small, C_DIM, it->info, 1);
+            wrap_text(r, right.x + mg, iy + s, maxw, small, it->id == UI_INFO_WARNING ? C_WARN : C_DIM, it->info, 1);
             if (whole) m->item_rects[i] = (SDL_Rect){ right.x, iy, right.w, h };
             iy += h + s;
             continue;
@@ -205,6 +210,13 @@ void ui_draw(SDL_Renderer *r, ui_menu *m, int ww, int wh) {
             int vx = rx - s * 2 - vw;
             int lx = vx - s * 2 - aw;
             int adjustable = (it->kind == UI_CHOICE || it->kind == UI_INT);
+            if (it->kind == UI_ACTION) {                   /* a description: up to the right edge, smaller if the row is short of room */
+                int vs = s, room = rc.w - 3 * mg - font_width(it->label, s);
+                if (vw > room && s > 1) { vs = s - 1; vw = font_width(vbuf, vs); }
+                font_draw(r, rc.x + rc.w - mg - vw, rc.y + (row - FONT_CELL_H * vs) / 2, vs, selected ? C_TEXT : C_DIM, 0, vbuf);
+                iy += row + s;
+                continue;
+            }
             if (adjustable) {
                 font_draw(r, lx, ty, s, selected ? C_ACCENT : C_DIM, 0, "<");
                 font_draw(r, rx, ty, s, selected ? C_ACCENT : C_DIM, 0, ">");
@@ -227,6 +239,59 @@ void ui_draw(SDL_Renderer *r, ui_menu *m, int ww, int wh) {
     if (m->status[0]) font_draw(r, mg, fy, s, C_TEXT, 0, m->status);
     fy += FONT_CELL_H * s + mg / 2;
     if (m->hint) font_draw(r, mg, fy, s > 1 ? s - 1 : 1, C_DIM, 0, m->hint);
+
+    if (m->dialog.open) {
+        SDL_Rect all = { 0, 0, ww, wh };
+        SDL_Color dim = { 4, 6, 8, 175 };
+        fill(r, all, dim);
+        int n = m->dialog.n, bw[3], total = (n - 1) * mg;
+        for (int i = 0; i < n; i++) { bw[i] = font_width(m->dialog.label[i], s) + 2 * mg; total += bw[i]; }
+        int longest = 0;                             /* as wide as its longest paragraph, up to 52 characters */
+        for (const char *q = m->dialog.text; *q; ) {
+            const char *nl = strchr(q, '\n');
+            int len = nl ? (int)(nl - q) : (int)strlen(q);
+            if (len > longest) longest = len;
+            q += len + (nl ? 1 : 0);
+        }
+        if (longest > 52) longest = 52;
+        int textw = longest * FONT_CELL_W * s;
+        if (textw > ww - 6 * mg) textw = ww - 6 * mg;
+        if (textw < total) textw = total;
+        int lh = FONT_CELL_H * s + s;
+        int lines = wrap_text(r, 0, 0, textw, s, C_TEXT, m->dialog.text, 0);
+        int bh = row + 2 * s;
+        SDL_Rect box = { (ww - textw) / 2 - mg, 0, textw + 2 * mg, mg + lines * lh + mg + bh + mg };
+        box.y = (wh - box.h) / 2;
+        SDL_Rect edge = { box.x - s, box.y - s, box.w + 2 * s, box.h + 2 * s };
+        fill(r, edge, C_ACCENT);
+        fill(r, box, C_PANEL);
+        wrap_text(r, box.x + mg, box.y + mg, textw, s, C_TEXT, m->dialog.text, 1);
+        int bx = box.x + (box.w - total) / 2, by = box.y + mg + lines * lh + mg;
+        for (int i = 0; i < n; i++) {
+            SDL_Rect b = { bx, by, bw[i], bh };
+            m->dialog.rect[i] = b;
+            int on = i == m->dialog.sel;
+            fill(r, b, on ? C_ACCENT : C_ROW);
+            font_draw(r, b.x + mg, b.y + (bh - FONT_CELL_H * s) / 2, s, on ? C_BG : C_TEXT, 0, m->dialog.label[i]);
+            bx += bw[i] + mg;
+        }
+    }
+}
+
+void ui_dialog(ui_menu *m, const char *text, int n, const char *const *labels, const int *ids, int sel) {
+    if (n < 1) n = 1;
+    if (n > 3) n = 3;
+    memset(&m->dialog, 0, sizeof m->dialog);
+    snprintf(m->dialog.text, sizeof m->dialog.text, "%s", text);
+    for (int i = 0; i < n; i++) {
+        snprintf(m->dialog.label[i], sizeof m->dialog.label[i], "%s", labels[i]);
+        m->dialog.id[i] = ids[i];
+    }
+    m->dialog.n = n;
+    m->dialog.sel = sel >= 0 && sel < n ? sel : 0;
+    m->dialog.open = 1;
+    if (m->capture == UI_CAPTURE_TEXT) SDL_StopTextInput();
+    m->capture = UI_CAPTURE_NONE;
 }
 
 static ui_event ev(int type, int id) { ui_event e = { type, id }; return e; }
@@ -366,7 +431,63 @@ static int in_rect(const SDL_Rect *rc, int x, int y) {
     return rc->w > 0 && x >= rc->x && x < rc->x + rc->w && y >= rc->y && y < rc->y + rc->h;
 }
 
+/* the open dialog takes every event: left / right pick a button, Enter / A chooses it, Escape / B / Start cancel */
+static ui_event dialog_key(ui_menu *m, SDL_Keycode k) {
+    switch (k) {
+    case SDLK_LEFT: case SDLK_UP: if (m->dialog.sel > 0) m->dialog.sel--; break;
+    case SDLK_RIGHT: case SDLK_DOWN: if (m->dialog.sel < m->dialog.n - 1) m->dialog.sel++; break;
+    case SDLK_RETURN: case SDLK_KP_ENTER: case SDLK_SPACE:
+        m->dialog.open = 0;
+        return ev(UI_EV_ACTIVATE, m->dialog.id[m->dialog.sel]);
+    case SDLK_ESCAPE: case SDLK_BACKSPACE: case SDLK_AC_BACK:
+        m->dialog.open = 0;
+        break;
+    default: break;
+    }
+    return ev(UI_EV_NONE, 0);
+}
+
+static ui_event dialog_event(ui_menu *m, const SDL_Event *e) {
+    switch (e->type) {
+    case SDL_KEYDOWN: {
+        SDL_Keycode k = e->key.keysym.sym;
+        /* the Enter that opened the dialog, still held, must not answer it */
+        if (e->key.repeat && k != SDLK_LEFT && k != SDLK_RIGHT && k != SDLK_UP && k != SDLK_DOWN) break;
+        return dialog_key(m, k); }
+    case SDL_CONTROLLERBUTTONDOWN:
+        switch (e->cbutton.button) {
+        case SDL_CONTROLLER_BUTTON_DPAD_UP: case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return dialog_key(m, SDLK_LEFT);
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN: case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return dialog_key(m, SDLK_RIGHT);
+        case SDL_CONTROLLER_BUTTON_A: return dialog_key(m, SDLK_RETURN);
+        case SDL_CONTROLLER_BUTTON_B: case SDL_CONTROLLER_BUTTON_START: return dialog_key(m, SDLK_ESCAPE);
+        default: break;
+        }
+        break;
+    case SDL_JOYBUTTONDOWN:
+        if (SDL_GameControllerFromInstanceID(e->jbutton.which)) break;
+        if (e->jbutton.button == 0) return dialog_key(m, SDLK_RETURN);
+        if (e->jbutton.button == 1 || e->jbutton.button == 7) return dialog_key(m, SDLK_ESCAPE);
+        break;
+    case SDL_JOYHATMOTION:
+        if (SDL_GameControllerFromInstanceID(e->jhat.which)) break;
+        if (e->jhat.value & (SDL_HAT_UP | SDL_HAT_LEFT)) return dialog_key(m, SDLK_LEFT);
+        if (e->jhat.value & (SDL_HAT_DOWN | SDL_HAT_RIGHT)) return dialog_key(m, SDLK_RIGHT);
+        break;
+    case SDL_MOUSEMOTION:
+        for (int i = 0; i < m->dialog.n; i++) if (in_rect(&m->dialog.rect[i], e->motion.x, e->motion.y)) m->dialog.sel = i;
+        break;
+    case SDL_MOUSEBUTTONDOWN:
+        if (e->button.button != SDL_BUTTON_LEFT) break;
+        for (int i = 0; i < m->dialog.n; i++)
+            if (in_rect(&m->dialog.rect[i], e->button.x, e->button.y)) { m->dialog.sel = i; return dialog_key(m, SDLK_RETURN); }
+        break;
+    default: break;
+    }
+    return ev(UI_EV_NONE, 0);
+}
+
 ui_event ui_handle_event(ui_menu *m, const SDL_Event *e) {
+    if (m->dialog.open) return dialog_event(m, e);
     switch (e->type) {
     case SDL_KEYDOWN:
         /* a held key auto-repeats; while binding, only a fresh press may be captured */

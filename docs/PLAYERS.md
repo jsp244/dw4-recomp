@@ -16,7 +16,10 @@ Getting started
 Menu (Esc in game, Start + Select together, or LT + RT on Android and the Steam Deck)
 -------------------------------------------------------------------------------------
 Play          Start / resume, reset, save state, load state, the save state slot
-              (1-9, with the date the slot was last saved), end game, quit
+              (1-9, with what the slot holds), end game, quit
+Save states   All nine slots: the chapter, the level of the chapter's main
+              character and when each was saved; choose one to load it or to
+              save into it
 Graphics      Display mode (windowed / fullscreen / fullscreen exclusive),
               resolution (auto, the sizes your display offers, and always
               1920x1080 and 3840x2160: the window size, the display mode in
@@ -75,8 +78,21 @@ again when you end the game or quit.
 Save states and rewind
 ----------------------
 There are nine save state slots per ROM. F5 saves to the current slot, F8 loads
-it, F6 / F7 change the slot (a message in the corner shows the slot and when it
-was last saved); the Play tab shows the same. Hold the rewind key to go back
+it, F6 / F7 change the slot (a message in the corner shows the slot and what it
+holds); the Play tab shows the same.
+
+The Save states tab lists all nine. Each slot shows the chapter the state is in,
+the level of that chapter's main character (Ragnar, Alena, Taloon, the sister who
+leads, the Hero) and when it was saved; a state from before a game was started
+shows "Title screen". Choose a slot to load it or to save the game into it; the
+slot you choose becomes the current one.
+
+A state is never overwritten without your consent. Saving into a slot that holds
+a state asks first, showing what the slot holds and where the game is now, with
+Cancel selected. In the game, F5 on such a slot says what it holds and saves only
+if you press F5 again within four seconds.
+
+Hold the rewind key to go back
 through the last several minutes of play (two frames of history per frame shown);
 release it to continue from there. Went back too far? Hold fast-forward within
 1.5 s of letting go of rewind: it goes forward again through the stretch you
@@ -163,6 +179,10 @@ are shared: a log saved under any choice of patches continues under any other, w
 without Delocalized. One caution from the hack
 itself: do not switch Manual tactics off while a party is set to the Manual tactic;
 choose another tactic first.
+
+Warning: enabling patches could break or corrupt save states. A save state holds the game
+in the middle of its work, and a patch changes the program under it. Choose one patch setup
+for a playthrough and keep it to the end; the Patches tab shows this warning too.
 
 Shaders
 -------

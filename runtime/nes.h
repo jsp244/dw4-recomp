@@ -390,6 +390,8 @@ size_t  nes_state_size(void);
 int     nes_state_save(void *buf, size_t size);
 int     nes_state_load(const void *buf, size_t size);   /* -1 not a state of this program, -2 saved from another patched image */
 int     nes_state_image(const void *buf, size_t size, uint32_t *image);   /* 1 and the image (patch_signature) a state was saved from */
+/* 1 and the console's 2 KiB of RAM and the cartridge's 8 KiB inside a saved state (pointers into buf), without loading it */
+int     nes_state_peek(const void *buf, size_t size, const uint8_t **ram2k, const uint8_t **wram8k);
 /* One of the game's own routines run on the side, to ask it something (widescreen.c): begin saves
    the CPU, the RAM, the battery RAM and the mapper; call runs the routine at addr in the
    interpreter until it returns (1) or max_steps instructions have gone by (0), with the hardware
