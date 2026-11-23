@@ -209,7 +209,8 @@ SNES Remaster textures
 Textures: SNES Remaster draws the map and the people on it with the art of the Super
 Famicom Dragon Quest games, and the windows as Dragon Quest III draws its own. That art
 does not come with the program: the choice appears when a pack of it, sfc.pak, lies in
-the program's folder (Android: Android/data/<package>/files). The pack is built from your
+the program's folder (Android: Android/data/<package>/files; the same file serves Windows,
+Linux, the Steam Deck and Android). The pack is built from your
 own dump of Dragon Quest III (Japan, Super Famicom) with the tools in the source
 (tools/sfc/README.md). It covers every place of the game and, in battle, the 46 monsters
 those games draw too (the slimes, the armours, the lions, Esturk and others), in Dragon

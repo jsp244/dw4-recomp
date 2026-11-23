@@ -48,6 +48,14 @@ Tips
 - Graphics > Textures: Pixel Remaster recolors and shades the game in the manner of the
   Pixel Remaster games (more colors per tile, soft light from the upper left). A
   hand-made tile pack, remaster.pak, if you have one, goes in the game folder.
+- Graphics > Textures: SNES Remaster draws the map, the people on it, the windows and, in
+  battle, 46 of the monsters with the art of the Super Famicom Dragon Quest games, and
+  Audio > Music: SNES Remaster plays the game's tunes on Dragon Quest III's instruments.
+  Both need a pack of that art, sfc.pak, in the game folder; the two choices appear once
+  it is there. The pack is not in this package: it is built from your own dump of Dragon
+  Quest III (Japan, Super Famicom) on a Windows or Linux PC with the tools in the port's
+  source (tools/sfc/README.md there), then copied to the Deck. The same file serves
+  every edition of the port.
 - ROM hacks: four come with the program, each with an On/Off switch on the Patches tab.
 - Updates: once the port has published releases, Check for updates on the menu's
   Updates tab, then Install, installs a new one in place (the previous version stays
