@@ -122,24 +122,36 @@ which of them plays which of the NES's three melodic channels (`runtime/sfcmusic
 player; the game is not changed, its own notes are followed frame by frame).
 
 - **Instruments.** Dragon Quest III loads a tune's instruments into its sound memory when the
-  tune starts. `extract.py` plays the game to a frame at which its town tune sounds and dumps
-  that memory (`sfc-capture --apu-dump FRAME PREFIX`: the sound CPU's 64 KiB and the sound
-  chip's registers; `DQ3_MUSIC`). `music.py samples DUMP` lists what a dump holds.
+  tune starts. `extract.py` dumps that memory at a frame at which its town tune sounds and at
+  one of its battle tune, which has the low brass (`sfc-capture --apu-dump FRAME PREFIX`: the
+  sound CPU's 64 KiB and the sound chip's registers; `DQ3_MUSIC` names the scenes and the
+  frames). `music.py samples DUMP` lists what a dump holds.
 - **Arrangements.** `tools/sfc/music/dw4.arr` names the instruments (a dump, a sample number,
   the pitch the sample sounds at, a checksum of its bytes) and scores the tunes: a line per
   part (channel, instrument, envelope, volume left and right, and how much of the game's own
-  volume envelope the instrument follows). The head of `music.py` describes every word.
+  volume envelope the instrument follows). A part may take only the notes below a pitch, or
+  from it up: the chip plays a sample at most two octaves above its own note, so a bass line
+  that climbs out of the double basses' reach passes to the next section, and a pedal note
+  can be the timpani's while the rest of the line is not. The head of `music.py` describes
+  every word.
   `music.py build` compiles it; `pack.py build OUT --music MUSIC.bin MAPS...` puts it at the
   pack's end.
 - **Which tune is which.** The game's sound driver keeps twice the tune's number at `$BF`.
   `nes-headless --apu-trace FILE` writes it for every frame (byte 20 of each 24) beside what
   the channels do, so a tune's number and its parts can be read from a run of the place it
-  plays in.
+  plays in. Where the game decides: the routine at `$803B` of its 16K bank 25 picks the
+  tune of a place (a table of places with a tune of their own at `$8124`, else by the kind of
+  place at `$811C`; the overworlds by chapter at `$8116`, in chapter 5 by who leads the
+  party at `$810B`; ship and balloon by `$0515`); the battle's is chosen at `$A140` of bank
+  24 and `$9053` of bank 17; everything else is a `BRK n $FB` in the code (play tune or sound
+  n). The fades are the driver's too: it steps a master volume (the low half of `$B0`) while
+  bit 6 of `$BB` is set, and the player scales the instruments by the same steps.
 - **Listening.** `nes-headless --sfc-pack PACK --sfc-music --wav OUT.wav` writes what the game
   would sound like (stereo: the instruments, and what is left of the NES's sound);
   `--sfc-music-wav FILE` writes the sound chip's output alone.
 
-Sound effects are not re-voiced. The game makes a few of them as tunes (a rumble, a thud):
+Sound effects are not re-voiced. The game makes a few of them as tunes (a rumble, a thud, a
+roll of low notes), and the far world of the last chapter has a drone with wind for a tune:
 those are marked `nes` in the file and left alone, as are the noise channel and whatever a
 sound effect takes of the second pulse channel while it runs.
 

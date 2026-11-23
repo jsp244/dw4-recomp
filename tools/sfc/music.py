@@ -19,14 +19,17 @@ The arrangements file, line by line ("#" starts a comment):
         an instrument: sample NUMBER (hex) of DUMP; PITCH = the note it sounds at the chip's pitch $1000, in Hz
         (measured from the sample's own sound; 0 for a drum)
     tune N NAME echo FEEDBACK VOLUME          (hex, as the chip's registers take them)
-        the arrangement of tune N (the game's own number; "tune any" = every tune that has none); NAME is only
-        for the reader. The lines after it are its parts:
-    CHANNEL INSTRUMENT ADSR LEFT RIGHT [octave N] [follow PERCENT] [top N] [ring] [detune CENTS]
+        the arrangement of tune N (the game's own number; several with commas, "1,15,43", share one;
+        "tune any" = every tune that has none); NAME is only for the reader. The lines after it are its parts:
+    CHANNEL INSTRUMENT ADSR LEFT RIGHT [octave N] [follow PERCENT] [top N] [ring] [detune CENTS] [below NOTE | from NOTE]
         CHANNEL p1, p2 (the pulses) or tri (the triangle); ADSR as four hex digits (the chip's two envelope
         registers); LEFT RIGHT the voice's volume at the channel's loudest; "follow": how much of the game's
         own volume envelope the instrument follows (0 = it only starts and stops with the note, 100 = all of
         it); "top": the NES volume that counts as loudest (default 12); "ring": a plucked string, which rings
-        on when the channel falls silent; "octave": octaves above the NES note; "detune": cents above it
+        on when the channel falls silent; "octave": octaves above the NES note; "detune": cents above it;
+        "below NOTE" / "from NOTE" (C4 = middle C, F#3...): the part plays only the channel's notes below
+        that one, or from it up, so that two instruments can share a line (the chip plays a sample at most
+        two octaves above its own note; a note that would still lie above that sounds an octave lower)
     tune N [NAME] nes
         the tune is left to the NES's own sound: the game makes a few sound effects as tunes
 """
@@ -34,6 +37,17 @@ import hashlib
 import os
 import struct
 import sys
+
+
+def note_number(s):
+    """C4 -> 60, F#3 -> 54, or the number itself"""
+    if s.isdigit():
+        return int(s)
+    names = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
+    sharp = len(s) > 2 and s[1] == "#"
+    if s[0] not in names or not s[2 if sharp else 1:].lstrip("-").isdigit():
+        raise ValueError(s)
+    return names[s[0]] + (1 if sharp else 0) + 12 * (int(s[2 if sharp else 1:]) + 1)
 
 
 def sample(ram, dirp, n):
@@ -102,12 +116,13 @@ def build(out, arrangements, dumpdir):
             names[name] = len(insts)
             insts.append((s[0], s[1], pitch))
         elif t[0] == "tune":
-            cur = {"tune": 255 if t[1] == "any" else int(t[1]), "nes": "nes" in t[2:], "efb": 0, "evol": 0, "parts": [], "where": where}
+            cur = {"tunes": [255] if t[1] == "any" else [int(n) for n in t[1].split(",")], "nes": "nes" in t[2:], "efb": 0, "evol": 0,
+                   "parts": [], "where": where}
             if "echo" in t:
                 i = t.index("echo")
                 cur["efb"], cur["evol"] = int(t[i + 1], 16), int(t[i + 2], 16)
-            if any(x["tune"] == cur["tune"] for x in tunes):
-                raise SystemExit("%s: tune %s has an arrangement already" % (where, t[1]))
+            if any(n in x["tunes"] for x in tunes for n in cur["tunes"]) or len(set(cur["tunes"])) != len(cur["tunes"]):
+                raise SystemExit("%s: a tune of %s has an arrangement already" % (where, t[1]))
             tunes.append(cur)
         elif t[0] in ("p1", "p2", "tri"):
             if cur is None or cur["nes"]:
@@ -115,7 +130,7 @@ def build(out, arrangements, dumpdir):
             if t[1] not in names:
                 raise SystemExit("%s: no instrument %r" % (where, t[1]))
             part = {"chan": ("p1", "p2", "tri").index(t[0]), "inst": names[t[1]], "adsr": int(t[2], 16), "vl": int(t[3]), "vr": int(t[4]),
-                    "octave": 0, "follow": 0, "top": 12, "ring": 0, "detune": 0}
+                    "octave": 0, "follow": 0, "top": 12, "ring": 0, "detune": 0, "side": 0, "split": 0}
             if not insts[part["inst"]][2] > 0:
                 raise SystemExit("%s: %s has no pitch (a drum)" % (where, t[1]))
             i = 5
@@ -124,6 +139,8 @@ def build(out, arrangements, dumpdir):
                     part["ring"] = 1; i += 1
                 elif t[i] in ("octave", "follow", "top", "detune"):
                     part[t[i]] = int(t[i + 1]); i += 2
+                elif t[i] in ("below", "from"):
+                    part["side"], part["split"] = (2 if t[i] == "below" else 4), note_number(t[i + 1]); i += 2
                 else:
                     raise SystemExit("%s: what is %r?" % (where, t[i]))
             cur["parts"].append(part)
@@ -133,18 +150,22 @@ def build(out, arrangements, dumpdir):
             raise SystemExit("%s: what is %r?" % (where, t[0]))
     if sum(len(i[0]) for i in insts) > 0x8000 - 0x0400:
         raise SystemExit("the instruments do not fit the chip's memory beside its echo")
-    b = bytearray(b"DW4M" + struct.pack("<HHHHB8BBH", 1, len(insts), len(tunes), chip["gain"], chip["delay"], *chip["fir"], chip["master"], 0))
+    records = sum(len(x["tunes"]) for x in tunes)
+    if records > 64:
+        raise SystemExit("more arrangements than the player holds (64)")
+    b = bytearray(b"DW4M" + struct.pack("<HHHHB8BBH", 1, len(insts), records, chip["gain"], chip["delay"], *chip["fir"], chip["master"], 0))
     for data, loop, pitch in insts:
         b += struct.pack("<HHf", len(data), loop, pitch) + data
-    for x in tunes:
-        b += struct.pack("<BBBbb3x", x["tune"], 1 if x["nes"] else 0, len(x["parts"]), x["efb"] - 256 if x["efb"] > 127 else x["efb"],
+    for x, n in ((x, n) for x in tunes for n in x["tunes"]):
+        b += struct.pack("<BBBbb3x", n, 1 if x["nes"] else 0, len(x["parts"]), x["efb"] - 256 if x["efb"] > 127 else x["efb"],
                          x["evol"] - 256 if x["evol"] > 127 else x["evol"])
         for p in x["parts"]:
-            b += struct.pack("<BBBBbbbBBBbx", p["chan"], p["inst"], p["adsr"] >> 8, p["adsr"] & 255, p["vl"], p["vr"], p["octave"], p["follow"],
-                             p["top"], p["ring"], p["detune"])
+            b += struct.pack("<BBBBbbbBBBbB", p["chan"], p["inst"], p["adsr"] >> 8, p["adsr"] & 255, p["vl"], p["vr"], p["octave"], p["follow"],
+                             p["top"], p["ring"] | p["side"], p["detune"], p["split"])
     with open(out, "wb") as f:
         f.write(b)
-    print("%s: %d instruments (%d bytes of samples), %d arrangements" % (out, len(insts), sum(len(i[0]) for i in insts), len(tunes)))
+    print("%s: %d instruments (%d bytes of samples), %d arrangements for %d tunes" % (out, len(insts), sum(len(i[0]) for i in insts),
+                                                                                  len(tunes), records))
 
 
 def main():

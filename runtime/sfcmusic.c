@@ -14,6 +14,11 @@
  *   - its period: the pitch, followed frame by frame;
  *   - its volume: the game shapes every note with its own envelope, and the instrument follows
  *     as much of it as the arrangement says; the note ends when the channel falls silent.
+ * A part may take only the notes below a pitch, or from it up: a bass line that climbs out of the
+ * double basses' reach is handed to the next section, as a score would. (The chip plays a sample at
+ * most two octaves above its own note; what would still lie above that sounds an octave lower.)
+ * The game's fades are followed too: its sound driver steps a master volume (the low half of $B0)
+ * while bit 6 of $BB is set, and the instruments' output is scaled by the same steps.
  * The game says which tune it plays (its sound driver keeps twice the number at $BF) and when a
  * sound effect has taken the second pulse channel or the noise ($0628, $BB): effects stay the
  * NES's own. The channels the instruments play are left out of the NES's mix (apu_mute_mask);
@@ -29,7 +34,8 @@
  *   a part (12 bytes): channel (0 pulse 1, 1 pulse 2, 2 triangle), instrument, ADSR 1, ADSR 2,
  *     volume left and right (at the channel's loudest), octaves up, how much of the game's volume
  *     envelope it follows (percent), the volume that counts as loudest, flags (1 = a plucked
- *     string: it rings on when the channel falls silent), cents of detuning, one unused;
+ *     string: it rings on when the channel falls silent; 2 = only the notes below the split, 4 = only
+ *     those from it up), cents of detuning, the split (a MIDI note number);
  *   then the blob's length (32 bits) and "DW4M" again.
  */
 #include "sfcmusic.h"
@@ -47,7 +53,7 @@
 #define SAMPLES_AT 0x0400
 #define ECHO_AT 0x8000
 
-typedef struct { uint8_t chan, inst, a1, a2; int8_t vl, vr, octave; uint8_t follow, top, flags; int8_t detune; } part_t;
+typedef struct { uint8_t chan, inst, a1, a2; int8_t vl, vr, octave; uint8_t follow, top, flags; int8_t detune; uint8_t split; } part_t;
 typedef struct { uint8_t tune, flags, nparts; int8_t efb, evol; part_t part[MAX_PARTS]; } arr_t;
 
 static float inst_f0[MAX_INST];
@@ -61,6 +67,10 @@ static const arr_t *now;            /* the arrangement of the tune that plays */
 static int now_tune = -1;
 static struct { uint8_t sounding; uint16_t pitch; int8_t vl, vr; } voice[MAX_PARTS];
 static uint8_t koff;
+/* the game's fades: what its master volume is of what it was before the fade, and where the output's scale is */
+static double fade_to = 1.0, fade_now = 1.0;
+static int fade_ref = 15;
+#define FADE_STEP (1.0 / 512)               /* per sample of the chip: a step of the game's sixteen in 4 ms */
 /* 32,000 Hz to the output's rate */
 static double pos;
 static int16_t hist[4][2];
@@ -93,6 +103,7 @@ static void chip_start(const uint8_t *fir, int edl, int mvol) {
     memset(voice, 0, sizeof voice);
     koff = 0; pos = 0; memset(hist, 0, sizeof hist);
     now = NULL; now_tune = -1;
+    fade_to = fade_now = 1.0; fade_ref = 15;
 }
 
 static int take(const uint8_t *d, size_t len) {
@@ -130,6 +141,7 @@ static int take(const uint8_t *d, size_t len) {
             q->chan = d[o]; q->inst = d[o + 1]; q->a1 = d[o + 2]; q->a2 = d[o + 3];
             q->vl = (int8_t)d[o + 4]; q->vr = (int8_t)d[o + 5]; q->octave = (int8_t)d[o + 6];
             q->follow = d[o + 7]; q->top = d[o + 8] ? d[o + 8] : 12; q->flags = d[o + 9]; q->detune = (int8_t)d[o + 10];
+            q->split = d[o + 11];
             if (q->chan > 2 || q->inst >= ninst || inst_f0[q->inst] <= 0) goto bad;
         }
     }
@@ -214,6 +226,10 @@ void sfcmusic_frame(void) {
     }
     apu_mute_mask = mask_now();
     if (!now || (now->flags & 1)) { memset(apu_struck, 0, sizeof apu_struck); return; }
+    int mv = ram[0xB0] & 15;                            /* the sound driver's master volume */
+    if (!mv) fade_to = 0.0;                             /* (a tune faded out plays on, silent) */
+    else if (ram[0xBB] & 0x40) fade_to = mv >= fade_ref ? 1.0 : (double)mv / fade_ref;
+    else { fade_ref = mv; fade_to = 1.0; }              /* no fade: whatever the tune set is its full volume */
     int sfx_p2 = ram[0x0628] && !(ram[0xBB] & 0x20);
     uint8_t kon = 0, newoff = koff;
     for (int v = 0; v < now->nparts; v++) {
@@ -233,9 +249,13 @@ void sfcmusic_frame(void) {
             struck = apu_struck[2];
             freq = 1789772.7 / (32.0 * (per + 1));
         }
-        double ratio = pow(2.0, q->octave + q->detune / 1200.0);
-        long pl = lround(4096.0 * freq * ratio / inst_f0[q->inst]);
-        uint16_t pitch = (uint16_t)(pl > 0x3FFF ? 0x3FFF : pl);
+        if (q->flags & 6) {                             /* the part has one side of the split only */
+            long m = lround(69.0 + 12.0 * log2(freq / 440.0));
+            if ((q->flags & 2) ? m >= q->split : m < q->split) vol = 0, struck = 0;
+        }
+        double pd = 4096.0 * freq * pow(2.0, q->octave + q->detune / 1200.0) / inst_f0[q->inst];
+        while (pd > 16383.0) pd *= 0.5;                 /* above the chip's reach: the octave below */
+        uint16_t pitch = (uint16_t)lround(pd);
         double follow = q->follow / 100.0, lev = (double)vol / q->top;
         double g = (1.0 - follow) + follow * (lev > 1.0 ? 1.0 : lev);
         int8_t vl = (int8_t)lround(q->vl * g), vr = (int8_t)lround(q->vr * g);
@@ -266,8 +286,21 @@ void sfcmusic_frame(void) {
     memset(apu_struck, 0, sizeof apu_struck);
 }
 
+/* a sample of the chip, scaled by where the game's fade is */
+static void chip_sample(int16_t *lr) {
+    sfcdsp_sample(lr);
+    if (fade_now != fade_to) {
+        double d = fade_to - fade_now;
+        fade_now += d > FADE_STEP ? FADE_STEP : d < -FADE_STEP ? -FADE_STEP : d;
+    }
+    if (fade_now < 1.0) {
+        lr[0] = (int16_t)lround(lr[0] * fade_now);
+        lr[1] = (int16_t)lround(lr[1] * fade_now);
+    }
+}
+
 void sfcmusic_render(int16_t *stereo, uint32_t frames) {
-    for (uint32_t i = 0; i < frames; i++) sfcdsp_sample(stereo + i * 2);
+    for (uint32_t i = 0; i < frames; i++) chip_sample(stereo + i * 2);
 }
 
 void sfcmusic_mix(int16_t *stereo, uint32_t frames, uint32_t rate) {
@@ -277,7 +310,7 @@ void sfcmusic_mix(int16_t *stereo, uint32_t frames, uint32_t rate) {
         pos += step;
         while (pos >= 1.0) {
             memmove(hist[0], hist[1], 3 * sizeof hist[0]);
-            sfcdsp_sample(hist[3]);
+            chip_sample(hist[3]);
             pos -= 1.0;
         }
         for (int c = 0; c < 2; c++) {

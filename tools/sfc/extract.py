@@ -71,10 +71,11 @@ DQ1_OVERWORLD = ["w1_%03d" % i for i in (34, 35, 36, 40, 41, 42, 43, 44)]
 DQ3_WINDOW = 1500
 # The music's instruments: Dragon Quest III loads a tune's instruments into its sound memory as the tune starts.
 # Its town tune (Aliahan, where the hero wakes) has eleven of them: the three string sections, flute, oboe,
-# clarinet, bassoon, trumpet, harp, timpani, a snare. The same script is played to a frame at which that tune
-# sounds and the sound memory is dumped (sfc-capture --apu-dump); music.py cuts the samples (tools/sfc/music/dw4.arr
-# names them and says which plays what).
-DQ3_MUSIC = {"town": 25000}
+# clarinet, bassoon, trumpet, harp, timpani, a snare; its battle tune (the first fight on the way to the cave) has
+# the low brass. The sound memory is dumped at a frame at which each sounds (sfc-capture --apu-dump: the scene whose
+# script gets there, and the frame); music.py cuts the samples (tools/sfc/music/dw4.arr names them and says which
+# plays what).
+DQ3_MUSIC = {"town": ("dq3", 25000), "battle": ("dq3_cave", 53900)}
 DQ3_WINDOW_BOX = "8,8,248,80"
 DQ3_SKIP = {"c_000", "c_047", "h_015"}          # (pictures between two maps: black)
 # Dragon Quest III's people by their numbers. The towns the scripts walk through show only some thirty of the game's
@@ -344,10 +345,15 @@ def main():
     if not a.keep_captures or not os.path.exists(window3):
         run([capture, a.dq3, "--keys", os.path.join(scenes, "dq3.keys"), "--frames", str(DQ3_WINDOW + 1),
              "--ppm", str(DQ3_WINDOW), window3])
-    for tune, frame in sorted(DQ3_MUSIC.items()):          # (short runs: also played when their dumps are not there yet)
-        if not a.keep_captures or not os.path.exists(os.path.join(cap, tune + ".spcram")):
-            run([capture, a.dq3, "--keys", os.path.join(scenes, "dq3.keys"), "--frames", str(frame + 1),
-                 "--apu-dump", str(frame), os.path.join(cap, tune)])
+    def sound_dumps(scene, first, last):            # the dumps of DQ3_MUSIC a run of a scene over these frames makes
+        return [x for tune, (sc, frame) in sorted(DQ3_MUSIC.items()) if sc == scene and first <= frame < last
+                for x in ("--apu-dump", str(frame), os.path.join(cap, tune))]
+    for tune, (scene, frame) in sorted(DQ3_MUSIC.items()):  # (captures kept: a dump not there yet gets a run of its own)
+        if a.keep_captures and not os.path.exists(os.path.join(cap, tune + ".spcram")):
+            holds = os.path.join(scenes, scene + ".holds")
+            print("   Dragon Quest III, the instruments of its %s tune: %d frames" % (tune, frame + 1), flush=True)
+            run([capture, a.dq3, "--keys", os.path.join(scenes, scene + ".keys"), "--frames", str(frame + 1),
+                 "--apu-dump", str(frame), os.path.join(cap, tune)] + (["--holds", holds] if os.path.exists(holds) else []))
     names = []
     upstairs = os.path.join(cap, "dq3_upstairs.state")
     for scene in ("dq3", "dq3_front", "dq3_cave"):
@@ -359,10 +365,13 @@ def main():
         holds = os.path.join(scenes, scene + ".holds")      # (the cave's script keeps the hero's hit points up)
         cmd = [capture, a.dq3, "--keys", os.path.join(scenes, scene + ".keys"),
                "--captures", os.path.join(scenes, scene + ".captures"), cap] + (["--holds", holds] if os.path.exists(holds) else [])
+        last = int(lines[-1][0]) + 1
         if scene == "dq3":          # (in two parts: the state between them is where the people by number are drawn from)
-            run(cmd + ["--frames", str(DQ3_UPSTAIRS), "--state-save", upstairs])
-            cmd += ["--state-load", upstairs, "--start", str(DQ3_UPSTAIRS)]
-        run(cmd + ["--frames", str(int(lines[-1][0]) + 1)])
+            run(cmd + sound_dumps(scene, 0, DQ3_UPSTAIRS) + ["--frames", str(DQ3_UPSTAIRS), "--state-save", upstairs])
+            cmd += ["--state-load", upstairs, "--start", str(DQ3_UPSTAIRS)] + sound_dumps(scene, DQ3_UPSTAIRS, last)
+        else:
+            cmd += sound_dumps(scene, 0, last)
+        run(cmd + ["--frames", str(last)])
     # Dragon Quest III's people by number (DQ3_PEOPLE): whoever has no captures yet is drawn by the game now
     people = ["n%02X%s_%s" % (n, tag, step) for n in sorted(DQ3_PEOPLE) for tag, _ in DQ3_FACINGS for step in "ab"]
     todo = [n for n in sorted(DQ3_PEOPLE) if not all(os.path.exists(os.path.join(cap, "n%02X%s_%s.regs" % (n, tag, step)))

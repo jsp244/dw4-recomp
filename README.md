@@ -127,9 +127,10 @@ Dragon Quest III's instruments (there is no Super Famicom Dragon Quest IV to tak
 soundtrack from). The samples are cut from your cartridge with the art and sound through an
 emulation of the Super Famicom's sound chip (LakeSnes's, MIT licence), with its echo. The
 scoring follows Dragon Quest III's own: castles for strings alone, as it plays its castle,
-towns for flute, harp and clarinet; `tools/sfc/music/dw4.arr` says which instrument takes
-which of the NES's channels in every tune. Sound effects stay the NES's. The choice is
-Original until you make it.
+towns for flute, harp and clarinet, marches and battles for brass over strings;
+`tools/sfc/music/dw4.arr` says which instrument takes which of the NES's channels in every
+tune, the short fanfares included. Sound effects stay the NES's. The choice is Original
+until you make it.
 
 ## Widescreen
 
