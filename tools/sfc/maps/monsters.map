@@ -1,0 +1,67 @@
+# The battles' monsters: the ones a Super Famicom Dragon Quest draws too, each in the NES drawing's place.
+# Dragon Quest III and V draw these creatures as the NES game does (the same designs, the same poses, nearly the
+# same sizes); every monster that shares the NES drawing's tiles and differs in colour takes the same picture.
+# "tones nes": each in the colours the NES game gives that monster (pack.py), so the variants the Super Famicom
+# games never drew, and the ones they colour otherwise (Esturk is brown there), are Dragon Warrior IV's.
+# No Super Famicom game draws the other 55 drawings (148 monsters): they stay as the NES draws them.
+
+figs dq3m ../../../generated/sfc/dq3_monsters.figs
+figs dq5m ../../../generated/sfc/dq5_monsters.figs
+monsters nesm ../../../generated/sfc/nes_monsters.json
+
+# the slimes (Dragon Quest III)
+mon 00 dq3m:4c982130 tones nes # Slime
+mon 04 dq3m:4c982130 tones nes # Slime (the eight that join)
+mon 05 dq3m:a4987400 tones nes # Red Slime
+mon 5C dq3m:2851be7e tones nes # Metal Slime
+mon 0A dq3m:6dffb63a tones nes # Babble
+mon 75 dq3m:9d051f56 tones nes # Metal Babble
+mon 14 dq3m:87c56331 tones nes # Healer
+mon 39 dq3m:48dabeec tones nes # Man O'War
+mon 5E dq3m:3b229567 tones nes # Curer
+mon AB dq3m:3b229567 tones nes # Mighty Healer: the Curer's picture
+# the toadstools
+mon 11 dq3m:4ea7166e tones nes # Demon Toadstool
+mon 47 dq3m:cf07b10c tones nes # Mage Toadstool
+# the armours
+mon 46 dq3m:f13b1668 tones nes # Rogue Knight
+mon 49 dq3m:cb4b5604 tones nes # Infurnus Knight
+mon 5D dq3m:a4839126 tones nes # Lethal Armor
+mon B2 dq3m:f13b1668 tones nes # Sampson: the Rogue Knight's picture
+mon C1 dq3m:f13b1668 tones nes # Saroknight: the same
+# the imps
+mon 51 dq3m:c2aa60aa tones nes # Demonite
+mon 74 dq3m:2ab16b4f tones nes # Minidemon
+mon 1B dq3m:c2aa60aa tones nes # Xemime: the Demonite's picture
+mon 78 dq3m:4641145e tones nes # Bomb Crag
+# the chests
+mon 59 dq3m:76d71882 tones nes # Man-Eater Chest
+mon 62 dq3m:f18c9ce8 tones nes # Mimic
+# Dragon Quest V's
+mon 0B dq5m:62c374c1 tones nes # Troglodyte
+mon 9F dq5m:de6ff689 tones nes # Demighoul
+mon 2D dq5m:62c374c1 tones nes # Liclick: the Troglodyte's picture
+# the dolls
+mon 91 dq5m:31e8dc57 tones nes # Clay Doll
+mon 58 dq5m:c746ed3e tones nes # Mystic Doll
+mon 16 dq5m:31e8dc57 tones nes # Lava Doll: the Clay Doll's picture
+mon 50 dq5m:d1c5e635 tones nes # Iceloth
+mon A2 dq5m:7f3e7599 tones nes # Big Sloth
+mon 66 dq5m:d1c5e635 tones nes # Barrenth: the Iceloth's picture
+# the kings of the slimes
+mon 30 dq5m:20421571 tones nes # King Slime
+mon 97 dq5m:15f69337 tones nes # King Healer
+mon A8 dq5m:e6e57ec0 tones nes # King Metal
+mon 5F dq5m:f0c26581 tones nes # Flamer
+mon 85 dq5m:7021a3da tones nes # Blizag
+# the lions: Keeleon is one
+mon 7B dq5m:d15a55c1 tones nes # Leaonar
+mon 90 dq5m:d15a55c1 tones nes # Ferocial
+mon BB dq5m:d15a55c1 tones nes # Keeleon
+mon BE dq5m:d15a55c1 tones nes # Keeleon
+mon 89 dq5m:0748d12e tones nes # Eigerhorn
+mon A0 dq5m:0748d12e tones nes # Bull Basher: the Eigerhorn's picture
+mon B7 dq5m:6b941dce tones nes # Infurnus Shadow
+# Esturk, and Necrosaro as he first stands
+mon BC dq5m:82051cf4 tones nes # Esturk
+mon AE dq5m:82051cf4 tones nes # Necrosaro: Esturk's picture

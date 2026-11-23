@@ -77,8 +77,20 @@
  * rows of pixels that belong above it (clear where the square above shows through). After the
  * squares and the figures are drawn, every pixel asks the square below its own for a top.
  *
- * Pack: "DW4S", version 4 (1: no tops; 2: no pictures; 3: no window), the number of squares, the number of
- * figures, then
+ * Battles' monsters. A monster is drawn with background tiles the game loads for the battle, a few with
+ * sprites laid over them for more colours; monsters that differ only in colour share the tiles and have
+ * other palettes. The pack knows a drawing by its tiles: their hashes and where each lies from the first
+ * (the top row's leftmost). Every frame the name tables are searched for a first tile of a drawing the
+ * pack has; where all the drawing's tiles are found around it, the pack's picture is drawn instead, its
+ * place given from the first tile's corner (a Super Famicom monster is another drawing of the same
+ * creature, often larger: it stands where the NES one stands). Of the pictures that share those tiles the
+ * one is taken whose colours are the palettes' now, or the nearest while the game fades them; the picture
+ * is scaled by how its colours compare with the game's, as a figure is, so it darkens and flashes with
+ * the game's own. The NES drawing's tiles and its sprites are left out; the picture shows wherever the
+ * screen holds nothing else (never over a window, a letter or a sprite of the NES's own, the cursor's).
+ *
+ * Pack: "DW4S", version 5 (1: no tops; 2: no pictures; 3: no window; 4: no monsters), the number of squares, the
+ * number of figures, then
  *   per square: key (64 bits), the four NES colors it was made for, the number of animation
  *     frames, the game frames each one lasts, a flags byte (bit 0: a top follows the frames; its
  *     high four bits: how much of the NES square is in its third color, 0 to 15), a byte with the
@@ -92,8 +104,15 @@
  *   from version 3: the number of pictures, and per picture its width and height (16 bits
  *     each) and its pixels (ARGB; alpha 0 where the NES's own pixel stays);
  *   from version 4: the window: the key of the game's frame (64 bits: the hash of the hashes of
- *     its ten tiles), the color of its line and letters, and 24x24 pixels: the frame's corners
- *     and edges, 8x8 each, round a piece of the fill.
+ *     its ten tiles; 0: the pack has no window), the color of its line and letters, and 24x24
+ *     pixels: the frame's corners and edges, 8x8 each, round a piece of the fill;
+ *   from version 5: the number of monsters, and per monster the number of its tiles (16 bits), of its
+ *     sprites' tiles and of its palettes (a byte each), where its picture starts from the first
+ *     tile's corner (two signed 16-bit numbers), the picture's width and height (16 bits each), the
+ *     twelve NES colors of its palettes (three each, in the order its tiles first use them), then
+ *     per tile its row and column from the first (signed bytes), which of the palettes it has, a
+ *     byte of nothing and its hash (64 bits); per sprite tile its hash; then the pixels (ARGB;
+ *     alpha 0 where it is clear).
  * All little-endian.
  * After all that a pack may hold the music (runtime/sfcmusic.c reads it from the file's end); this
  * file does not look at it.
@@ -118,6 +137,14 @@ static int any_tops;
 typedef struct { uint64_t key; uint8_t ref[12]; int8_t dx, dy; uint8_t w, h; const uint32_t *px; int next; } figure_t;
 
 typedef struct { uint32_t w, h; const uint32_t *px; } picture_t;
+typedef struct { int8_t dr, dc; uint8_t pal; uint64_t hash; } mtile_t;
+typedef struct { uint16_t ntiles, w, h; uint8_t nspr, npal, ref[12]; int16_t dx, dy; const mtile_t *tiles; const uint64_t *spr;
+                 const uint32_t *px; int next; } monster_t;
+static monster_t *monsters;             /* the battles' */
+static mtile_t *mon_tiles;
+static uint64_t *mon_sprs;
+static int32_t *mon_table;              /* by the first tile's hash: the first of the ones that begin with it */
+static uint32_t n_monsters, mon_cap;
 static square_t *squares;
 static figure_t *figures;
 static picture_t *pictures;             /* laid over the whole map */
@@ -197,8 +224,10 @@ static uint64_t rd64(const uint8_t *p) { return rd32(p) | ((uint64_t)rd32(p + 4)
 
 void sfc_forget(void) {
     free(squares); free(figures); free(pictures); free(sq_table); free(fig_table); free(pixels);
+    free(monsters); free(mon_tiles); free(mon_sprs); free(mon_table);
     squares = NULL; figures = NULL; pictures = NULL; sq_table = fig_table = NULL; pixels = NULL;
-    n_squares = n_figures = n_pictures = sq_cap = fig_cap = 0;
+    monsters = NULL; mon_tiles = NULL; mon_sprs = NULL; mon_table = NULL;
+    n_squares = n_figures = n_pictures = sq_cap = fig_cap = n_monsters = mon_cap = 0;
     win_key = 0; win_on = 0;
     ready = 0;
     any_tops = 0;
@@ -218,7 +247,7 @@ int sfc_init(const char *pack_path) {
     long len = ftell(f);
     fseek(f, 0, SEEK_SET);
     uint8_t *d = len >= 16 && len < (64L << 20) ? malloc((size_t)len) : NULL;
-    if (!d || fread(d, 1, (size_t)len, f) != (size_t)len || memcmp(d, "DW4S", 4) || rd32(d + 4) < 1 || rd32(d + 4) > 4) { free(d); fclose(f); return 0; }
+    if (!d || fread(d, 1, (size_t)len, f) != (size_t)len || memcmp(d, "DW4S", 4) || rd32(d + 4) < 1 || rd32(d + 4) > 5) { free(d); fclose(f); return 0; }
     fclose(f);
     uint32_t ns = rd32(d + 8), nf = rd32(d + 12);
     if (ns > 65536 || nf > 65536) { free(d); return 0; }
@@ -303,12 +332,61 @@ int sfc_init(const char *pack_path) {
             win_key = rd64(d + o); win_ink = rd32(d + o + 8);
             for (int k = 0; k < 24 * 24; k++) win_px[k] = rd32(d + o + 12 + k * 4);
             win_fill = win_px[12 * 24 + 12];
+            o += 12 + sizeof win_px;
+        }
+    }
+    if (!bad && rd32(d + 4) >= 5) {
+        uint32_t nm = o + 4 <= (size_t)len ? rd32(d + o) : 0;
+        size_t nt = 0, nsp = 0, q = o + 4;
+        o += 4;
+        if (nm > 4096) bad = 1;
+        for (uint32_t i = 0; i < nm && !bad; i++) {             /* first how many tiles there are in all */
+            if (q + 24 > (size_t)len) { bad = 1; break; }
+            size_t t = d[q] | (d[q + 1] << 8), s = d[q + 2], w = d[q + 8] | (d[q + 9] << 8), h = d[q + 10] | (d[q + 11] << 8);
+            if (!t || d[q + 3] < 1 || d[q + 3] > 4) { bad = 1; break; }
+            nt += t; nsp += s;
+            q += 24 + t * 12 + s * 8 + w * h * 4;
+        }
+        if (!bad && q > (size_t)len) bad = 1;
+        mon_cap = nm * 2 + 16;
+        if (!bad && nm && (!(monsters = calloc(nm, sizeof *monsters)) || !(mon_tiles = calloc(nt + 1, sizeof *mon_tiles)) ||
+                           !(mon_sprs = calloc(nsp + 1, sizeof *mon_sprs)) || !(mon_table = calloc(mon_cap, sizeof *mon_table)))) bad = 1;
+        nt = nsp = 0;
+        for (uint32_t i = 0; i < nm && !bad; i++) {
+            monster_t *m = &monsters[n_monsters];
+            m->ntiles = (uint16_t)(d[o] | (d[o + 1] << 8)); m->nspr = d[o + 2]; m->npal = d[o + 3];
+            m->dx = (int16_t)(d[o + 4] | (d[o + 5] << 8)); m->dy = (int16_t)(d[o + 6] | (d[o + 7] << 8));
+            m->w = (uint16_t)(d[o + 8] | (d[o + 9] << 8)); m->h = (uint16_t)(d[o + 10] | (d[o + 11] << 8));
+            memcpy(m->ref, d + o + 12, 12);
+            o += 24;
+            m->tiles = mon_tiles + nt;
+            for (int k = 0; k < m->ntiles; k++, o += 12) {
+                mtile_t *t = &mon_tiles[nt++];
+                t->dr = (int8_t)d[o]; t->dc = (int8_t)d[o + 1]; t->pal = d[o + 2] & 3; t->hash = rd64(d + o + 4);
+            }
+            m->spr = mon_sprs + nsp;
+            for (int k = 0; k < m->nspr; k++, o += 8) mon_sprs[nsp++] = rd64(d + o);
+            m->px = pixels + used;
+            for (size_t k = 0; k < (size_t)m->w * m->h; k++) pixels[used++] = rd32(d + o + k * 4);
+            o += (size_t)m->w * m->h * 4;
+            m->next = 0;
+            uint32_t t = (uint32_t)(m->tiles[0].hash % mon_cap);
+            while (mon_table[t] && monsters[mon_table[t] - 1].tiles[0].hash != m->tiles[0].hash) t = (t + 1) % mon_cap;
+            if (!mon_table[t]) mon_table[t] = (int32_t)n_monsters + 1;
+            else {                                              /* the same first tile: chained */
+                monster_t *h = &monsters[mon_table[t] - 1];
+                while (h->next) h = &monsters[h->next - 1];
+                h->next = (int)n_monsters + 1;
+            }
+            n_monsters++;
         }
     }
     free(d);
     if (bad || !(n_squares + n_figures)) { sfc_forget(); return 0; }
     ready = 1;
-    printf("16-bit textures: %u map squares and %u figures%s from %s\n", n_squares, n_figures, win_key ? ", the windows" : "", pack_path);
+    char mons[40] = "";
+    if (n_monsters) snprintf(mons, sizeof mons, ", %u monsters", n_monsters);
+    printf("16-bit textures: %u map squares and %u figures%s%s from %s\n", n_squares, n_figures, win_key ? ", the windows" : "", mons, pack_path);
     return (int)(n_squares + n_figures);
 }
 
@@ -597,6 +675,106 @@ static void gather(void) {
         add_draw(list[i].x, list[i].y, list[i].tile, list[i].attr, 1);
 }
 
+/* ---- the battles' monsters ---- */
+typedef struct { int x, y, x0, y0, x1, y1; const monster_t *who; uint16_t tint[3]; } mdraw_t;
+#define MAX_MDRAWS 16
+static mdraw_t mdraws[MAX_MDRAWS];
+static int n_mdraws;
+static uint32_t mon_cell[4 * 960];      /* the frame on which a name table cell was part of a drawing the pack draws */
+static uint8_t slot_mon[SLOTS];         /* the sprite tiles that are part of one */
+
+static const monster_t *first_monster(uint64_t hash) {
+    if (!mon_cap) return NULL;
+    for (uint32_t i = (uint32_t)(hash % mon_cap);; i = (i + 1) % mon_cap) {
+        if (!mon_table[i]) return NULL;
+        if (monsters[mon_table[i] - 1].tiles[0].hash == hash) return &monsters[mon_table[i] - 1];
+    }
+}
+
+/* are all of m's tiles in name table nt around (row, col), where its first is? */
+static int monster_here(const monster_t *m, const uint8_t *t, int row, int col) {
+    for (int k = 1; k < m->ntiles; k++) {
+        int r = row + m->tiles[k].dr, c = col + m->tiles[k].dc;
+        if (r < 0 || r >= 30 || c < 0 || c >= 32) return 0;
+        int s = slot_of(t[r * 32 + c], 0);
+        if (s >= SLOTS || slot_hash[s] != m->tiles[k].hash) return 0;
+    }
+    return 1;
+}
+
+static void gather_monsters(void) {
+    n_mdraws = 0;
+    memset(slot_mon, 0, sizeof slot_mon);
+    if (!n_monsters) return;
+    /* where the screen's corner lies in the name tables on this frame */
+    int sx0 = (ppu.frame_t & 31) * 8 + ppu.frame_x + ((ppu.frame_t >> 10) & 1) * 256;
+    int sy0 = ((ppu.frame_t >> 5) & 31) * 8 + ((ppu.frame_t >> 12) & 7) + ((ppu.frame_t >> 11) & 1) * 240;
+    for (int nt = 0; nt < 4; nt++) {
+        int twice = 0;
+        for (int k = 0; k < nt; k++) twice |= ppu.nt_offset[k] == ppu.nt_offset[nt];
+        if (twice) continue;                                    /* (the same memory again) */
+        const uint8_t *t = ppu.vram + ppu.nt_offset[nt];
+        for (int row = 0; row < 30; row++)
+            for (int col = 0; col < 32; col++) {
+                if (mon_cell[nt * 960 + row * 32 + col] == gen) continue;
+                int s = slot_of(t[row * 32 + col], 0);
+                if (s >= SLOTS || slot_blank[s]) continue;
+                const monster_t *first = first_monster(slot_hash[s]), *m, *best = NULL;
+                if (!first) continue;
+                int x = (nt & 1) * 256 + col * 8 - sx0, y = (nt >> 1) * 240 + row * 8 - sy0;
+                x = ((x % 512) + 512) % 512; if (x >= 384) x -= 512;
+                y = ((y % 480) + 480) % 480; if (y >= 360) y -= 480;
+                if (x <= -128 || x >= 256 || y <= -128 || y >= 240) continue;
+                int line = y < 0 ? 0 : y > 239 ? 239 : y;
+                const uint8_t *pal = ppu.hd_palettes[HD_PALSET(ppu.hd_bg[line * 256 + 128])];
+                uint8_t e = ppu.line_emph[line], now[12];
+                unsigned nearest = ~0u;
+                for (m = first;; m = &monsters[m->next - 1]) {
+                    if (monster_here(m, t, row, col)) {
+                        /* its palettes' colours now: each palette is the one its first tile of that kind has here */
+                        uint8_t got[12] = { 0 };
+                        for (int p = 0; p < m->npal; p++)
+                            for (int k = 0; k < m->ntiles; k++) {
+                                if (m->tiles[k].pal != p) continue;
+                                int r = row + m->tiles[k].dr, c = col + m->tiles[k].dc;
+                                int a = (t[0x3C0 + (r >> 2) * 8 + (c >> 2)] >> (((r & 2) ? 4 : 0) + ((c & 2) ? 2 : 0))) & 3;
+                                for (int i = 0; i < 3; i++) got[p * 3 + i] = pal[a * 4 + 1 + i];
+                                break;
+                            }
+                        unsigned d = 0;
+                        for (int i = 0; i < m->npal * 3; i++) {
+                            uint32_t u = nes_rgb[got[i] & 0x3F], v = nes_rgb[m->ref[i] & 0x3F];
+                            for (int c = 0; c < 24; c += 8) d += (unsigned)abs((int)((u >> c) & 255) - (int)((v >> c) & 255));
+                        }
+                        if (d < nearest) { nearest = d; best = m; memcpy(now, got, sizeof now); }
+                    }
+                    if (!m->next) break;
+                }
+                if (!best || n_mdraws >= MAX_MDRAWS) continue;
+                mdraw_t *d = &mdraws[n_mdraws++];
+                d->who = best; d->x = x; d->y = y;
+                d->x0 = d->y0 = 1 << 20; d->x1 = d->y1 = -(1 << 20);
+                for (int k = 0; k < best->ntiles; k++) {
+                    int r = row + best->tiles[k].dr, c = col + best->tiles[k].dc;
+                    mon_cell[nt * 960 + r * 32 + c] = gen;
+                    int px = x + best->tiles[k].dc * 8, py = y + best->tiles[k].dr * 8;
+                    if (px < d->x0) d->x0 = px;
+                    if (py < d->y0) d->y0 = py;
+                    if (px + 8 > d->x1) d->x1 = px + 8;
+                    if (py + 8 > d->y1) d->y1 = py + 8;
+                }
+                tint_of(best->ref, now, NULL, best->npal * 3, (e >> 5) & 7, (e & 1) ? 0x30 : 0x3F, d->tint);
+                for (int i = 0; i < 64 && best->nspr; i++) {   /* the sprites laid over it */
+                    const uint8_t *o = ppu.oam + i * 4;
+                    if (o[0] >= 0xEF || o[3] + 8 <= d->x0 - 8 || o[3] >= d->x1 + 8 || o[0] + 9 <= d->y0 - 8 || o[0] + 1 >= d->y1 + 8) continue;
+                    int ss = slot_of(o[1], 1);
+                    for (int k = 0; k < best->nspr && ss < SLOTS; k++)
+                        if (best->spr[k] == slot_hash[ss]) { slot_mon[ss] = 1; break; }
+                }
+            }
+    }
+}
+
 static uint32_t spr_kept[WS_W * WS_H];
 
 void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg, const uint32_t *spr, const uint16_t *cell,
@@ -611,6 +789,7 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
     n_missed_sq = n_missed_fig = 0;
     win_on = win_key && frame_loaded();
     gather();
+    gather_monsters();
 
     /* the NES pixels of the figures that are drawn from the pack are left out */
     for (int y = 0; y < h; y++) memcpy(spr_kept + (size_t)y * w, spr + (size_t)y * src_stride, (size_t)w * sizeof *spr);
@@ -624,6 +803,19 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
                 if (x < 0 || x >= w) continue;
                 uint32_t s = spr_kept[(size_t)y * w + x];
                 if ((s & HD_PRESENT) && HD_TILE(s) < SLOTS && slot_replaced[HD_TILE(s)]) spr_kept[(size_t)y * w + x] = 0;
+            }
+        }
+    }
+    for (int k = 0; k < n_mdraws; k++) {               /* and the sprites that are part of a monster the pack draws */
+        const mdraw_t *d = &mdraws[k];
+        for (int py = d->y0 - 8; py < d->y1 + 16; py++) {
+            int y = py - org_y;
+            if (y < 0 || y >= h) continue;
+            for (int px = d->x0 - 8; px < d->x1 + 16; px++) {
+                int x = px - org_x;
+                if (x < 0 || x >= w) continue;
+                uint32_t s = spr_kept[(size_t)y * w + x];
+                if ((s & HD_PRESENT) && HD_TILE(s) < SLOTS && slot_mon[HD_TILE(s)]) spr_kept[(size_t)y * w + x] = 0;
             }
         }
     }
@@ -727,6 +919,53 @@ void sfc_frame(uint32_t *out, int stride, const uint8_t *idx, const uint32_t *bg
                 if (wt->tile == 0x83 && col >= 4) px = own;                         /* the mark beside the edge */
             }
             o[x] = px == win_fill ? wt->fill : wt->ink;
+        }
+    }
+
+    /* the battles' monsters: the NES drawing's tiles show the backdrop, then the pack's picture over whatever
+       is empty there */
+    if (n_mdraws) {
+        for (int y = 0; y < h; y++) {
+            const uint32_t *br = bg + (size_t)y * src_stride, *sr = spr_kept + (size_t)y * w;
+            const uint16_t *cr = cell + (size_t)y * src_stride;
+            uint32_t *o = out + (size_t)y * stride;
+            uint8_t gray = (emph[y] & 1) ? 0x30 : 0x3F;
+            for (int x = 0; x < w; x++) {
+                uint16_t c = cr[x];
+                if (!(c & HD_CELL) || ((c >> 5) & 31) >= 30 || (sr[x] & HD_PRESENT) || !(br[x] & HD_PRESENT)) continue;
+                if (mon_cell[((c >> 10) & 3) * 960 + ((c >> 5) & 31) * 32 + (c & 31)] != gen) continue;
+                uint32_t back = nes_rgb[((emph[y] >> 5) & 7) * 64 + (ppu.hd_palettes[HD_PALSET(br[x])][0] & gray & 0x3F)];
+                o[x] = 0xFF000000u | back;
+            }
+        }
+        for (int k = 0; k < n_mdraws; k++) {
+            const mdraw_t *d = &mdraws[k];
+            const monster_t *m = d->who;
+            int plain = d->tint[0] == 256 && d->tint[1] == 256 && d->tint[2] == 256;
+            for (int j = 0; j < m->h; j++) {
+                int y = d->y + m->dy + j - org_y;
+                if (y < 0 || y >= h) continue;
+                for (int i = 0; i < m->w; i++) {
+                    int x = d->x + m->dx + i - org_x;
+                    if (x < 0 || x >= w) continue;
+                    uint32_t v = m->px[(size_t)j * m->w + i];
+                    if (!(v >> 24)) continue;
+                    if (spr_kept[(size_t)y * w + x] & HD_PRESENT) continue;         /* a sprite of the NES's own (the cursor) */
+                    uint16_t c = cell[(size_t)y * src_stride + x];
+                    if (c & HD_CELL) {
+                        int nt = (c >> 10) & 3, row = (c >> 5) & 31, col = c & 31;
+                        if (row >= 30) continue;
+                        if (mon_cell[nt * 960 + row * 32 + col] != gen) {          /* beyond the drawing: only where nothing is */
+                            int s = slot_of(ppu.vram[ppu.nt_offset[nt] + row * 32 + col], 0);
+                            if (s >= SLOTS || !slot_blank[s]) continue;
+                            wtile_t *wt = &win_tile[nt * 960 + row * 32 + col];
+                            if (wt->gen != gen) resolve_window(wt, nt, row, col);
+                            if (wt->tile) continue;
+                        }
+                    } else if (c) continue;
+                    out[(size_t)y * stride + x] = plain ? (0xFF000000u | v) : tinted(v, d->tint);
+                }
+            }
         }
     }
 

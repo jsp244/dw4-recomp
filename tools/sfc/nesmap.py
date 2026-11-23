@@ -17,6 +17,13 @@ usage:
                                              and two steps, from the game's own sprite definitions
     nesmap.py frame DUMP...                  the key of the windows' frame as the dumps have it loaded (pack.py:
                                              window ... frame KEY)
+    nesmap.py monsters OUT_PREFIX DUMP...    the battles' monsters. Each DUMP is `nes-headless --ppu-dump` of a
+                                             battle with one monster alone, the monster's number the last two
+                                             hex digits of its name (mon_30.ppu). OUT_PREFIX.json: per number the
+                                             tiles of its drawing (where each lies from the first, its hash,
+                                             which of the drawing's palettes it has), the colours of those
+                                             palettes, the sprites that are part of it and the name the game
+                                             writes; OUT_PREFIX.png: all of them, numbered
 """
 import json
 import os
@@ -249,9 +256,123 @@ def figures(prefix, dumps):
     print("%s: %d different figures" % (prefix, len(order)))
 
 
+# ---- the battles' monsters ----
+# A monster is drawn with background tiles the game loads for the battle (numbers from $8D on: below them are the
+# letters and the windows' frame), a few with sprites laid over them for more colours. Monsters that differ only in
+# their colours share the tiles. The runtime knows a drawing by its tiles' hashes and where they lie from the
+# first (the top row's leftmost), and tells the colour variants apart by the palettes the tiles have.
+LETTERS = {0: " ", 0x6A: "'", 0x65: "-", 0x6E: "."}
+for _i in range(10):
+    LETTERS[1 + _i] = str(_i)
+for _i in range(26):
+    LETTERS[0x0B + _i] = chr(97 + _i)
+    LETTERS[0x25 + _i] = chr(65 + _i)
+
+
+class PpuDump:
+    def __init__(self, path):
+        d = open(path, "rb").read()
+        if d[:4] != b"DWPP":
+            raise SystemExit("%s: not a --ppu-dump" % path)
+        self.ctrl = d[8]
+        self.pal = d[16:48]
+        self.nt = d[48:48 + 1024]                   # (a battle is in the first name table, unscrolled)
+        self.chr = d[48 + 4096:48 + 4096 + 8192]
+        self.oam = d[48 + 4096 + 8192:48 + 4096 + 8192 + 256]
+
+    def tile(self, n, sprites=False):
+        base = 0x1000 if self.ctrl & (0x08 if sprites else 0x10) else 0
+        return self.chr[base + n * 16:base + n * 16 + 16]
+
+    def palette(self, row, col):
+        at = self.nt[960 + (row // 4) * 8 + col // 4]
+        return (at >> ((4 if row & 2 else 0) + (2 if col & 2 else 0))) & 3
+
+
+def monster_of(path):
+    d = PpuDump(path)
+    cells = []
+    for row in range(1, 19):
+        for col in range(32):
+            n = d.nt[row * 32 + col]
+            if n >= 0x8D and any(d.tile(n)):
+                cells.append((row, col))
+    if not cells:
+        return None
+    r0, c0 = cells[0]
+    pals, tiles = [], []
+    for row, col in cells:
+        p = d.palette(row, col)
+        if p not in pals:
+            pals.append(p)
+        tiles.append([row - r0, col - c0, "%016X" % tile_hash(d.tile(d.nt[row * 32 + col])), pals.index(p), d.tile(d.nt[row * 32 + col]).hex()])
+    colors = [d.pal[p * 4 + 1 + i] & 0x3F for p in pals for i in range(3)]
+    x0, x1 = min(c for _, c in cells) * 8, max(c for _, c in cells) * 8 + 8
+    y0, y1 = min(r for r, _ in cells) * 8, max(r for r, _ in cells) * 8 + 8
+    sprites = []
+    for i in range(0, 256, 4):
+        y, n, attr, x = d.oam[i:i + 4]
+        if y < 0xEF and y0 - 8 <= y + 1 < y1 and x0 - 8 <= x < x1 and any(d.tile(n, True)):
+            sprites.append([x - c0 * 8, y + 1 - r0 * 8, "%016X" % tile_hash(d.tile(n, True)), attr, d.tile(n, True).hex(),
+                            [d.pal[16 + (attr & 3) * 4 + 1 + k] & 0x3F for k in range(3)]])
+    name = "".join(LETTERS.get(d.nt[19 * 32 + c], "?") for c in range(13, 27)).strip()
+    key = fnv(b"".join(struct.pack("<bbQ", t[0], t[1], int(t[2], 16)) for t in tiles)) or 1
+    return {"mon": int(os.path.splitext(os.path.basename(path))[0][-2:], 16), "name": name, "key": "%016X" % key,
+            "tiles": tiles, "colors": colors, "backdrop": d.pal[0] & 0x3F, "sprites": sprites,
+            "box": [x0 - c0 * 8, y0 - r0 * 8, x1 - c0 * 8, y1 - r0 * 8]}
+
+
+def monster_image(e):
+    """the monster as the NES draws it (its tiles, then its sprites), on clear"""
+    from PIL import Image
+    x0, y0, x1, y1 = e["box"]
+    im = Image.new("RGBA", (x1 - x0 + 16, y1 - y0 + 16), (0, 0, 0, 0))
+    px = im.load()
+
+    def lay(tile, cols, ox, oy, hflip=False, vflip=False):
+        t = bytes.fromhex(tile)
+        for y in range(8):
+            for x in range(8):
+                yy, bit = (7 - y if vflip else y), (x if hflip else 7 - x)
+                v = ((t[yy] >> bit) & 1) | (((t[yy + 8] >> bit) & 1) << 1)
+                if v and 0 <= ox + x < im.size[0] and 0 <= oy + y < im.size[1]:
+                    c = NES_RGB[cols[v - 1]]
+                    px[ox + x, oy + y] = ((c >> 16) & 255, (c >> 8) & 255, c & 255, 255)
+    for dr, dc, _, p, tile in e["tiles"]:
+        lay(tile, e["colors"][p * 3:p * 3 + 3], dc * 8 - x0 + 8, dr * 8 - y0 + 8)
+    for sx, sy, _, attr, tile, cols in reversed(e["sprites"]):
+        lay(tile, cols, sx - x0 + 8, sy - y0 + 8, bool(attr & 0x40), bool(attr & 0x80))
+    return im
+
+
+def monsters(prefix, dumps):
+    from PIL import Image, ImageDraw
+    out = []
+    for path in dumps:
+        e = monster_of(path)
+        if e:
+            out.append(e)
+    out.sort(key=lambda e: e["mon"])
+    json.dump(out, open(prefix + ".json", "w"))
+    cell = 136
+    sheet = Image.new("RGB", (8 * cell, ((len(out) + 7) // 8) * cell), (0, 0, 0))
+    draw = ImageDraw.Draw(sheet)
+    for i, e in enumerate(out):
+        im = monster_image(e)
+        x, y = (i % 8) * cell, (i // 8) * cell
+        im = im.crop((0, 0, min(im.size[0], cell - 4), min(im.size[1], cell - 14)))
+        sheet.paste(im, (x + 2, y + 12), im)
+        draw.text((x + 2, y), "%02X %s" % (e["mon"], e["name"]), fill=(255, 255, 255))
+    sheet.save(prefix + ".png")
+    shapes = len(set(e["key"] for e in out))
+    print("%s.json: %d monsters, %d drawings" % (prefix, len(out), shapes))
+
+
 def main():
     a = sys.argv
-    if len(a) >= 4 and a[1] == "figures":
+    if len(a) >= 4 and a[1] == "monsters":
+        monsters(a[2], a[3:])
+    elif len(a) >= 4 and a[1] == "figures":
         figures(a[2], a[3:])
     elif len(a) == 4 and a[1] == "render":
         render(a[2], a[3])

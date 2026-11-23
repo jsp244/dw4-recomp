@@ -28,6 +28,7 @@ What it does, step by step (everything it writes is under generated/sfc, which g
 The same ROMs give the same pack every time. The art is the games': keep the pack with your own copies.
 """
 import argparse
+import concurrent.futures
 import glob
 import hashlib
 import os
@@ -42,7 +43,7 @@ KNOWN = {"dq12": "1c0c6d78bf2bc29160adf48b17ebf5a5bc46230e", "dq3": "b711341e4b1
 
 # the libraries cut from games other than Dragon Quest III: what the map files use of them goes into the supplement
 SUPPLEMENT_LIBRARIES = ("dq1_castle.sfclib", "dq1_ow.sfclib", "dq1.figs", "dq5_ship.sfclib", "dq6_people.figs",
-                        "dq6_dragon.figs", "dq6_lord.figs", "dq6_sky.figs", "dq5_people.figs")
+                        "dq6_dragon.figs", "dq6_lord.figs", "dq6_sky.figs", "dq5_people.figs", "dq5_monsters.figs")
 # Dragon Quest V opens on a ship: its script (scenes/dq5.keys) starts a new game, lets the opening's words pass, walks
 # the boy out of his cabin, through the storeroom and up the stairs, opens the deckhouse's door and walks the deck
 # from bow to stern; scenes/dq5.captures names the 27 pictures the deck is cut from. That game keeps its map's
@@ -136,6 +137,41 @@ DQ5_FACINGS = (("U", 0x80), ("R", 0x10), ("D", 0x40), ("L", 0x20))
 # number: who (the map files name a set by the number in decimal: dq5n:g104 is the ship)
 DQ5_PEOPLE = {0x38: "a lion-headed beast", 0x68: "the ship as the sea shows it", 0x92: "the sky people in robes",
               0x96: "the sky people in tunics"}
+# The battles' monsters. All three games draw any monster on request, alone in a battle, when the numbers of an
+# encounter's groups are held in memory while the battle is made up.
+# Dragon Warrior IV: from a frame of chapter 1's script on the overworld the soldier steps to and fro until a
+# battle is about to start by itself (NES_WALK steps of 20 frames; the state is kept). The encounter's four
+# groups are eight bytes of battery RAM (NES_GROUPS: the monsters' numbers, $FF for none, then how many of each):
+# held for 400 frames (nes-headless --poke), the battle comes up with that monster alone, and its picture
+# memory is dumped: nesmap.py monsters makes the inventory of the game's 194 monsters from the dumps (the tiles
+# of each drawing; monsters that differ only in colour share them).
+# Dragon Quest III: its cave scene crosses the overworld, and at frame DQ3_BATTLE a battle is 130 frames away
+# (the scene is played in two parts, the state between them kept). The first group's monster and how many
+# there are of it are work RAM (DQ3_GROUPS and eight bytes on); held from that frame, with the scene's buttons
+# for those 130 frames and none after, the monster stands alone at the command window, drawn with sprites
+# (sfcfig.py buildall cuts it). Its numbers count from 1.
+# Dragon Quest V: a byte of work RAM (DQ5_MAP) says which map of the place the boy is in is loaded. He walks up
+# the deckhouse's stairs from the state the people by number are drawn from; with that byte held at 6 from the
+# frame the stairs take him (DQ5_STAIRS), the game loads the overworld outside the port instead of the deck
+# below, and a battle starts there by itself. Its groups are work RAM too (DQ5_GROUPS: four monsters, counted
+# from 0, then how many of each), held from a few frames later. The largest monsters take the longest to appear.
+NES_OVERWORLD = 8200
+NES_WALK = 83
+NES_GROUPS = 0x6E45
+NES_MONSTERS = [n for n in range(0xC3) if n != 0xAD]        # ($AD is an empty entry of the game's table)
+DQ3_BATTLE = 55300
+DQ3_GROUPS = 0x2000
+DQ3_MONSTERS = {0x01: "slime", 0x07: "bubble slime", 0x0A: "healslime", 0x14: "toadstool", 0x18: "toadstool, purple cap",
+                0x1C: "wandering armour", 0x2C: "cureslime", 0x32: "metal slime", 0x35: "imp", 0x37: "man-eating chest",
+                0x3F: "armour of hell", 0x41: "man o' war", 0x4D: "killer armour", 0x58: "bomb crag", 0x60: "minidemon",
+                0x63: "mimic", 0x6A: "red slime", 0x6E: "liquid metal slime"}
+DQ5_STAIRS = 64
+DQ5_MAP = 0x00BD
+DQ5_GROUPS = 0x1001
+DQ5_MONSTERS = {0x0C: "troglodyte", 0x24: "clay doll", 0x35: "yeti", 0x4D: "mystic doll", 0x4F: "big sloth",
+                0x55: "small ghoul", 0x6B: "king slime", 0x6C: "flame warrior", 0x83: "arm lion", 0x91: "blizzard man",
+                0x94: "king healslime", 0xA2: "metal king", 0xA4: "the horned demon", 0xC5: "the horned demon, blue",
+                0xE5: "Esturk"}
 # The same opening has a great golden dragon: when the hero walks up to the companion who stands at the cliff's edge
 # (scenes/dq6_dragon.keys, from the cliff's state) she calls it, and it hovers over the sea alone, beating its
 # wings, before it comes for them. Two captures there are two beats (frames after the state): dq6_dragon.figs.
@@ -267,6 +303,20 @@ def moments(cmd, first, base):
     return [base + ".map"] + sorted(glob.glob(base + "_[0-9]*.map"), key=lambda p: int(p[len(base) + 1:-4]))
 
 
+def keys_between(path, first, last):
+    """a keys file's lines for the frames first to last - 1: the buttons held at first given there, none from last on"""
+    held, out = "-", []
+    for ln in open(path):
+        t = ln.split()
+        if len(t) < 2 or not t[0].isdigit():
+            continue
+        if int(t[0]) < first:
+            held = t[1]
+        elif int(t[0]) < last:
+            out.append("%s %s\n" % (t[0], t[1]))
+    return "%d %s\n" % (first, held) + "".join(out) + "%d -\n" % last
+
+
 def run(cmd):
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode:
@@ -356,6 +406,7 @@ def main():
                  "--apu-dump", str(frame), os.path.join(cap, tune)] + (["--holds", holds] if os.path.exists(holds) else []))
     names = []
     upstairs = os.path.join(cap, "dq3_upstairs.state")
+    battle3 = os.path.join(cap, "dq3_battle.state")
     for scene in ("dq3", "dq3_front", "dq3_cave"):
         lines = [ln.split() for ln in open(os.path.join(scenes, scene + ".captures")) if ln.strip()]
         names += [ln[1] for ln in lines]
@@ -369,6 +420,9 @@ def main():
         if scene == "dq3":          # (in two parts: the state between them is where the people by number are drawn from)
             run(cmd + sound_dumps(scene, 0, DQ3_UPSTAIRS) + ["--frames", str(DQ3_UPSTAIRS), "--state-save", upstairs])
             cmd += ["--state-load", upstairs, "--start", str(DQ3_UPSTAIRS)] + sound_dumps(scene, DQ3_UPSTAIRS, last)
+        elif scene == "dq3_cave":   # (in two parts too: the state between them is where the battles' monsters are drawn from)
+            run(cmd + sound_dumps(scene, 0, DQ3_BATTLE) + ["--frames", str(DQ3_BATTLE), "--state-save", battle3])
+            cmd += ["--state-load", battle3, "--start", str(DQ3_BATTLE)] + sound_dumps(scene, DQ3_BATTLE, last)
         else:
             cmd += sound_dumps(scene, 0, last)
         run(cmd + ["--frames", str(last)])
@@ -424,6 +478,58 @@ def main():
                 os.remove(copy)
                 if os.path.exists(holds):
                     os.remove(holds)
+    # The battles' monsters: Dragon Quest III's by number (DQ3_MONSTERS), whichever have no capture yet
+    monsters3 = [os.path.join(cap, "m3_%02X" % n) for n in sorted(DQ3_MONSTERS)]
+    todo = [n for n in sorted(DQ3_MONSTERS) if not os.path.exists(os.path.join(cap, "m3_%02X.regs" % n))]
+    if todo:
+        print("   Dragon Quest III, %d of its monsters by number" % len(todo), flush=True)
+        cave_keys, cave_holds = os.path.join(scenes, "dq3_cave.keys"), os.path.join(scenes, "dq3_cave.holds")
+        if not os.path.exists(battle3):             # (captures kept from before there was this step)
+            run([capture, a.dq3, "--keys", cave_keys, "--holds", cave_holds, "--frames", str(DQ3_BATTLE), "--state-save", battle3])
+        keys = os.path.join(cap, "monsters.keys")
+        with open(keys, "w", newline="\n") as f:
+            f.write(keys_between(cave_keys, DQ3_BATTLE, DQ3_BATTLE + 130))
+
+        def battle_3(n):
+            holds = os.path.join(cap, "monsters_%02X.holds" % n)
+            with open(holds, "w", newline="\n") as f:
+                f.write(open(cave_holds).read())
+                for i, v in enumerate([n & 255, n >> 8, 0, 0, 0, 0, 0, 0, 1, 0]):
+                    f.write("%d %04X %02X\n" % (DQ3_BATTLE, DQ3_GROUPS + i, v))
+            try:
+                run([capture, a.dq3, "--keys", keys, "--holds", holds, "--state-load", battle3, "--start", str(DQ3_BATTLE),
+                     "--frames", str(DQ3_BATTLE + 431), "--capture", str(DQ3_BATTLE + 430), os.path.join(cap, "m3_%02X" % n)])
+            finally:
+                os.remove(holds)
+        with concurrent.futures.ThreadPoolExecutor() as ex:
+            list(ex.map(battle_3, todo))
+        os.remove(keys)
+    # and Dragon Quest V's (DQ5_MONSTERS)
+    monsters5 = [os.path.join(cap, "m5_%02X" % n) for n in sorted(DQ5_MONSTERS)]
+    todo = [n for n in sorted(DQ5_MONSTERS) if not os.path.exists(os.path.join(cap, "m5_%02X.regs" % n))] if a.dq5 else []
+    if todo:
+        print("   Dragon Quest V, %d of its monsters by number" % len(todo), flush=True)
+        deckhouse = os.path.join(cap, "dq5_deckhouse.state")
+        if not os.path.exists(deckhouse):
+            run([capture, a.dq5, "--keys", os.path.join(scenes, "dq5.keys"), "--frames", str(DQ5_DECKHOUSE), "--state-save", deckhouse])
+        keys = os.path.join(cap, "monsters.keys")
+        with open(keys, "w", newline="\n") as f:
+            f.write("1 u\n113 -\n")
+
+        def battle_5(n):
+            holds = os.path.join(cap, "monsters_%02X.holds" % n)
+            with open(holds, "w", newline="\n") as f:
+                f.write("%d %04X 06\n" % (DQ5_STAIRS, DQ5_MAP))
+                for i, v in enumerate([n, 0xFF, 0xFF, 0xFF, 1, 0, 0, 0]):
+                    f.write("%d %04X %02X\n" % (DQ5_STAIRS + 8, DQ5_GROUPS + i, v))
+            try:
+                run([capture, a.dq5, "--keys", keys, "--holds", holds, "--state-load", deckhouse, "--frames", "700",
+                     "--capture", "699", os.path.join(cap, "m5_%02X" % n)])
+            finally:
+                os.remove(holds)
+        with concurrent.futures.ThreadPoolExecutor() as ex:
+            list(ex.map(battle_5, todo))
+        os.remove(keys)
     # Dragon Quest VI's people by number (DQ6_PEOPLE), the same way
     people6 = ["v%02X%s_%s" % (n, tag, step) for n in sorted(DQ6_PEOPLE) for tag, _ in DQ6_FACINGS for step in "ab"]
     todo = [n for n in sorted(DQ6_PEOPLE) if not all(os.path.exists(os.path.join(cap, "v%02X%s_%s.regs" % (n, tag, step)))
@@ -479,6 +585,9 @@ def main():
         py("sfcfig.py", "buildall", os.path.join(gen, "dq6_dragon.figs"), *dragon6)
         py("sfcfig.py", "buildall", os.path.join(gen, "dq6_lord.figs"), "%s@%d,%d,%d,%d" % ((lord6,) + DQ6_LORD_BOX))
         py("sfcfig.py", "buildscroll", os.path.join(gen, "dq6_sky.figs"), "2", "256", DQ6_SKY_ROWS, *sky6)
+    if a.dq5:                       # the battles' monsters, one picture each, in the order of their numbers
+        py("sfcfig.py", "buildall", os.path.join(gen, "dq5_monsters.figs"), *monsters5)
+    py("sfcfig.py", "buildall", os.path.join(gen, "dq3_monsters.figs"), *monsters3)
     py("sfclib.py", "dq3-overworld", os.path.join(gen, "dq3_ow.sfclib"), a.dq3, os.path.join(cap, "dq3_overworld"))
     py("sfcfig.py", "buildwindow", os.path.join(gen, "dq3_window.figs"), window3, DQ3_WINDOW_BOX)
     town, castle, front, house, figures = dq3_sets(names)
@@ -578,6 +687,26 @@ def main():
                             "--poke", "9-21:64:%02X" % level, "--frames", "115", "--map-dump", dumps[-1], "--quiet"])
         py("nesmap.py", "figures", os.path.join(gen, "nes_people_ch%d" % chapter), *dumps)
     os.remove(sav)
+    # the battles' monsters: every number alone in a battle, for the inventory nes_monsters
+    run(game + ["--frames", str(NES_OVERWORLD), "--input", script, "--state-save", state, "--quiet"])
+
+    def walk(first, steps):
+        return ";".join("%d:%s;%d:-" % ((k - first) * 20, "LEFT" if k % 2 == 0 else "RIGHT", (k - first) * 20 + 16)
+                        for k in range(first, first + steps))
+    run(game + ["--state-load", state, "--keys", walk(0, NES_WALK), "--frames", str(NES_WALK * 20), "--state-save", state, "--quiet"])
+
+    def battle(n):
+        out = os.path.join(gen, "mon_%02X.ppu" % n)
+        cmd = game + ["--state-load", state, "--keys", walk(NES_WALK, 2), "--frames", "480", "--ppu-dump", out, "--quiet"]
+        for i, v in enumerate([n, 0xFF, 0xFF, 0xFF, 1, 0, 0, 0]):
+            cmd += ["--poke", "0-400:%04X:%02X" % (NES_GROUPS + i, v)]
+        run(cmd)
+        return out
+    with concurrent.futures.ThreadPoolExecutor() as ex:
+        dumps = list(ex.map(battle, NES_MONSTERS))
+    py("nesmap.py", "monsters", os.path.join(gen, "nes_monsters"), *dumps)
+    for d in dumps:
+        os.remove(d)
     os.remove(state)
 
     print("4. the pack")

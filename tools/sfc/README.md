@@ -115,6 +115,35 @@ lists every place of the game; `extract.py` dumps them all and writes one invent
 of map (`generated/sfc/nes_kXX.json`). (A level can be two maps side by side, the second loaded as the
 player walks into it: a direction after the level's number has it dumped again from there.)
 
+## The battles' monsters
+
+The NES game draws its 194 monsters with 71 drawings: the rest are the same tiles in other
+colours. Sixteen of those drawings are creatures Dragon Quest III or V draws too, in the same
+pose and nearly the same size; `maps/monsters.map` gives the 46 monsters that use them a Super
+Famicom picture (`mon NN FIGS:ART tones nes`). No Super Famicom game drew the other 55 drawings
+(Dragon Quest IV never came out for it), and nothing is invented for them: those monsters stay
+the NES's.
+
+- **Each game draws any monster on request**, alone in a battle, when the numbers of an
+  encounter's groups are held in memory while the battle is made up (`extract.py`, the comment
+  above `NES_OVERWORLD`): Dragon Warrior IV's at `$6E45` (four monsters, then how many of each),
+  Dragon Quest III's at work RAM `$2000`, Dragon Quest V's at `$1001`. Dragon Quest V is taken
+  to a battle without playing its opening through: the byte that says which map is loaded
+  (`$00BD`) is held at the overworld's number while the boy takes a staircase on the ship.
+- **The NES inventory** (`nesmap.py monsters`, `generated/sfc/nes_monsters.json`): per monster
+  the tiles of its drawing (where each lies from the first, its hash), its palettes' colours and
+  the sprites laid over it. The Super Famicom games draw monsters with sprites: `sfcfig.py
+  buildall` cuts one from a capture.
+- **Colours.** The same creature is often another colour in another game (Esturk is brown in
+  Dragon Quest V), and the NES game's own variants were never drawn at all. `tones nes` gives a
+  picture the NES monster's colours: since the poses match, every colour of the picture is a
+  shade of the NES colour drawn where it mostly lies; it takes that colour's hue and keeps its
+  own light and dark. One picture so serves a whole family.
+- **In the game** (`runtime/sfc.c`): a drawing is found in the name tables by its first tile's
+  hash and confirmed by all its tiles; the variant is the one whose colours the palettes hold
+  (the nearest while the game fades them). The NES tiles and the monster's own sprites are
+  left out and the picture is drawn where the NES drawing stands, never over a window.
+
 ## The music
 
 The pack also holds music: Dragon Quest III's instruments and, for each of the game's 54 tunes,

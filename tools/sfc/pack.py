@@ -7,6 +7,7 @@ A map file says which Super Famicom art takes the place of which NES map square 
     nes NAME FILE.json            an inventory of NES squares (nesmap.py squares) under a short name
     figs NAME FILE.figs           a library of Super Famicom figures (sfcfig.py)
     people NAME FILE.json         an inventory of NES figures (nesmap.py figures)
+    monsters NAME FILE.json       an inventory of the NES game's battle monsters (nesmap.py monsters)
     picture NAME FIGS:ART [colors FROM>TO,...]
                                   a picture laid over the whole map, repeating (an entry of a figure
                                   library, of any size: sfcfig.py buildscroll) under a short name;
@@ -67,6 +68,18 @@ A map file says which Super Famicom art takes the place of which NES map square 
                                           the line the NES draws round that outline: the pixels of the
                                           NES square's color 2 that reach a clear pixel through at most
                                           two of their kind are that color instead of the picture's
+    mon NN FIGS:ART [dx DX] [dy DY] [tones nes] [colors FROM>TO,...]
+                                          the battle monster number NN (hex, the NES game's) drawn as the picture
+                                          ART of a figure library: it stands where the NES drawing stands (the
+                                          middle of its lowest row of tiles), DX, DY pixels from there. The
+                                          monsters that share the NES drawing's tiles and differ in colour each
+                                          take a line. "tones nes" gives the picture that monster's colours: the
+                                          Super Famicom games draw these creatures in the NES drawing's pose, so
+                                          each colour of the picture is the shade of one NES colour (the one
+                                          drawn where it mostly lies) and takes that colour's hue and its
+                                          light, the shades among themselves kept; the darkest lines stay. One picture thus serves the colour
+                                          variants the Super Famicom games never drew. "colors" (as for cast,
+                                          below) changes single colours after that.
     fig NES SFC [dx DX] [dy DY] [in KK] [colors FROM>TO,...]
                                           the NES figure NES drawn as the figure SFC, its picture starting
                                           DX, DY pixels from the NES figure's corner (default: same feet).
@@ -358,6 +371,93 @@ def recast(px, w, rules, where):
     return tuple(out)
 
 
+def nes_drawing(e):
+    """an inventory's monster as the NES draws it: {(x, y): NES colour}, from the first tile's corner; the sprites
+    lie over the tiles"""
+    px = {}
+
+    def lay(tile, cols, ox, oy, hflip=False, vflip=False):
+        t = bytes.fromhex(tile)
+        for y in range(8):
+            for x in range(8):
+                yy, bit = (7 - y if vflip else y), (x if hflip else 7 - x)
+                v = ((t[yy] >> bit) & 1) | (((t[yy + 8] >> bit) & 1) << 1)
+                if v:
+                    px[(ox + x, oy + y)] = cols[v - 1]
+    for dr, dc, _, p, tile in e["tiles"]:
+        lay(tile, e["colors"][p * 3:p * 3 + 3], dc * 8, dr * 8)
+    for sx, sy, _, attr, tile, cols in reversed(e["sprites"]):
+        lay(tile, cols, sx, sy, bool(attr & 0x40), bool(attr & 0x80))
+    return px
+
+
+def nes_toned(e, px, w, dx, dy):
+    """the picture px (w wide, laid dx, dy from the NES drawing's first tile) in the NES drawing's colours"""
+    import colorsys
+    from nesmap import NES_RGB
+    nes = nes_drawing(e)
+    count, tally = {}, {}
+    for i, p in enumerate(px):
+        if not p >> 24:
+            continue
+        c = p & 0xFFFFFF
+        count[c] = count.get(c, 0) + 1
+        n = nes.get((dx + i % w, dy + i // w))
+        if n is not None:
+            tally.setdefault(c, {})
+            tally[c][n] = tally[c].get(n, 0) + 1
+
+    def rgb(c):
+        return ((c >> 16) & 255) / 255.0, ((c >> 8) & 255) / 255.0, (c & 255) / 255.0
+
+    def hls(c):
+        return colorsys.rgb_to_hls(*rgb(c))
+
+    def chroma(c):
+        return max(rgb(c)) - min(rgb(c))
+
+    def far(a, b):
+        return sum(abs(((a >> s) & 255) - ((b >> s) & 255)) for s in (0, 8, 16))
+    role = {}
+    for c, t in tally.items():
+        n, most = max(t.items(), key=lambda kv: kv[1])
+        if sum(t.values()) >= 3 and most * 5 >= sum(t.values()) * 2:
+            role[c] = n
+    if not role:
+        return px
+    known = sorted(role)
+    for c in count:                     # a colour that lies where the NES draws nothing: the nearest colour's
+        if c not in role:
+            role[c] = role[min(known, key=lambda k: far(k, c))]
+    light, color = {}, {}               # per NES colour: the mean light and colour of the picture's shades of it
+    for r in set(role.values()):
+        members = [(c, count[c]) for c in count if role[c] == r]
+        total = sum(n for _, n in members)
+        light[r] = sum(hls(c)[1] * n for c, n in members) / total
+        color[r] = sum(chroma(c) * n for c, n in members) / total
+    made = {}
+    for c in count:
+        h, l, s = hls(c)
+        if l < 0.13:
+            made[c] = c                 # the dark lines
+            continue
+        r = role[c]
+        t = NES_RGB[r & 0x3F]
+        th, tl, ts = hls(t)
+        if tl >= light[r]:              # lighter: the shades keep their steps (a white keeps room above it)
+            nl = l + (min(tl, 0.80) - light[r])
+        else:                           # darker: the shades keep their proportions
+            nl = l * max(0.45, tl / light[r])
+        nl = max(0.05, min(0.97, nl))
+        if chroma(t) < 0.08:            # a grey, a white (the NES's white is not quite neutral): next to no colour
+            nh, ns = h, min(s, 0.08)
+        else:                           # the NES colour's hue, a little under its full colour
+            nh, ns = th, max(0.0, min(0.92, ts * (0.5 + 0.4 * chroma(c) / max(color[r], 0.06))))
+        rr, gg, bb = colorsys.hls_to_rgb(nh, nl, ns)
+        made[c] = (int(round(rr * 255)) << 16) | (int(round(gg * 255)) << 8) | int(round(bb * 255))
+    return tuple((p & 0xFF000000) | made[p & 0xFFFFFF] if p >> 24 else p for p in px)
+
+
 def row_list(text, where):
     """the sixteen row numbers of "4,1-3,4,5-7,..." """
     order = []
@@ -372,6 +472,7 @@ def row_list(text, where):
 class Maps:
     def __init__(self, paths):
         self.libs, self.nes, self.figs, self.people = {}, {}, {}, {}
+        self.monsters, self.mon = {}, []        # the battles' monsters: the inventories, the lines
         self.files, self.used = {}, set()       # library file -> its entries; the entries a line has taken (supplement.py)
         self.sq, self.fig, self.cast = [], [], []
         self.pictures = {}                      # name -> (where, the figure library's entry, its options)
@@ -395,6 +496,10 @@ class Maps:
                         self.figs[t[1]] = self.library(os.path.join(base, t[2]))
                     elif t[0] == "people":
                         self.people[t[1]] = self.inventory(os.path.join(base, t[2]))
+                    elif t[0] == "monsters":
+                        self.monsters[t[1]] = self.inventory(os.path.join(base, t[2]))
+                    elif t[0] == "mon":
+                        self.mon.append((where, int(t[1], 16), t[2], dict(zip(t[3::2], t[4::2]))))
                     elif t[0] == "picture":
                         self.pictures[t[1]] = (where, t[2], dict(zip(t[3::2], t[4::2])))
                     elif t[0] == "window":
@@ -694,6 +799,29 @@ def build(out, paths, quiet=False, music=None):
                 px = tuple(px[(h - 1 - x) * w + y] for y in range(w) for x in range(h))
                 dx, dy, w, h = 16 - (dy + h), dx, h, w
             figures.append((key, ref_colors, dx, dy, w, h, px))
+    # The battles' monsters: a line's picture for the NES drawing of that number, standing where it stands.
+    mons, mon_done = [], set()
+    for where, num, ref, opt in m.mon:
+        e = next((x for inv in m.monsters.values() for x in inv if x["mon"] == num), None)
+        if e is None:
+            skipped += 1
+            continue
+        a = m.art(ref, m.figs, where)
+        colors = bytes(e["colors"] + [0] * (12 - len(e["colors"])))
+        if (e["key"], colors) in mon_done:
+            continue                        # (the same drawing in the same colours: another number of the same monster)
+        mon_done.add((e["key"], colors))
+        x0, _, x1, y1 = e["box"]
+        dx, dy = (x0 + x1 - a["w"]) // 2 + int(opt.get("dx", 0)), y1 - a["h"] + int(opt.get("dy", 0))
+        px = a["px"]
+        if opt.get("tones") == "nes":
+            px = nes_toned(e, px, a["w"], dx, dy)
+        elif "tones" in opt:
+            raise SystemExit("%s: tones %s?" % (where, opt["tones"]))
+        if "colors" in opt:
+            px = recast(px, a["w"], opt["colors"], where)
+        mons.append(([(t[0], t[1], t[3], int(t[2], 16)) for t in e["tiles"]], sorted(set(int(s[2], 16) for s in e["sprites"])),
+                     len(e["colors"]) // 3, dx, dy, a["w"], a["h"], colors, px))
     window = None                           # (the frame's key, the letters' colour, 24x24 pixels)
     if m.window:
         at, ref, opt = m.window
@@ -705,7 +833,7 @@ def build(out, paths, quiet=False, music=None):
             raise SystemExit("%s: a window is two colours, its fill's and its line's" % at)
         window = (int(opt["frame"], 16), line.pop(), a["px"])
     with open(out, "wb") as f:
-        f.write(b"DW4S" + struct.pack("<III", 4 if window else 3 if pictures else 2, len(squares), len(figures)))
+        f.write(b"DW4S" + struct.pack("<III", 5 if mons else 4 if window else 3 if pictures else 2, len(squares), len(figures)))
         for key, (ref, frames, ticks, top, w) in sorted(squares.items()):
             f.write(struct.pack("<Q4sBBBB", key, ref, len(frames), max(1, min(255, ticks)), (1 if top else 0) | (w[2] << 4),
                                 w[0] | (w[1] << 4)))
@@ -717,20 +845,32 @@ def build(out, paths, quiet=False, music=None):
         for key, ref, dx, dy, w, h, px in figures:
             f.write(struct.pack("<Q12sbbBB", key, ref, dx, dy, w, h))
             f.write(struct.pack("<%dI" % (w * h), *px))
-        if pictures or window:          # (a pack without them is version 2, as before)
+        if pictures or window or mons:  # (a pack without them is version 2, as before)
             f.write(struct.pack("<I", len(pictures)))
             for w, h, px in pictures:
                 f.write(struct.pack("<HH", w, h))
                 f.write(struct.pack("<%dI" % (w * h), *px))
         if window:                      # (and one without a window version 3)
             f.write(struct.pack("<QI576I", window[0], window[1], *window[2]))
+        elif mons:                      # (version 5 has the window's place: none)
+            f.write(struct.pack("<QI576I", 0, 0, *([0] * 576)))
+        if mons:                        # (and one without monsters version 4)
+            f.write(struct.pack("<I", len(mons)))
+            for tiles, sprs, npal, dx, dy, w, h, colors, px in mons:
+                f.write(struct.pack("<HBBhhHH12s", len(tiles), len(sprs), npal, dx, dy, w, h, colors))
+                for dr, dc, pal, tile in tiles:
+                    f.write(struct.pack("<bbBBQ", dr, dc, pal, 0, tile))
+                for s in sprs:
+                    f.write(struct.pack("<Q", s))
+                f.write(struct.pack("<%dI" % (w * h), *px))
         if music:                       # the music (music.py), last, with its length and name after it: found from the file's end
             blob = open(music, "rb").read()
             if blob[:4] != b"DW4M":
                 raise SystemExit("%s: not music made by music.py" % music)
             f.write(blob + struct.pack("<I", len(blob)) + b"DW4M")
     if not quiet:
-        print("%s: %d map squares, %d figures%s%s" % (out, len(squares), len(figures), ", the music" if music else "",
+        print("%s: %d map squares, %d figures%s%s%s" % (out, len(squares), len(figures), ", %d monsters" % len(mons) if mons else "",
+              ", the music" if music else "",
               "; %d lines left out (their NES squares or people are in no inventory given)" % skipped if skipped else ""))
     return m
 
@@ -740,7 +880,7 @@ def freeze(path):
     out = []
     for _, raw in m.lines:
         t = raw.split()
-        if t and t[0] in ("sq", "fig", "picture", "window"):
+        if t and t[0] in ("sq", "fig", "picture", "window", "mon"):
             words = raw.rstrip("\n").split(" ")
             for i, w in enumerate(words):
                 if w == "#":

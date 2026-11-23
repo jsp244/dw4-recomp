@@ -211,8 +211,10 @@ Famicom Dragon Quest games, and the windows as Dragon Quest III draws its own. T
 does not come with the program: the choice appears when a pack of it, sfc.pak, lies in
 the program's folder (Android: Android/data/<package>/files). The pack is built from your
 own dump of Dragon Quest III (Japan, Super Famicom) with the tools in the source
-(tools/sfc/README.md). It covers every place of the game; the monsters of the battles,
-the title and the few things it has no art for look as they do with Pixel Remaster.
+(tools/sfc/README.md). It covers every place of the game and, in battle, the 46 monsters
+those games draw too (the slimes, the armours, the lions, Esturk and others), in Dragon
+Warrior IV's colours; the other monsters, the title and the few things it has no art for
+look as they do with Pixel Remaster.
 
 SNES Remaster music
 -------------------
